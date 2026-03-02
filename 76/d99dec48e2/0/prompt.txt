@@ -1,0 +1,1 @@
+please install playwright so you can test the app yourself
