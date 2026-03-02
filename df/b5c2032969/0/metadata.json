@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "dfb5c2032969",
+  "session_id": "a8e472e3-3c5d-45b1-8a7a-abf69304cde2",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-02T21:15:12.134121Z",
+  "branch": "master",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "core/ai/openrouter-provider.ts",
+    "data/.gitkeep",
+    "data/README.md",
+    "package.json",
+    "scripts/ingest-transcript.ts"
+  ],
+  "agent": "Cursor",
+  "turn_id": "65a80f812d45",
+  "initial_attribution": {
+    "calculated_at": "2026-03-02T21:15:12.108212Z",
+    "agent_lines": 159,
+    "human_added": 606,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 765,
+    "agent_percentage": 20.784313725490197
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "dfb5c2032969",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "core/ai/openrouter-provider.ts",
+    "data/.gitkeep",
+    "data/README.md",
+    "package.json",
+    "scripts/ingest-transcript.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/df/b5c2032969/0/metadata.json",
+      "transcript": "/df/b5c2032969/0/full.jsonl",
+      "context": "/df/b5c2032969/0/context.md",
+      "content_hash": "/df/b5c2032969/0/content_hash.txt",
+      "prompt": "/df/b5c2032969/0/prompt.txt"
+    }
+  ]
+}
