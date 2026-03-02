@@ -1,0 +1,25 @@
+please implement the existing epics in @specs/ Validate the current state of the app before you start.
+
+---
+
+playwright is installed
+
+---
+
+I did run it. Can you evaluate the results yourself?
+
+---
+
+i re-run it please check the results
+
+---
+
+When I create a challenge and submit it, I get an error in the app saying "Failed to generate challenge summary"
+
+---
+
+We have to change to AI api coneection from open Ai to openrouter.
+
+---
+
+what is the embedding model used for?
