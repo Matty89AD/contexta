@@ -1,9 +1,11 @@
 /**
  * Seed curated content and chunks with embeddings.
  * Run: npm run seed (or npx tsx scripts/seed-content.ts)
- * Requires: .env with NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY
+ * Requires: .env.local (or .env) with NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY
  */
 import "dotenv/config";
+import { config } from "dotenv";
+config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { createOpenAIProvider } from "../core/ai/openai-provider";
 import { ingestContent } from "../services/ingest";
