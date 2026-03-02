@@ -1,0 +1,20 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "19be83db3d56",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".cursor/skills/implement-epics/SKILL.md",
+    ".cursor/skills/test-after-implementation/SKILL.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/19/be83db3d56/0/metadata.json",
+      "transcript": "/19/be83db3d56/0/full.jsonl",
+      "context": "/19/be83db3d56/0/context.md",
+      "content_hash": "/19/be83db3d56/0/content_hash.txt",
+      "prompt": "/19/be83db3d56/0/prompt.txt"
+    }
+  ]
+}

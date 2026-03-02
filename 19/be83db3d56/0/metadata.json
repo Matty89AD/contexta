@@ -1,0 +1,24 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "19be83db3d56",
+  "session_id": "4de3b4e4-d748-4169-9fc4-144a41e36a0a",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-02T18:16:24.64666Z",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".cursor/skills/implement-epics/SKILL.md",
+    ".cursor/skills/test-after-implementation/SKILL.md"
+  ],
+  "agent": "Cursor",
+  "turn_id": "4138227b5738",
+  "initial_attribution": {
+    "calculated_at": "2026-03-02T18:16:24.621546Z",
+    "agent_lines": 114,
+    "human_added": 537,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 651,
+    "agent_percentage": 17.51152073732719
+  }
+}
