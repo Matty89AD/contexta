@@ -1,0 +1,18 @@
+---
+description: Contexta MVP architecture — thin routes, AI provider interface, repositories, centralized prompts
+alwaysApply: true
+---
+
+# Contexta MVP — Architecture Rules
+
+- **Next.js**: Use App Router only. Route Handlers live under `app/api/`. No business logic inside route handlers; they only parse the request, call a single service method, and return the response.
+
+- **AI**: All LLM/embedding usage goes through the `AIProvider` interface (`generateText`, `generateEmbedding`). Do not import or use OpenAI (or any provider) directly in services, repositories, or domain code. Implementations live in `core/ai/` (e.g. `openai-provider.ts`).
+
+- **Data layer**: Use separate repositories for users (profiles), challenges, content, and embeddings. Services depend on repositories and the AI provider; route handlers depend on services. Inject Supabase client (or a small context) into repos where reasonable.
+
+- **Prompts**: Keep all prompt templates and structured-output schemas in `core/prompts/`. No inline prompt strings in services.
+
+- **Validation**: Use Zod for request bodies and any structured LLM output. Validate in the service layer (or at the route boundary before calling the service); keep route handlers thin.
+
+- **Errors**: Use structured error types (e.g. ValidationError, NotFoundError, AIProviderError) and map them to HTTP status in the route layer.
