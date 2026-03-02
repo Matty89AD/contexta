@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "b5adda0ac607",
+  "session_id": "afcfc44e-29b1-4836-a645-b991cf4db71d",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-02T23:02:13.139854Z",
+  "branch": "master",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "requirements/spec.md",
+    "specs/6-multi-domain-and-matching.md",
+    "specs/7-hybrid-rag-retrieval.md"
+  ],
+  "agent": "Cursor",
+  "turn_id": "ae4d603bd2f9",
+  "initial_attribution": {
+    "calculated_at": "2026-03-02T23:02:13.094473Z",
+    "agent_lines": 135,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 135,
+    "agent_percentage": 100
+  }
+}

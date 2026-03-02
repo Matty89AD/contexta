@@ -1,0 +1,21 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "b5adda0ac607",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "requirements/spec.md",
+    "specs/6-multi-domain-and-matching.md",
+    "specs/7-hybrid-rag-retrieval.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b5/adda0ac607/0/metadata.json",
+      "transcript": "/b5/adda0ac607/0/full.jsonl",
+      "context": "/b5/adda0ac607/0/context.md",
+      "content_hash": "/b5/adda0ac607/0/content_hash.txt",
+      "prompt": "/b5/adda0ac607/0/prompt.txt"
+    }
+  ]
+}

@@ -1,0 +1,592 @@
+how does the content retrievel work right now?
+
+---
+
+does the embedding deliver any real advantage compared to a text search in a text field?
+
+---
+
+wouldn't it make sense after getting the matched chunks to read the raw text of the content piece and to build the answer from there?
+
+---
+
+we could also stroe the txt file in file storage or raw text in a table field of the content table and read it from there.
+
+---
+
+ok, next topic. It's about the matching domain. currently it's a single select but often challenges and content touch multiple domains. especially podcast (one content piece) handle more than one domain. How can we handle this behavior? And I think that it is dangerous to over estimate the domain relevance between challenge and recommendation bc the user can make mistakes and then more suitable advices will be missed because of a different domain.
+
+---
+
+generate an epic for that change an save it at @specs/ with an meaningful naming, thus we can implement it later.
+
+---
+
+<attached_files>
+
+<code_selection path="file:///Users/mattyaldoyaili/.cursor/plans/epic_6_multi-domain_and_matching_3f35586f.plan.md" lines="1-69">
+     1|---
+     2|name: Epic 6 multi-domain and matching
+     3|overview: Add a new epic spec under specs/ that defines multi-domain support (challenge and content) and safer matching behavior so domain does not over-exclude relevant recommendations.
+     4|todos: []
+     5|isProject: false
+     6|---
+     7|
+     8|# Epic 6: Multi-domain and matching — spec document
+     9|
+    10|## Deliverable
+    11|
+    12|Create a single new file:
+    13|
+    14|- **Path:** [specs/6-multi-domain-and-matching.md](specs/6-multi-domain-and-matching.md)
+    15|- **Naming:** Follows existing pattern `{number}-{kebab-case}.md`; next number is 6; name reflects both multi-domain modeling and matching behavior.
+    16|
+    17|No changes to existing code or other specs; this is a new epic document only.
+    18|
+    19|## Epic document content (to be written into the file)
+    20|
+    21|The file will contain the following structure and text, aligned with [specs/4-matching-engine.md](specs/4-matching-engine.md) and [specs/3-schemas-knowledge-embeddings.md](specs/3-schemas-knowledge-embeddings.md) style:
+    22|
+    23|---
+    24|
+    25|**Title and rationale**
+    26|
+    27|- **Epic 6: Multi-domain and matching**
+    28|- Rationale: (1) Challenges and content (especially podcasts) often span multiple domains; single `primary_domain` is limiting. (2) Over-relying on domain match is risky—users can pick the wrong domain, and good advice can be missed when content is tagged with a different domain. This epic adds multi-domain modeling and makes matching safer.
+    29|
+    30|**Scope**
+    31|
+    32|- **Schema (Challenge):** Support multiple domains per challenge (array or primary + secondary); update Challenge_Processor / extraction to populate; update UI (e.g. multi-select in [components/flow/ChallengeStep.tsx](components/flow/ChallengeStep.tsx)).
+    33|- **Schema (Content):** Support multiple domains per content piece (array or primary + secondary); update Content_Indexer and ingest (e.g. [scripts/ingest-transcript.ts](scripts/ingest-transcript.ts), [services/ingest.ts](services/ingest.ts)) to accept and store.
+    34|- **Matching_Engine:** Remove the hard filter that drops all candidates without a domain match when any match exists; rank all embedding candidates; treat domain as a soft signal (overlap = boost) or explainability-only; keep or lower `STRUCTURED_FIT_WEIGHT` so semantic relevance dominates.
+    35|
+    36|**Requirements (summary table)**
+    37|
+    38|- R1: Multi-domain Challenge schema (store and use list of domains).
+    39|- R2: Multi-domain Content schema (store and use list of domains).
+    40|- R3: Matching ranks all semantic candidates; no exclusion by domain.
+    41|- R4: Domain used as soft score (overlap) or for explainability only; configurable weight.
+    42|
+    43|**Key acceptance criteria**
+    44|
+    45|- Challenge: At least one domain required; multiple domains supported (UI multi-select or similar); API and DB store array (or primary + secondary_domains).
+    46|- Content: Ingest and API accept multiple domains; DB stores array (or primary + secondary_domains); existing content can be migrated or defaulted.
+    47|- Matching: All candidates from vector search participate in ranking; domain overlap (if any) contributes a small bonus or only to `matchReason`; no step that removes candidates solely because of domain mismatch.
+    48|- Config: `STRUCTURED_FIT_WEIGHT` remains configurable; default remains low (e.g. 0.2 or 0.3) so semantic similarity dominates.
+    49|
+    50|**Out of scope**
+    51|
+    52|- Chunk-level domain (e.g. per-chunk domain on `content_chunks`); can be a later extension.
+    53|- Full taxonomy beyond domain (e.g. capability_tag, company_stage) multi-value changes; only domain in this epic.
+    54|
+    55|**Dependencies**
+    56|
+    57|- Epic 3 (schemas, embeddings), Epic 4 (matching engine). Implements a refinement of both.
+    58|
+    59|**Notes**
+    60|
+    61|- DB: Add `domains challenge_domain[]` (or `primary_domain` + `secondary_domains`) to `challenges` and `content`; migration for existing rows (e.g. `primary_domain` → `domains = ARRAY[primary_domain]` or keep backward compatibility).
+    62|- Backward compatibility: If keeping `primary_domain` on content for a transition, matching can treat “any overlap of challenge domains with content domains” as structured fit; then remove hard filter in [services/matching.ts](services/matching.ts).
+    63|
+    64|---
+    65|
+    66|## Implementation note (for later)
+    67|
+    68|When implementing this epic (in a future session), the work will touch: DB migrations, [lib/db/types.ts](lib/db/types.ts), [repositories/content.ts](repositories/content.ts), challenge repo/API, [services/matching.ts](services/matching.ts), [services/challenge.ts](services/challenge.ts), [services/ingest.ts](services/ingest.ts), ingest scripts, and [components/flow/ChallengeStep.tsx](components/flow/ChallengeStep.tsx). This plan does not perform those edits; it only adds the epic spec file.
+    69|
+</code_selection>
+
+</attached_files>
+
+Epic 6: Multi-domain and matching — spec document
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+how does the content retrievel work right now?
+
+---
+
+does the embedding deliver any real advantage compared to a text search in a text field?
+
+---
+
+wouldn't it make sense after getting the matched chunks to read the raw text of the content piece and to build the answer from there?
+
+---
+
+we could also stroe the txt file in file storage or raw text in a table field of the content table and read it from there.
+
+---
+
+ok, next topic. It's about the matching domain. currently it's a single select but often challenges and content touch multiple domains. especially podcast (one content piece) handle more than one domain. How can we handle this behavior? And I think that it is dangerous to over estimate the domain relevance between challenge and recommendation bc the user can make mistakes and then more suitable advices will be missed because of a different domain.
+
+---
+
+generate an epic for that change an save it at @specs/ with an meaningful naming, thus we can implement it later.
+
+---
+
+<attached_files>
+
+<code_selection path="/Users/mattyaldoyaili/.cursor/plans/epic_6_multi-domain_and_matching_3f35586f.plan.md" lines="1-62">
+     1|# Epic 6: Multi-domain and matching — spec document
+     2|
+     3|## Deliverable
+     4|
+     5|Create a single new file:
+     6|
+     7|- **Path:** [specs/6-multi-domain-and-matching.md](specs/6-multi-domain-and-matching.md)
+     8|- **Naming:** Follows existing pattern `{number}-{kebab-case}.md`; next number is 6; name reflects both multi-domain modeling and matching behavior.
+     9|
+    10|No changes to existing code or other specs; this is a new epic document only.
+    11|
+    12|## Epic document content (to be written into the file)
+    13|
+    14|The file will contain the following structure and text, aligned with [specs/4-matching-engine.md](specs/4-matching-engine.md) and [specs/3-schemas-knowledge-embeddings.md](specs/3-schemas-knowledge-embeddings.md) style:
+    15|
+    16|---
+    17|
+    18|**Title and rationale**
+    19|
+    20|- **Epic 6: Multi-domain and matching**
+    21|- Rationale: (1) Challenges and content (especially podcasts) often span multiple domains; single `primary_domain` is limiting. (2) Over-relying on domain match is risky—users can pick the wrong domain, and good advice can be missed when content is tagged with a different domain. This epic adds multi-domain modeling and makes matching safer.
+    22|
+    23|**Scope**
+    24|
+    25|- **Schema (Challenge):** Support multiple domains per challenge (array or primary + secondary); update Challenge_Processor / extraction to populate; update UI (e.g. multi-select in [components/flow/ChallengeStep.tsx](components/flow/ChallengeStep.tsx)).
+    26|- **Schema (Content):** Support multiple domains per content piece (array or primary + secondary); update Content_Indexer and ingest (e.g. [scripts/ingest-transcript.ts](scripts/ingest-transcript.ts), [services/ingest.ts](services/ingest.ts)) to accept and store.
+    27|- **Matching_Engine:** Remove the hard filter that drops all candidates without a domain match when any match exists; rank all embedding candidates; treat domain as a soft signal (overlap = boost) or explainability-only; keep or lower `STRUCTURED_FIT_WEIGHT` so semantic relevance dominates.
+    28|
+    29|**Requirements (summary table)**
+    30|
+    31|- R1: Multi-domain Challenge schema (store and use list of domains).
+    32|- R2: Multi-domain Content schema (store and use list of domains).
+    33|- R3: Matching ranks all semantic candidates; no exclusion by domain.
+    34|- R4: Domain used as soft score (overlap) or for explainability only; configurable weight.
+    35|
+    36|**Key acceptance criteria**
+    37|
+    38|- Challenge: At least one domain required; multiple domains supported (UI multi-select or similar); API and DB store array (or primary + secondary_domains).
+    39|- Content: Ingest and API accept multiple domains; DB stores array (or primary + secondary_domains); existing content can be migrated or defaulted.
+    40|- Matching: All candidates from vector search participate in ranking; domain overlap (if any) contributes a small bonus or only to `matchReason`; no step that removes candidates solely because of domain mismatch.
+    41|- Config: `STRUCTURED_FIT_WEIGHT` remains configurable; default remains low (e.g. 0.2 or 0.3) so semantic similarity dominates.
+    42|
+    43|**Out of scope**
+    44|
+    45|- Chunk-level domain (e.g. per-chunk domain on `content_chunks`); can be a later extension.
+    46|- Full taxonomy beyond domain (e.g. capability_tag, company_stage) multi-value changes; only domain in this epic.
+    47|
+    48|**Dependencies**
+    49|
+    50|- Epic 3 (schemas, embeddings), Epic 4 (matching engine). Implements a refinement of both.
+    51|
+    52|**Notes**
+    53|
+    54|- DB: Add `domains challenge_domain[]` (or `primary_domain` + `secondary_domains`) to `challenges` and `content`; migration for existing rows (e.g. `primary_domain` → `domains = ARRAY[primary_domain]` or keep backward compatibility).
+    55|- Backward compatibility: If keeping `primary_domain` on content for a transition, matching can treat “any overlap of challenge domains with content domains” as structured fit; then remove hard filter in [services/matching.ts](services/matching.ts).
+    56|
+    57|---
+    58|
+    59|## Implementation note (for later)
+    60|
+    61|When implementing this epic (in a future session), the work will touch: DB migrations, [lib/db/types.ts](lib/db/types.ts), [repositories/content.ts](repositories/content.ts), challenge repo/API, [services/matching.ts](services/matching.ts), [services/challenge.ts](services/challenge.ts), [services/ingest.ts](services/ingest.ts), ingest scripts, and [components/flow/ChallengeStep.tsx](components/flow/ChallengeStep.tsx). This plan does not perform those edits; it only adds the epic spec file.
+    62|
+</code_selection>
+
+</attached_files>
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
+
+---
+
+let's discuss the fact when we have a small content base, will we not get the top 20 chunks mostly from the same content piece? What would be the benefit of it?
+
+---
+
+Please read he following prd about improving the matching logic. Ask possible questions. When done update the requirements document at @requirements/ @requirements/spec.md and create a new epic in @specs/ with meaningful nameing.
+
+# PRD — Contexta MVP Knowledge Engine (Hybrid RAG)
+
+## 1. Overview
+
+Contexta’s MVP Knowledge Engine enables users to ask product management–related questions and receive grounded, cited answers derived from curated long-form content (starting with podcast transcripts).
+
+The system uses a **Hybrid RAG architecture**:
+- Semantic retrieval (pgvector)
+- Keyword retrieval (Postgres full-text search)
+- Merged + reranked context
+- LLM answer generation with citations
+
+The MVP prioritizes:
+- Production simplicity (Node/TS monolith)
+- Single database (Supabase Postgres)
+- Clear source attribution
+- Fast iteration
+
+---
+
+## 2. Problem Statement
+
+Product managers consume knowledge across podcasts, newsletters, and blogs. Insights are:
+- Hard to recall
+- Hard to compare
+- Hard to apply to specific challenges
+
+Contexta should:
+- Surface relevant insights quickly
+- Ground answers in trusted sources
+- Maintain traceability (episode, guest, timestamp)
+
+---
+
+## 3. Goals & Non-Goals
+
+### Goals
+- Ingest podcast transcripts into structured storage
+- Enable hybrid retrieval (vector + keyword)
+- Generate cited answers under 5 seconds
+- Support incremental ingestion
+- Keep architecture simple and extensible
+
+### Non-Goals (MVP)
+- No agent orchestration
+- No graph database
+- No multi-hop reasoning engine
+- No automated crawling pipeline
+- No advanced analytics dashboard
+
+---
+
+## 4. User Stories
+
+### External User (PM)
+- As a PM, I want to ask a question about product strategy and receive a concise, cited answer.
+- As a PM, I want to see which episode and speaker the insight comes from.
+- As a PM, I want reliable results even when I use exact framework names.
+
+### Internal User (Admin)
+- As an admin, I want to ingest a new transcript file.
+- As an admin, I want embeddings generated automatically.
+- As an admin, I want ingestion to be repeatable and idempotent.
+
+---
+
+## 5. Architecture
+
+### High-Level Flow
+
+Ingestion:
+Transcript → Chunk → Store → Embed → Index
+
+Retrieval:
+Question → Embed → Vector Search
+           → Keyword Search
+           → Merge + Rerank
+           → Inject Context
+           → LLM → Answer + Sources
+
+---
+
+## 7. Data Model
+
+### episodes
+- id (uuid)
+- title
+- guest
+- published_at
+- source_url
+- description
+- created_at
+
+### transcripts
+- id (uuid)
+- episode_id (fk)
+- raw_text
+- token_count
+- created_at
+
+### chunks
+- id (uuid)
+- episode_id (fk)
+- chunk_index
+- content
+- token_count
+- embedding (vector)
+- tsv (tsvector)
+- created_at
+
+Indexes:
+- vector index on embedding (pgvector)
+- GIN index on tsv (full-text)
+
+Optional (Phase 2-ready):
+- tags
+- entities (lightweight extraction)
+
+---
+
+## 8. Ingestion Pipeline (Node Service)
+
+### Step 1 – Upload Transcript
+Input: cleaned transcript text file
+
+### Step 2 – Chunking
+- Chunk size: 500–800 tokens
+- Overlap: 50–100 tokens
+- Store in `chunks`
+
+### Step 3 – Embedding
+- Call embedding API
+- Store vector in `embedding` column
+
+### Step 4 – Keyword Index
+- Generate tsvector from content
+- Store in `tsv` column
+
+### Step 5 – Commit Transaction
+Ingestion is atomic.
+
+Performance target:
+- < 2 minutes per 1-hour transcript
+
+---
+
+## 9. Retrieval Logic
+
+### Step 1 – Embed User Question
+Generate question embedding.
+
+### Step 2 – Vector Search
+Select top K chunks:
+ORDER BY embedding <-> query_embedding
+LIMIT 10
+
+### Step 3 – Keyword Search
+Full-text match:
+WHERE tsv @@ plainto_tsquery(question)
+ORDER BY ts_rank(...)
+LIMIT 10
+
+### Step 4 – Merge & Rerank
+- Combine results
+- Remove duplicates
+- Optional simple scoring:
+  score = semantic_score * 0.7 + keyword_score * 0.3
+- Select top 6–8 chunks
+
+### Step 5 – Prompt Construction
+Prompt structure:
+- System role
+- User question
+- Retrieved chunks
+- Instructions to cite sources
+
+### Step 6 – LLM Generation
+Generate final answer with inline citations.
+
+Latency target:
+< 5 seconds end-to-end
+
+---
+
+## 10. Output Format
+
+Response:
+- Answer (structured markdown)
+- Sources:
+  - Episode title
+  - Guest
+  - Optional timestamp
+  - Chunk reference ID
+
+Example:
+
+Answer:
+"Three patterns emerge..."
+
+Sources:
+1. Episode: X — Guest: Y
+2. Episode: Z — Guest: A
+
+---
+
+## 11. Quality Criteria
+
+### Retrieval Quality
+- Relevant chunk presence in top 5
+- No hallucinated sources
+- Citations map to real chunks
+
+### System Performance
+- P95 latency < 5s
+- Vector query < 150ms
+- Full-text query < 150ms
+
+---
+
+---
+
+<attached_files>
+
+<code_selection path="file:///Users/mattyaldoyaili/.cursor/plans/prd_hybrid_rag_requirements_and_epic_280775a7.plan.md" lines="1-146">
+     1|---
+     2|name: PRD Hybrid RAG requirements and epic
+     3|overview: Update the requirements document with new requirements for hybrid retrieval (vector + keyword), full-text index on chunks, merge/rerank, and evolved content/chunk schema; then add a new epic spec for implementation.
+     4|todos: []
+     5|isProject: false
+     6|---
+     7|
+     8|# PRD Hybrid RAG — Requirements update and new epic
+     9|
+    10|## Context
+    11|
+    12|- **PRD scope (per your choices):** Retrieval-only. Add hybrid (vector + keyword) and merge/rerank; keep challenge → recommendations output as-is. No new Q&A flow.
+    13|- **Data model:** Evolve existing. Add transcript storage and full-text (tsvector) to current content/content_chunks; keep content as the main entity.
+    14|
+    15|---
+    16|
+    17|## 1. Update [requirements/spec.md](requirements/spec.md)
+    18|
+    19|### 1.1 Glossary (add)
+    20|
+    21|- **Keyword_Matcher**: The matching component that ranks chunks using Postgres full-text search (tsvector/tsquery).
+    22|- **Hybrid_Retrieval**: Combined use of Semantic_Matcher (vector) and Keyword_Matcher (full-text); results are merged and reranked before being passed to the Content_Recommender.
+    23|
+    24|### 1.2 New requirements (append after Requirement 36)
+    25|
+    26|Add four new requirements. Exact wording below.
+    27|
+    28|**Requirement 37: Full-Text Search on Chunks**
+    29|
+    30|**User Story:** As a Matching_Engine, I want to retrieve chunks by keyword/full-text match in addition to vector similarity, so that exact framework names and terminology surface relevant content even when semantic similarity is lower.
+    31|
+    32|**Acceptance Criteria**
+    33|
+    34|1. THE Content_Indexer SHALL maintain a full-text search index (tsvector) on each content chunk’s text and SHALL store it in a dedicated column (e.g. tsv) on the chunk table.
+    35|2. THE Matching_Engine SHALL support a keyword retrieval path that runs a full-text query (e.g. plainto_tsquery) against chunk text and returns chunks ordered by relevance (e.g. ts_rank).
+    36|3. THE Keyword_Matcher SHALL return a configurable top-K keyword matches (e.g. top 10) for use in hybrid merge.
+    37|4. WHEN no keyword index exists for a chunk, THE Keyword_Matcher SHALL exclude that chunk from keyword results only (vector path unchanged).
+    38|
+    39|**Requirement 38: Hybrid Retrieval and Rerank**
+    40|
+    41|**User Story:** As a Matching_Engine, I want to combine vector and keyword retrieval results and rerank them, so that both semantic relevance and exact term match improve recommendation quality.
+    42|
+    43|**Acceptance Criteria**
+    44|
+    45|1. THE Matching_Engine SHALL run both vector search and keyword search for the same query (challenge summary / problem statement or equivalent).
+    46|2. THE Matching_Engine SHALL merge the two result sets, deduplicate by chunk (or content) identity, and apply a configurable rerank formula (e.g. combined score = semantic_weight * semantic_score + keyword_weight * keyword_score).
+    47|3. THE Matching_Engine SHALL select a final set of top chunks (e.g. 6–8) from the merged and reranked list for use by the Content_Recommender.
+    48|4. THE Matching_Engine SHALL allow configurable weights for semantic vs keyword (e.g. via env) and SHALL document default values (e.g. 0.7 semantic, 0.3 keyword).
+    49|5. Existing structured filter and recommendation output (3–5 items with explanations) SHALL remain unchanged; hybrid retrieval only improves the candidate pool and ranking.
+    50|
+    51|**Requirement 39: Content and Chunk Schema Extension for Hybrid RAG**
+    52|
+    53|**User Story:** As a Content_Indexer, I want to store full-text index and optional raw transcript per content, so that keyword search and future answer-generation can use full text.
+    54|
+    55|**Acceptance Criteria**
+    56|
+    57|1. THE Content_Indexer SHALL add and maintain a tsvector column on the content chunk table, populated from the chunk’s text during ingestion.
+    58|2. THE Content_Indexer SHALL create a GIN index on the tsvector column to support efficient full-text queries.
+    59|3. THE Content_Indexer MAY store raw transcript or full text per content item (e.g. raw_text column on content or equivalent) when available, for use in ingestion and optional future features.
+    60|4. WHEN ingesting new chunks, THE Content_Indexer SHALL generate and store both embedding and tsvector in a single atomic flow.
+    61|5. Existing content and chunk rows SHALL be migratable (e.g. backfill tsvector from existing chunk text); migration strategy is left to implementation.
+    62|
+    63|**Requirement 40: Ingestion Pipeline for Hybrid RAG**
+    64|
+    65|**User Story:** As an admin, I want ingestion to produce both embeddings and full-text index in one pipeline, so that newly ingested content is immediately available for hybrid retrieval.
+    66|
+    67|**Acceptance Criteria**
+    68|
+    69|1. THE Content_Indexer (or ingestion pipeline) SHALL chunk long-form text with configurable size (e.g. 500–800 tokens) and overlap (e.g. 50–100 tokens) where applicable.
+    70|2. THE Content_Indexer SHALL generate embeddings for each chunk and store them as today.
+    71|3. THE Content_Indexer SHALL generate tsvector from each chunk’s text and store it on the chunk row.
+    72|4. Ingestion SHALL be atomic where possible (e.g. transaction covering chunk insert, embed, and tsvector).
+    73|5. Performance target (informational): ingestion of a 1-hour transcript SHOULD complete within 2 minutes where infrastructure allows.
+    74|
+    75|### 1.3 Optional: Reference in existing requirements
+    76|
+    77|- In **Requirement 28 (Semantic Similarity Layer)**, add one acceptance criterion: “THE Semantic_Matcher SHALL operate alongside Keyword_Matcher when hybrid retrieval is enabled (see Requirement 38).” This can be added as criterion 6 to keep the spec consistent.
+    78|- In **Requirement 26 (Three-Layer Matching Architecture)**, add a note that “Hybrid retrieval (vector + keyword) extends the semantic layer and is specified in Requirements 37–38.” This can be a single sentence after the acceptance criteria or in the requirement body.
+    79|
+    80|---
+    81|
+    82|## 2. New epic: [specs/7-hybrid-rag-retrieval.md](specs/7-hybrid-rag-retrieval.md)
+    83|
+    84|Create a new file with the following content (style aligned with [specs/4-matching-engine.md](specs/4-matching-engine.md)).
+    85|
+    86|**Title:** Epic 7: Hybrid RAG retrieval
+    87|
+    88|**Intro (1 short paragraph):**  
+    89|Add hybrid retrieval (vector + keyword) and merge/rerank to the matching engine so that both semantic similarity and exact term match improve the candidate set for recommendations. The existing challenge → recommendations flow and output (3–5 items with explanations) remain; only retrieval and ranking evolve. Content and chunk schema are extended with full-text index (tsvector) and optional raw text storage.
+    90|
+    91|**Scope**
+    92|
+    93|- **Keyword_Matcher:** Full-text search on chunk text (tsvector/tsquery); top-K keyword results.
+    94|- **Matching_Engine:** Run vector and keyword retrieval; merge and deduplicate; rerank with configurable weights; pass top 6–8 chunks to existing recommendation pipeline.
+    95|- **Content_Indexer / ingestion:** Add tsvector column and GIN index on chunks; populate during ingest; optional raw_text (or equivalent) on content. Chunking parameters (size, overlap) configurable.
+    96|- **Config:** Weights for semantic vs keyword in rerank (e.g. env); default 0.7 / 0.3.
+    97|
+    98|**Requirements (from spec)**
+    99|
+   100|
+   101|| Req | Title                                             |
+   102|| --- | ------------------------------------------------- |
+   103|| 37  | Full-Text Search on Chunks                        |
+   104|| 38  | Hybrid Retrieval and Rerank                       |
+   105|| 39  | Content and Chunk Schema Extension for Hybrid RAG |
+   106|| 40  | Ingestion Pipeline for Hybrid RAG                 |
+   107|
+   108|
+   109|**Key acceptance criteria (summary)**
+   110|
+   111|- Chunks have tsvector column and GIN index; ingestion populates both embedding and tsvector.
+   112|- Matching runs vector search and keyword search; merges and deduplicates; reranks with configurable formula; returns top 6–8 chunks to existing flow.
+   113|- Recommendation output remains 3–5 items with explanations; no Q&A or cited-answer format in this epic.
+   114|- Ingestion: chunk size and overlap configurable; single pipeline for embed + tsvector; atomic where possible.
+   115|- Optional: raw text storage per content for future use.
+   116|
+   117|**Out of scope**
+   118|
+   119|- Q&A flow or cited-answer output (PRD’s “answer + sources” format).
+   120|- New tables (episodes, transcripts as separate entities); evolve content/chunks only.
+   121|- Agent orchestration, graph DB, multi-hop reasoning (per PRD non-goals).
+   122|
+   123|**Dependencies**
+   124|
+   125|- Epic 3 (schemas, embeddings), Epic 4 (matching engine). Epic 6 (multi-domain) is independent but may be implemented in any order.
+   126|
+   127|**Notes**
+   128|
+   129|- DB migration: add `tsv tsvector` (or equivalent) to content_chunks; GIN index; backfill from `body` for existing rows. Optional: `raw_text text` on content.
+   130|- Latency: vector query and full-text query each < 150ms target; end-to-end recommendation latency target unchanged (e.g. < 5s where applicable).
+   131|- Implementation touchpoints: [repositories/embeddings.ts](repositories/embeddings.ts) or new keyword repo, [services/matching.ts](services/matching.ts), [services/challenge.ts](services/challenge.ts), ingest service and scripts, Supabase migration, config (env for weights and chunk params).
+   132|
+   133|---
+   134|
+   135|## 3. Summary
+   136|
+   137|
+   138|| Action                          | Target                                   |
+   139|| ------------------------------- | ---------------------------------------- |
+   140|| Add glossary terms              | requirements/spec.md (Glossary)          |
+   141|| Add Requirements 37–40          | requirements/spec.md (after Req 36)      |
+   142|| Optionally extend Req 26 and 28 | requirements/spec.md (one sentence each) |
+   143|| Create new epic                 | specs/7-hybrid-rag-retrieval.md          |
+   144|
+   145|
+   146|No changes to the plan file itself. After approval, implement in order: spec.md updates first, then create the epic file.
+</code_selection>
+
+</attached_files>
+
+PRD Hybrid RAG — Requirements update and new epic
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
