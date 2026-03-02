@@ -18,9 +18,18 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
     apiKey: key,
     baseURL: OPENROUTER_BASE_URL,
   });
-  const chatModel = process.env.OPENROUTER_CHAT_MODEL ?? DEFAULT_CHAT_MODEL;
-  const embeddingModel =
-    process.env.OPENROUTER_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL;
+  const chatModelRaw = (process.env.OPENROUTER_CHAT_MODEL ?? "").trim();
+  const chatModel = chatModelRaw || DEFAULT_CHAT_MODEL;
+  const embeddingModelRaw = (process.env.OPENROUTER_EMBEDDING_MODEL ?? "").trim();
+  const embeddingModel = embeddingModelRaw || DEFAULT_EMBEDDING_MODEL;
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      "[OpenRouter] chat model:",
+      chatModel,
+      chatModelRaw ? "" : "(OPENROUTER_CHAT_MODEL not set in env, using default)"
+    );
+  }
 
   return {
     async generateText(prompt, options) {

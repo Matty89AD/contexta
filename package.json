@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "node -r tsconfig-paths/register -r tsx/cjs scripts/seed-content.ts",
+    "ingest-transcript": "node -r tsconfig-paths/register -r tsx/cjs scripts/ingest-transcript.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
