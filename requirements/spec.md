@@ -30,6 +30,8 @@ The Fast Activation Core Flow enables first-time ICP users to reach a clear "aha
 - **Semantic_Matcher**: The matching layer that ranks content using embedding-based similarity
 - **Archetype_Classifier**: The matching layer that classifies challenges into problem archetypes and boosts aligned content
 - **Matching_Engine**: The system component that orchestrates the three-layer matching architecture
+- **Keyword_Matcher**: The matching component that ranks chunks using Postgres full-text search (tsvector/tsquery)
+- **Hybrid_Retrieval**: Combined use of Semantic_Matcher (vector) and Keyword_Matcher (full-text); results are merged and reranked before being passed to the Content_Recommender
 
 ### Data Structures
 - **Challenge_Schema**: Structured representation of user challenges including taxonomy, context, problem patterns, and constraints
@@ -365,6 +367,8 @@ The Fast Activation Core Flow enables first-time ICP users to reach a clear "aha
 3. THE Matching_Engine SHALL implement archetype alignment boosting as the third matching layer
 4. THE Matching_Engine SHALL combine all three layers to produce final content scores and rankings
 
+Hybrid retrieval (vector + keyword) extends the semantic layer and is specified in Requirements 37–38.
+
 ### Requirement 27: Structured Filtering Layer
 
 **User Story:** As a Structured_Filter, I want to filter content by taxonomy and context overlap, so that only contextually appropriate content reaches the ranking stage.
@@ -389,6 +393,7 @@ The Fast Activation Core Flow enables first-time ICP users to reach a clear "aha
 3. THE Semantic_Matcher SHALL compute similarity scores between Challenge and Content embeddings
 4. THE Semantic_Matcher SHALL rank content by semantic similarity scores in descending order
 5. WHEN multiple content items have similar semantic scores, THE Semantic_Matcher SHALL preserve relative ordering for archetype boosting
+6. THE Semantic_Matcher SHALL operate alongside Keyword_Matcher when hybrid retrieval is enabled (see Requirement 38)
 
 ### Requirement 29: Archetype Classification and Alignment
 
@@ -482,5 +487,52 @@ The Fast Activation Core Flow enables first-time ICP users to reach a clear "aha
 3. THE Semantic_Matcher SHALL use a consistent embedding model for both challenges and content
 4. THE Semantic_Matcher SHALL compute cosine similarity between challenge and content embeddings
 5. WHEN embeddings cannot be generated, THE Semantic_Matcher SHALL log the error and exclude semantic scoring for that item
+
+### Requirement 37: Full-Text Search on Chunks
+
+**User Story:** As a Matching_Engine, I want to retrieve chunks by keyword/full-text match in addition to vector similarity, so that exact framework names and terminology surface relevant content even when semantic similarity is lower.
+
+#### Acceptance Criteria
+
+1. THE Content_Indexer SHALL maintain a full-text search index (tsvector) on each content chunk's text and SHALL store it in a dedicated column (e.g. tsv) on the chunk table.
+2. THE Matching_Engine SHALL support a keyword retrieval path that runs a full-text query (e.g. plainto_tsquery) against chunk text and returns chunks ordered by relevance (e.g. ts_rank).
+3. THE Keyword_Matcher SHALL return a configurable top-K keyword matches (e.g. top 10) for use in hybrid merge.
+4. WHEN no keyword index exists for a chunk, THE Keyword_Matcher SHALL exclude that chunk from keyword results only (vector path unchanged).
+
+### Requirement 38: Hybrid Retrieval and Rerank
+
+**User Story:** As a Matching_Engine, I want to combine vector and keyword retrieval results and rerank them, so that both semantic relevance and exact term match improve recommendation quality.
+
+#### Acceptance Criteria
+
+1. THE Matching_Engine SHALL run both vector search and keyword search for the same query (challenge summary / problem statement or equivalent).
+2. THE Matching_Engine SHALL merge the two result sets, deduplicate by chunk (or content) identity, and apply a configurable rerank formula (e.g. combined score = semantic_weight * semantic_score + keyword_weight * keyword_score).
+3. THE Matching_Engine SHALL select a final set of top chunks (e.g. 6–8) from the merged and reranked list for use by the Content_Recommender.
+4. THE Matching_Engine SHALL allow configurable weights for semantic vs keyword (e.g. via env) and SHALL document default values (e.g. 0.7 semantic, 0.3 keyword).
+5. Existing structured filter and recommendation output (3–5 items with explanations) SHALL remain unchanged; hybrid retrieval only improves the candidate pool and ranking.
+
+### Requirement 39: Content and Chunk Schema Extension for Hybrid RAG
+
+**User Story:** As a Content_Indexer, I want to store full-text index and optional raw transcript per content, so that keyword search and future answer-generation can use full text.
+
+#### Acceptance Criteria
+
+1. THE Content_Indexer SHALL add and maintain a tsvector column on the content chunk table, populated from the chunk's text during ingestion.
+2. THE Content_Indexer SHALL create a GIN index on the tsvector column to support efficient full-text queries.
+3. THE Content_Indexer MAY store raw transcript or full text per content item (e.g. raw_text column on content or equivalent) when available, for use in ingestion and optional future features.
+4. WHEN ingesting new chunks, THE Content_Indexer SHALL generate and store both embedding and tsvector in a single atomic flow.
+5. Existing content and chunk rows SHALL be migratable (e.g. backfill tsvector from existing chunk text); migration strategy is left to implementation.
+
+### Requirement 40: Ingestion Pipeline for Hybrid RAG
+
+**User Story:** As an admin, I want ingestion to produce both embeddings and full-text index in one pipeline, so that newly ingested content is immediately available for hybrid retrieval.
+
+#### Acceptance Criteria
+
+1. THE Content_Indexer (or ingestion pipeline) SHALL chunk long-form text with configurable size (e.g. 500–800 tokens) and overlap (e.g. 50–100 tokens) where applicable.
+2. THE Content_Indexer SHALL generate embeddings for each chunk and store them as today.
+3. THE Content_Indexer SHALL generate tsvector from each chunk's text and store it on the chunk row.
+4. Ingestion SHALL be atomic where possible (e.g. transaction covering chunk insert, embed, and tsvector).
+5. Performance target (informational): ingestion of a 1-hour transcript SHOULD complete within 2 minutes where infrastructure allows.
 
 This file is the single source of truth for product requirements. See `q-and-a.md` for implementation decisions, Q&A, and MVP scope (e.g. access flow, context enums, matching layers, activation). See `specs/` for epic-level breakdown aligned with those decisions.
