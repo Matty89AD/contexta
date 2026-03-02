@@ -2,9 +2,44 @@
 
 import type { ChallengeResult } from "@/services/challenge";
 
-export function ResultsStep({ result }: { result: ChallengeResult }) {
+function logEvent(event: string, properties?: Record<string, unknown>) {
+  fetch("/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event, properties }),
+  }).catch(() => {});
+}
+
+function matchReasonLabel(reason: string): string {
+  return reason === "structured_fit"
+    ? "Matches your focus area"
+    : "Semantically relevant";
+}
+
+export function ResultsStep({
+  result,
+  onBack,
+}: {
+  result: ChallengeResult;
+  onBack?: () => void;
+}) {
+  const handleOpen = (contentId: string, title: string, url: string) => {
+    logEvent("recommendation_opened", { content_id: contentId, title });
+    logEvent("activation_completed", { content_id: contentId, action: "open" });
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="space-y-8">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm text-zinc-500 hover:text-zinc-700 underline"
+        >
+          ← Edit challenge
+        </button>
+      )}
       <div>
         <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
           Your challenge
@@ -35,17 +70,19 @@ export function ResultsStep({ result }: { result: ChallengeResult }) {
                     </span>
                   )}
                   <p className="mt-2 text-sm text-zinc-600">{rec.explanation}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {matchReasonLabel(rec.matchReason)}
+                  </p>
                 </div>
                 <div className="shrink-0">
                   {rec.url ? (
-                    <a
-                      href={rec.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => handleOpen(rec.contentId, rec.title, rec.url!)}
                       className="rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium hover:bg-zinc-800 transition"
                     >
                       Open
-                    </a>
+                    </button>
                   ) : (
                     <span className="rounded-lg bg-zinc-200 text-zinc-500 px-4 py-2 text-sm font-medium cursor-not-allowed">
                       Open

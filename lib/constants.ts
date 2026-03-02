@@ -37,6 +37,9 @@ export const DOMAIN_LABELS: Record<string, string> = {
   leadership: "Leadership",
 };
 
+/** localStorage key for session context (Epic 1); cleared on sign-up */
+export const FLOW_CONTEXT_STORAGE_KEY = "contexta_flow_context";
+
 export const ROLES = Object.keys(ROLE_LABELS) as string[];
 export const COMPANY_STAGES = Object.keys(COMPANY_STAGE_LABELS) as string[];
 export const TEAM_SIZES = Object.keys(TEAM_SIZE_LABELS) as string[];

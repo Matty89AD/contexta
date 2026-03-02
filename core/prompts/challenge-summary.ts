@@ -8,10 +8,30 @@ export const challengeSummaryOutputSchema = z.object({
 
 export type ChallengeSummaryOutput = z.infer<typeof challengeSummaryOutputSchema>;
 
-export function buildChallengeSummaryPrompt(rawDescription: string, domain: string): string {
+type ContextInput = {
+  role?: string;
+  company_stage?: string;
+  team_size?: string;
+  experience_level?: string;
+} | undefined;
+
+export function buildChallengeSummaryPrompt(
+  rawDescription: string,
+  domain: string,
+  context?: ContextInput
+): string {
+  const contextBlock =
+    context &&
+    (context.role || context.company_stage || context.team_size || context.experience_level)
+      ? `
+Context (for tailoring): role=${context.role ?? "—"}, company_stage=${context.company_stage ?? "—"}, team_size=${context.team_size ?? "—"}, experience_level=${context.experience_level ?? "—"}
+`
+      : "";
+
   return `You are a product management advisor. Given a raw challenge description and domain, produce a structured summary.
 
 Domain: ${domain}
+${contextBlock}
 
 Raw challenge description:
 """

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   ROLES,
   COMPANY_STAGES,
@@ -19,15 +19,40 @@ export interface ContextData {
   experience_level: string;
 }
 
+function logEvent(event: string, properties?: Record<string, unknown>) {
+  fetch("/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event, properties }),
+  }).catch(() => {});
+}
+
 export function ContextStep({
+  initialData,
   onComplete,
 }: {
+  initialData?: ContextData | null;
   onComplete: (data: ContextData) => void;
 }) {
-  const [role, setRole] = useState<string>("");
-  const [companyStage, setCompanyStage] = useState<string>("");
-  const [teamSize, setTeamSize] = useState<string>("");
-  const [experienceLevel, setExperienceLevel] = useState<string>("");
+  const [role, setRole] = useState<string>(initialData?.role ?? "");
+  const [companyStage, setCompanyStage] = useState<string>(
+    initialData?.company_stage ?? ""
+  );
+  const [teamSize, setTeamSize] = useState<string>(
+    initialData?.team_size ?? ""
+  );
+  const [experienceLevel, setExperienceLevel] = useState<string>(
+    initialData?.experience_level ?? ""
+  );
+
+  const setRoleAndLog = useCallback((r: string) => {
+    setRole(r);
+    if (r) logEvent("role_selected", { role: r });
+  }, []);
+  const setCompanyStageAndLog = useCallback((s: string) => {
+    setCompanyStage(s);
+    if (s) logEvent("stage_selected", { company_stage: s });
+  }, []);
 
   const canContinue =
     role && companyStage && teamSize && experienceLevel;
@@ -58,7 +83,7 @@ export function ContextStep({
             <button
               key={r}
               type="button"
-              onClick={() => setRole(r)}
+              onClick={() => setRoleAndLog(r)}
               className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
                 role === r
                   ? "bg-zinc-900 text-white border-zinc-900"
@@ -80,7 +105,7 @@ export function ContextStep({
             <button
               key={s}
               type="button"
-              onClick={() => setCompanyStage(s)}
+              onClick={() => setCompanyStageAndLog(s)}
               className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
                 companyStage === s
                   ? "bg-zinc-900 text-white border-zinc-900"

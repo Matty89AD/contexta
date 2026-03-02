@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { DOMAINS, DOMAIN_LABELS } from "@/lib/constants";
+import type { ContextData } from "@/components/flow/ContextStep";
 
 export function ChallengeStep({
+  contextData,
   onSubmit,
   loading,
   error,
+  onBack,
 }: {
+  contextData?: ContextData | null;
   onSubmit: (body: {
     raw_description: string;
     domain: string;
@@ -16,6 +20,7 @@ export function ChallengeStep({
   }) => void;
   loading: boolean;
   error: string | null;
+  onBack?: () => void;
 }) {
   const [rawDescription, setRawDescription] = useState("");
   const [domain, setDomain] = useState("");
@@ -39,9 +44,19 @@ export function ChallengeStep({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <p className="text-zinc-600">
-        Describe your product or leadership challenge in a few sentences. What’s
+        Get personalized content recommendations in ~3 minutes. Describe your
+        product or leadership challenge in a few sentences. What’s
         blocking you or your team?
       </p>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm text-zinc-500 hover:text-zinc-700 underline"
+        >
+          ← Back to context
+        </button>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 mb-2">

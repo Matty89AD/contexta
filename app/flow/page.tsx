@@ -1,22 +1,70 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ContextStep } from "@/components/flow/ContextStep";
 import { ChallengeStep } from "@/components/flow/ChallengeStep";
 import { ResultsStep } from "@/components/flow/ResultsStep";
 import type { ContextData } from "@/components/flow/ContextStep";
 import type { ChallengeResult } from "@/services/challenge";
+import { FLOW_CONTEXT_STORAGE_KEY } from "@/lib/constants";
 
 type Step = "context" | "challenge" | "results";
+
+function logEvent(event: string, properties?: Record<string, unknown>) {
+  fetch("/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event, properties }),
+  }).catch(() => {});
+}
 
 export default function FlowPage() {
   const [step, setStep] = useState<Step>("context");
   const [contextData, setContextData] = useState<ContextData | null>(null);
+  const [initialContextFromStorage, setInitialContextFromStorage] =
+    useState<ContextData | null>(null);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FLOW_CONTEXT_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as unknown;
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "role" in parsed &&
+          "company_stage" in parsed &&
+          "team_size" in parsed &&
+          "experience_level" in parsed
+        ) {
+          setInitialContextFromStorage(parsed as ContextData);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step === "context") logEvent("context_step_started");
+  }, [step]);
+
   const onContextComplete = useCallback((data: ContextData) => {
+    try {
+      localStorage.setItem(FLOW_CONTEXT_STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      // ignore
+    }
+    logEvent("context_completed", {
+      role: data.role,
+      company_stage: data.company_stage,
+      team_size: data.team_size,
+      experience_level: data.experience_level,
+    });
+    logEvent("challenge_input_transition");
     setContextData(data);
     setStep("challenge");
   }, []);
@@ -34,7 +82,10 @@ export default function FlowPage() {
         const res = await fetch("/api/challenges", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            ...body,
+            context: contextData ?? undefined,
+          }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -49,7 +100,7 @@ export default function FlowPage() {
         setLoading(false);
       }
     },
-    []
+    [contextData]
   );
 
   return (
@@ -67,19 +118,28 @@ export default function FlowPage() {
         </div>
 
         {step === "context" && (
-          <ContextStep onComplete={onContextComplete} />
+          <ContextStep
+            key={initialContextFromStorage ? "restored" : "new"}
+            initialData={initialContextFromStorage}
+            onComplete={onContextComplete}
+          />
         )}
 
         {step === "challenge" && (
           <ChallengeStep
+            contextData={contextData}
             onSubmit={onSubmitChallenge}
             loading={loading}
             error={error}
+            onBack={() => setStep("context")}
           />
         )}
 
         {step === "results" && result && (
-          <ResultsStep result={result} />
+          <ResultsStep
+            result={result}
+            onBack={() => setStep("challenge")}
+          />
         )}
       </div>
     </main>

@@ -10,11 +10,32 @@ function getTopK(): number {
   return n;
 }
 
+function getFloatEnv(name: string, defaultVal: number, min: number, max: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return defaultVal;
+  const n = parseFloat(raw);
+  if (Number.isNaN(n) || n < min || n > max) return defaultVal;
+  return n;
+}
+
 let cachedTopK: number | null = null;
+let cachedWeights: { structuredFitWeight: number; embeddingSimilarityWeight: number } | null = null;
 
 export function getConfig() {
   if (cachedTopK === null) {
     cachedTopK = getTopK();
   }
-  return { TOP_K: cachedTopK };
+  if (cachedWeights === null) {
+    const structured = getFloatEnv("STRUCTURED_FIT_WEIGHT", 0.3, 0, 1);
+    const semantic = getFloatEnv("EMBEDDING_SIMILARITY_WEIGHT", 0.7, 0, 1);
+    cachedWeights = {
+      structuredFitWeight: structured,
+      embeddingSimilarityWeight: semantic,
+    };
+  }
+  return {
+    TOP_K: cachedTopK,
+    STRUCTURED_FIT_WEIGHT: cachedWeights.structuredFitWeight,
+    EMBEDDING_SIMILARITY_WEIGHT: cachedWeights.embeddingSimilarityWeight,
+  };
 }
