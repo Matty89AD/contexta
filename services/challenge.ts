@@ -14,6 +14,26 @@ import {
 } from "@/core/prompts/recommendations";
 import { ValidationError, AIProviderError } from "@/core/errors";
 import { logger } from "@/core/logger";
+
+/** Turn OpenAI/API errors into a short, user-safe message for the UI. */
+function aiErrorToUserMessage(e: unknown): string {
+  const err = e as { status?: number; message?: string } | undefined;
+  const status = err?.status;
+  const msg = err?.message ?? (e instanceof Error ? e.message : String(e));
+  if (status === 401) {
+    return "Invalid or missing API key. Add a valid OPENROUTER_API_KEY to .env.local.";
+  }
+  if (status === 429) {
+    return "Rate limit exceeded. Please try again in a moment.";
+  }
+  if (status === 500 || status === 502) {
+    return "AI service is temporarily unavailable. Please try again.";
+  }
+  if (msg && typeof msg === "string" && msg.length < 120 && !msg.includes("sk-")) {
+    return msg;
+  }
+  return "Failed to generate challenge summary. Check the server logs for details.";
+}
 import type { ChunkWithContent } from "@/lib/db/types";
 import type { ChallengeDomain } from "@/lib/db/types";
 
@@ -83,8 +103,13 @@ export async function runChallengePipeline(
   try {
     summaryText = await ai.generateText(summaryPrompt, { jsonMode: true });
   } catch (e) {
-    logger.error("AI summary failed", { challengeId: challenge.id, error: e });
-    throw new AIProviderError("Failed to generate challenge summary", e);
+    const detail = e instanceof Error ? e.message : String(e);
+    logger.error("AI summary failed", {
+      challengeId: challenge.id,
+      detail,
+      cause: e instanceof Error ? e.cause : undefined,
+    });
+    throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
   const summaryParsed = challengeSummaryOutputSchema.safeParse(
     JSON.parse(summaryText)
@@ -113,8 +138,13 @@ export async function runChallengePipeline(
   try {
     embedding = await ai.generateEmbedding(textToEmbed);
   } catch (e) {
-    logger.error("Embedding failed", { challengeId: challenge.id, error: e });
-    throw new AIProviderError("Failed to generate embedding", e);
+    const detail = e instanceof Error ? e.message : String(e);
+    logger.error("Embedding failed", {
+      challengeId: challenge.id,
+      detail,
+      cause: e instanceof Error ? e.cause : undefined,
+    });
+    throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
 
   // 4. Matching engine (structured filter + semantic similarity)

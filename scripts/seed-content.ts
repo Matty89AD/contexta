@@ -1,13 +1,13 @@
 /**
  * Seed curated content and chunks with embeddings.
  * Run: npm run seed (or npx tsx scripts/seed-content.ts)
- * Requires: .env.local (or .env) with NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY
+ * Requires: .env.local (or .env) with NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENROUTER_API_KEY
  */
 import "dotenv/config";
 import { config } from "dotenv";
 config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
-import { createOpenAIProvider } from "../core/ai/openai-provider";
+import { createOpenRouterProvider } from "../core/ai/openrouter-provider";
 import { ingestContent } from "../services/ingest";
 import type { ContentSourceType } from "../lib/db/types";
 import type { ChallengeDomain } from "../lib/db/types";
@@ -20,7 +20,7 @@ if (!url || !key) {
 }
 
 const supabase = createClient(url, key);
-const ai = createOpenAIProvider();
+const ai = createOpenRouterProvider();
 
 const SAMPLE_CONTENT: Array<{
   source_type: ContentSourceType;

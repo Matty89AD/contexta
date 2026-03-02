@@ -7,7 +7,7 @@ alwaysApply: true
 
 - **Next.js**: Use App Router only. Route Handlers live under `app/api/`. No business logic inside route handlers; they only parse the request, call a single service method, and return the response.
 
-- **AI**: All LLM/embedding usage goes through the `AIProvider` interface (`generateText`, `generateEmbedding`). Do not import or use OpenAI (or any provider) directly in services, repositories, or domain code. Implementations live in `core/ai/` (e.g. `openai-provider.ts`).
+- **AI**: All LLM/embedding usage goes through the `AIProvider` interface (`generateText`, `generateEmbedding`). Do not import or use OpenAI (or any provider) directly in services, repositories, or domain code. Implementations live in `core/ai/` (e.g. `openrouter-provider.ts`).
 
 - **Data layer**: Use separate repositories for users (profiles), challenges, content, and embeddings. Services depend on repositories and the AI provider; route handlers depend on services. Inject Supabase client (or a small context) into repos where reasonable.
 

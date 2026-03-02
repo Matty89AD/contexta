@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/services/auth";
 import { runChallengePipeline } from "@/services/challenge";
-import { createOpenAIProvider } from "@/core/ai/openai-provider";
+import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
 import {
   AppError,
   ValidationError,
@@ -14,7 +14,18 @@ export async function POST(request: Request) {
     const user = await getCurrentUser().catch(() => null);
     const body = await request.json();
     const supabase = getServiceRoleClient();
-    const ai = createOpenAIProvider();
+    let ai;
+    try {
+      ai = createOpenRouterProvider();
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.includes("OPENROUTER_API_KEY")
+          ? "Invalid or missing API key. Add a valid OPENROUTER_API_KEY to .env.local."
+          : e instanceof Error
+            ? e.message
+            : "AI provider is not configured.";
+      return NextResponse.json({ error: msg }, { status: 502 });
+    }
     const result = await runChallengePipeline(
       supabase,
       ai,

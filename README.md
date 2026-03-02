@@ -6,7 +6,7 @@ AI-powered product management knowledge system. Describe a real challenge and ge
 
 - **Next.js** (App Router), TypeScript, Tailwind CSS
 - **Supabase**: Postgres, Auth, pgvector for embeddings
-- **OpenAI**: text generation and embeddings (via swappable AI provider interface)
+- **OpenRouter**: text generation and embeddings via OpenAI-compatible API (swappable AI provider interface)
 - **Zod** for validation
 
 ## Setup
@@ -22,7 +22,7 @@ AI-powered product management knowledge system. Describe a real challenge and ge
    Copy `.env.example` to `.env.local` and set:
 
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` from your [Supabase](https://supabase.com) project
-   - `OPENAI_API_KEY`
+   - `OPENROUTER_API_KEY` — get one at [OpenRouter](https://openrouter.ai)
    - `TOP_K` (e.g. `5`) — number of content chunks to retrieve per challenge
 
 3. **Database**
@@ -43,7 +43,7 @@ AI-powered product management knowledge system. Describe a real challenge and ge
    npm run seed
    ```
 
-   Requires `OPENAI_API_KEY` and Supabase keys. Uses `text-embedding-3-small` (1536 dimensions).
+   Requires `OPENROUTER_API_KEY` and Supabase keys. Uses OpenRouter’s `openai/text-embedding-3-small` (1536 dimensions).
 
 5. **Run**
 
@@ -66,7 +66,7 @@ AI-powered product management knowledge system. Describe a real challenge and ge
 ## Architecture
 
 - **Route handlers** (`app/api/*`) are thin: parse request, call one service, return response.
-- **Business logic** lives in `services/` and uses the **AI provider interface** (`core/ai/types.ts`); no direct OpenAI in domain code.
+- **Business logic** lives in `services/` and uses the **AI provider interface** (`core/ai/types.ts`); no direct provider SDK in domain code.
 - **Data** is accessed via **repositories**; services receive Supabase client and (where needed) AI provider.
 - **Prompts** are in `core/prompts/`.
 - **TOP_K** is required in env (no default in code).
