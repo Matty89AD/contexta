@@ -129,4 +129,6 @@ export interface ChunkWithContent {
   chunk: ContentChunk;
   content: Content;
   similarity?: number;
+  /** Full-text keyword relevance score (0–1) from hybrid RAG retrieval (Epic 7). */
+  keywordScore?: number;
 }

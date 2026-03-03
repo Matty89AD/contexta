@@ -154,11 +154,12 @@ export async function runChallengePipeline(
     throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
 
-  // 4. Matching engine — domain as soft signal, all candidates ranked (Epic 6)
+  // 4. Matching engine — hybrid retrieval: vector + keyword, reranked (Epic 7)
   const ranked = await runMatching(
     supabase,
     embedding,
-    domains as ChallengeDomain[]
+    domains as ChallengeDomain[],
+    textToEmbed
   );
   const matches = ranked.map((r) => r.chunkWithContent);
   const matchReasonByContentId = new Map(

@@ -7,8 +7,10 @@
  *   npm run ingest-transcript -- data/transcript.txt --title "..." --url "https://..." --domain strategy --domain leadership
  *
  * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENROUTER_API_KEY
+ *      CHUNK_SIZE (default 1500), MAX_CHUNK_CHARS (default 8000) — Epic 7 configurable chunking
  * Optional: --title (default: filename), --url, --summary
  *           --domain (strategy|discovery|delivery|growth|leadership) — can be repeated for multi-domain (Epic 6)
+ *           --chunk-size N, --max-chunk-chars N — override chunking params (Epic 7)
  */
 import "dotenv/config";
 import { config } from "dotenv";
@@ -19,10 +21,19 @@ import { createOpenRouterProvider } from "../core/ai/openrouter-provider";
 import { ingestContent } from "../services/ingest";
 import type { ChallengeDomain } from "../lib/db/types";
 
-const TARGET_CHUNK_CHARS = 1500;
-const MAX_CHUNK_CHARS = 8000;
+const DEFAULT_CHUNK_SIZE = 1500;
+const DEFAULT_MAX_CHUNK_CHARS = 8000;
 
-function chunkTranscript(text: string): string[] {
+/**
+ * Chunk transcript text into segments of roughly targetChars characters,
+ * split on paragraph boundaries, capped at maxChars per chunk.
+ * Both params are configurable via env or CLI (Epic 7).
+ */
+function chunkTranscript(
+  text: string,
+  targetChars: number = DEFAULT_CHUNK_SIZE,
+  maxChars: number = DEFAULT_MAX_CHUNK_CHARS
+): string[] {
   const normalized = text.replace(/\r\n/g, "\n").trim();
   if (!normalized) return [];
 
@@ -33,7 +44,7 @@ function chunkTranscript(text: string): string[] {
   let current = "";
 
   for (const p of paragraphs) {
-    if (current.length + p.length + 2 > MAX_CHUNK_CHARS && current.length > 0) {
+    if (current.length + p.length + 2 > maxChars && current.length > 0) {
       chunks.push(current.trim());
       current = "";
     }
@@ -42,7 +53,7 @@ function chunkTranscript(text: string): string[] {
     } else {
       current += "\n\n" + p;
     }
-    if (current.length >= TARGET_CHUNK_CHARS) {
+    if (current.length >= targetChars) {
       chunks.push(current.trim());
       current = "";
     }
@@ -59,10 +70,22 @@ function parseArgs(): {
   url?: string;
   summary?: string;
   domains: ChallengeDomain[];
+  chunkSize: number;
+  maxChunkChars: number;
 } {
   const args = process.argv.slice(2);
   const filePath = args[0] ?? "data/transcript.txt";
-  const result: ReturnType<typeof parseArgs> = { filePath, domains: [] };
+
+  // Env fallbacks for chunk params (Epic 7 configurable chunking)
+  const envChunkSize = parseInt(process.env.CHUNK_SIZE ?? "", 10);
+  const envMaxChunk = parseInt(process.env.MAX_CHUNK_CHARS ?? "", 10);
+
+  const result: ReturnType<typeof parseArgs> = {
+    filePath,
+    domains: [],
+    chunkSize: Number.isFinite(envChunkSize) && envChunkSize > 0 ? envChunkSize : DEFAULT_CHUNK_SIZE,
+    maxChunkChars: Number.isFinite(envMaxChunk) && envMaxChunk > 0 ? envMaxChunk : DEFAULT_MAX_CHUNK_CHARS,
+  };
 
   for (let i = 1; i < args.length; i++) {
     if (args[i] === "--title" && args[i + 1]) {
@@ -76,13 +99,19 @@ function parseArgs(): {
       if (VALID_DOMAINS.includes(d) && !result.domains.includes(d as ChallengeDomain)) {
         result.domains.push(d as ChallengeDomain);
       }
+    } else if (args[i] === "--chunk-size" && args[i + 1]) {
+      const n = parseInt(args[++i], 10);
+      if (Number.isFinite(n) && n > 0) result.chunkSize = n;
+    } else if (args[i] === "--max-chunk-chars" && args[i + 1]) {
+      const n = parseInt(args[++i], 10);
+      if (Number.isFinite(n) && n > 0) result.maxChunkChars = n;
     }
   }
   return result;
 }
 
 async function main() {
-  const { filePath, title, url, summary, domains } = parseArgs();
+  const { filePath, title, url, summary, domains, chunkSize, maxChunkChars } = parseArgs();
 
   const urlEnv = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -99,7 +128,7 @@ async function main() {
     process.exit(1);
   }
 
-  const chunks = chunkTranscript(raw);
+  const chunks = chunkTranscript(raw, chunkSize, maxChunkChars);
   const displayTitle = title ?? filePath.replace(/^.*[/\\]/, "").replace(/\.[^.]+$/, "");
 
   console.log("Chunked transcript into", chunks.length, "segments");

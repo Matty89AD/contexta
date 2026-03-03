@@ -19,7 +19,11 @@ function getFloatEnv(name: string, defaultVal: number, min: number, max: number)
 }
 
 let cachedTopK: number | null = null;
-let cachedWeights: { structuredFitWeight: number; embeddingSimilarityWeight: number } | null = null;
+let cachedWeights: {
+  structuredFitWeight: number;
+  embeddingSimilarityWeight: number;
+  keywordRelevanceWeight: number;
+} | null = null;
 
 export function getConfig() {
   if (cachedTopK === null) {
@@ -28,14 +32,18 @@ export function getConfig() {
   if (cachedWeights === null) {
     const structured = getFloatEnv("STRUCTURED_FIT_WEIGHT", 0.3, 0, 1);
     const semantic = getFloatEnv("EMBEDDING_SIMILARITY_WEIGHT", 0.7, 0, 1);
+    const keyword = getFloatEnv("KEYWORD_RELEVANCE_WEIGHT", 0.3, 0, 1);
     cachedWeights = {
       structuredFitWeight: structured,
       embeddingSimilarityWeight: semantic,
+      keywordRelevanceWeight: keyword,
     };
   }
   return {
     TOP_K: cachedTopK,
     STRUCTURED_FIT_WEIGHT: cachedWeights.structuredFitWeight,
     EMBEDDING_SIMILARITY_WEIGHT: cachedWeights.embeddingSimilarityWeight,
+    /** Weight for keyword (full-text) relevance in hybrid reranking (Epic 7). Default 0.3. */
+    KEYWORD_RELEVANCE_WEIGHT: cachedWeights.keywordRelevanceWeight,
   };
 }
