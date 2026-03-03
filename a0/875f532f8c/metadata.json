@@ -1,0 +1,20 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "a0875f532f8c",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".cursor/skills/implementation/SKILL.md",
+    ".cursor/skills/test-after-implementation/SKILL.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a0/875f532f8c/0/metadata.json",
+      "transcript": "/a0/875f532f8c/0/full.jsonl",
+      "context": "/a0/875f532f8c/0/context.md",
+      "content_hash": "/a0/875f532f8c/0/content_hash.txt",
+      "prompt": "/a0/875f532f8c/0/prompt.txt"
+    }
+  ]
+}

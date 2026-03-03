@@ -1,0 +1,24 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "a0875f532f8c",
+  "session_id": "c1952a35-e1c5-4758-9b8f-32c1797d02ae",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-03T11:19:11.07595Z",
+  "branch": "master",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".cursor/skills/implementation/SKILL.md",
+    ".cursor/skills/test-after-implementation/SKILL.md"
+  ],
+  "agent": "Cursor",
+  "turn_id": "aa8c05e9bb9d",
+  "initial_attribution": {
+    "calculated_at": "2026-03-03T11:19:11.052844Z",
+    "agent_lines": 75,
+    "human_added": 1640,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1715,
+    "agent_percentage": 4.373177842565598
+  }
+}
