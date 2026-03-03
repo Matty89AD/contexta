@@ -11,6 +11,7 @@ export async function createChallenge(
       user_id: input.user_id ?? null,
       raw_description: input.raw_description,
       domain: input.domain,
+      domains: input.domains,
       subdomain: input.subdomain ?? null,
       impact_reach: input.impact_reach ?? null,
       summary: input.summary ?? null,

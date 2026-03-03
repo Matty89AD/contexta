@@ -17,9 +17,10 @@ type ContextInput = {
 
 export function buildChallengeSummaryPrompt(
   rawDescription: string,
-  domain: string,
+  domains: string | string[],
   context?: ContextInput
 ): string {
+  const domainLabel = Array.isArray(domains) ? domains.join(", ") : domains;
   const contextBlock =
     context &&
     (context.role || context.company_stage || context.team_size || context.experience_level)
@@ -28,9 +29,9 @@ Context (for tailoring): role=${context.role ?? "—"}, company_stage=${context.
 `
       : "";
 
-  return `You are a product management advisor. Given a raw challenge description and domain, produce a structured summary.
+  return `You are a product management advisor. Given a raw challenge description and domain(s), produce a structured summary.
 
-Domain: ${domain}
+Domain(s): ${domainLabel}
 ${contextBlock}
 
 Raw challenge description:

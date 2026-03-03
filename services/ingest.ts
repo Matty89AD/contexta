@@ -11,7 +11,10 @@ export interface ContentToIngest {
   url?: string | null;
   summary?: string | null;
   key_takeaways?: string | null;
+  /** Primary domain for backward compat. Use `domains` for multi-domain (Epic 6). */
   primary_domain?: ChallengeDomain | null;
+  /** Multi-domain support (Epic 6). When provided, overrides primary_domain derivation. */
+  domains?: ChallengeDomain[];
   metadata?: Record<string, unknown>;
   chunks: string[];
 }
@@ -21,6 +24,14 @@ export async function ingestContent(
   ai: AIProvider,
   input: ContentToIngest
 ): Promise<{ contentId: string }> {
+  // Build effective domains: explicit array takes precedence; fall back to primary_domain
+  const effectiveDomains: ChallengeDomain[] =
+    input.domains && input.domains.length > 0
+      ? input.domains
+      : input.primary_domain
+      ? [input.primary_domain]
+      : [];
+
   const content = await contentRepo.createContent(supabase, {
     source_type: input.source_type,
     title: input.title,
@@ -28,7 +39,8 @@ export async function ingestContent(
     summary: input.summary ?? null,
     key_takeaways: input.key_takeaways ?? null,
     metadata: input.metadata ?? {},
-    primary_domain: input.primary_domain ?? null,
+    primary_domain: effectiveDomains[0] ?? null,
+    domains: effectiveDomains,
   } as ContentInsert);
 
   for (let i = 0; i < input.chunks.length; i++) {

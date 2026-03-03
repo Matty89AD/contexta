@@ -14,7 +14,7 @@ export function ChallengeStep({
   contextData?: ContextData | null;
   onSubmit: (body: {
     raw_description: string;
-    domain: string;
+    domains: string[];
     subdomain?: string;
     impact_reach?: string;
   }) => void;
@@ -23,19 +23,25 @@ export function ChallengeStep({
   onBack?: () => void;
 }) {
   const [rawDescription, setRawDescription] = useState("");
-  const [domain, setDomain] = useState("");
+  const [domains, setDomains] = useState<string[]>([]);
   const [subdomain, setSubdomain] = useState("");
   const [impactReach, setImpactReach] = useState("");
 
+  const toggleDomain = (d: string) => {
+    setDomains((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]
+    );
+  };
+
   const canSubmit =
-    rawDescription.trim().length >= 10 && domain;
+    rawDescription.trim().length >= 10 && domains.length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit || loading) return;
     onSubmit({
       raw_description: rawDescription.trim(),
-      domain,
+      domains,
       subdomain: subdomain.trim() || undefined,
       impact_reach: impactReach.trim() || undefined,
     });
@@ -45,7 +51,7 @@ export function ChallengeStep({
     <form onSubmit={handleSubmit} className="space-y-6">
       <p className="text-zinc-600">
         Get personalized content recommendations in ~3 minutes. Describe your
-        product or leadership challenge in a few sentences. What’s
+        product or leadership challenge in a few sentences. What&apos;s
         blocking you or your team?
       </p>
       {onBack && (
@@ -76,16 +82,17 @@ export function ChallengeStep({
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 mb-2">
-          Domain *
+          Domain(s) *{" "}
+          <span className="text-zinc-400 font-normal">(select one or more)</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {DOMAINS.map((d) => (
             <button
               key={d}
               type="button"
-              onClick={() => setDomain(d)}
+              onClick={() => toggleDomain(d)}
               className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                domain === d
+                domains.includes(d)
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
               }`}
@@ -111,13 +118,13 @@ export function ChallengeStep({
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 mb-2">
-          Impact & reach (optional)
+          Impact &amp; reach (optional)
         </label>
         <input
           type="text"
           value={impactReach}
           onChange={(e) => setImpactReach(e.target.value)}
-          placeholder="Who is affected? What’s at stake?"
+          placeholder="Who is affected? What's at stake?"
           className="w-full rounded-lg border border-zinc-200 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
         />
       </div>

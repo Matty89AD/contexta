@@ -37,6 +37,8 @@ function aiErrorToUserMessage(e: unknown): string {
 import type { ChunkWithContent } from "@/lib/db/types";
 import type { ChallengeDomain } from "@/lib/db/types";
 
+const DOMAIN_VALUES = ["strategy", "discovery", "delivery", "growth", "leadership"] as const;
+
 const contextSchema = z
   .object({
     role: z.string().optional(),
@@ -48,7 +50,8 @@ const contextSchema = z
 
 const challengeInputSchema = z.object({
   raw_description: z.string().min(10).max(5000),
-  domain: z.enum(["strategy", "discovery", "delivery", "growth", "leadership"]),
+  /** Multi-domain support (Epic 6): at least one domain required. */
+  domains: z.array(z.enum(DOMAIN_VALUES)).min(1).max(5),
   subdomain: z.string().max(200).optional(),
   impact_reach: z.string().max(1000).optional(),
   context: contextSchema,
@@ -82,13 +85,17 @@ export async function runChallengePipeline(
   if (!parsed.success) {
     throw new ValidationError(parsed.error.message);
   }
-  const { raw_description, domain, subdomain, impact_reach, context } = parsed.data;
+  const { raw_description, domains, subdomain, impact_reach, context } = parsed.data;
+
+  // Primary domain = first in array (for backward compat column)
+  const primaryDomain = domains[0] as ChallengeDomain;
 
   // 1. Create challenge record (summary updated after LLM)
   const challenge = await challengesRepo.createChallenge(supabase, {
     user_id: userId,
     raw_description,
-    domain: domain as ChallengeDomain,
+    domain: primaryDomain,
+    domains: domains as ChallengeDomain[],
     subdomain: subdomain ?? null,
     impact_reach: impact_reach ?? null,
   });
@@ -96,7 +103,7 @@ export async function runChallengePipeline(
   // 2. Generate structured summary (context-aware when provided)
   const summaryPrompt = buildChallengeSummaryPrompt(
     raw_description,
-    domain,
+    domains,
     context
   );
   let summaryText: string;
@@ -147,11 +154,11 @@ export async function runChallengePipeline(
     throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
 
-  // 4. Matching engine (structured filter + semantic similarity)
+  // 4. Matching engine — domain as soft signal, all candidates ranked (Epic 6)
   const ranked = await runMatching(
     supabase,
     embedding,
-    domain as ChallengeDomain
+    domains as ChallengeDomain[]
   );
   const matches = ranked.map((r) => r.chunkWithContent);
   const matchReasonByContentId = new Map(

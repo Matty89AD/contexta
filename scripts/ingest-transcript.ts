@@ -4,10 +4,11 @@
  * Usage:
  *   npm run ingest-transcript -- data/transcript.txt
  *   npm run ingest-transcript -- data/transcript.txt --title "Episode 1: Building roadmaps"
- *   npm run ingest-transcript -- data/transcript.txt --title "..." --url "https://..." --domain strategy
+ *   npm run ingest-transcript -- data/transcript.txt --title "..." --url "https://..." --domain strategy --domain leadership
  *
  * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENROUTER_API_KEY
- * Optional: --title (default: filename), --url, --summary, --domain (strategy|discovery|delivery|growth|leadership)
+ * Optional: --title (default: filename), --url, --summary
+ *           --domain (strategy|discovery|delivery|growth|leadership) — can be repeated for multi-domain (Epic 6)
  */
 import "dotenv/config";
 import { config } from "dotenv";
@@ -50,16 +51,18 @@ function chunkTranscript(text: string): string[] {
   return chunks;
 }
 
+const VALID_DOMAINS = ["strategy", "discovery", "delivery", "growth", "leadership"];
+
 function parseArgs(): {
   filePath: string;
   title?: string;
   url?: string;
   summary?: string;
-  domain?: ChallengeDomain;
+  domains: ChallengeDomain[];
 } {
   const args = process.argv.slice(2);
   const filePath = args[0] ?? "data/transcript.txt";
-  const result: ReturnType<typeof parseArgs> = { filePath };
+  const result: ReturnType<typeof parseArgs> = { filePath, domains: [] };
 
   for (let i = 1; i < args.length; i++) {
     if (args[i] === "--title" && args[i + 1]) {
@@ -70,8 +73,8 @@ function parseArgs(): {
       result.summary = args[++i];
     } else if (args[i] === "--domain" && args[i + 1]) {
       const d = args[++i];
-      if (["strategy", "discovery", "delivery", "growth", "leadership"].includes(d)) {
-        result.domain = d as ChallengeDomain;
+      if (VALID_DOMAINS.includes(d) && !result.domains.includes(d as ChallengeDomain)) {
+        result.domains.push(d as ChallengeDomain);
       }
     }
   }
@@ -79,7 +82,7 @@ function parseArgs(): {
 }
 
 async function main() {
-  const { filePath, title, url, summary, domain } = parseArgs();
+  const { filePath, title, url, summary, domains } = parseArgs();
 
   const urlEnv = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -101,6 +104,9 @@ async function main() {
 
   console.log("Chunked transcript into", chunks.length, "segments");
   console.log("Ingesting as podcast:", displayTitle);
+  if (domains.length > 0) {
+    console.log("Domains:", domains.join(", "));
+  }
 
   const supabase = createClient(urlEnv, key);
   const ai = createOpenRouterProvider();
@@ -111,7 +117,7 @@ async function main() {
     url: url ?? null,
     summary: summary ?? null,
     key_takeaways: null,
-    primary_domain: domain ?? null,
+    domains: domains.length > 0 ? domains : undefined,
     chunks,
   });
 

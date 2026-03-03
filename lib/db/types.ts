@@ -64,6 +64,8 @@ export interface Challenge {
   user_id: string | null;
   raw_description: string;
   domain: ChallengeDomain;
+  /** Multi-domain support (Epic 6). At least one domain required. */
+  domains: ChallengeDomain[];
   subdomain: string | null;
   impact_reach: string | null;
   summary: string | null;
@@ -74,6 +76,8 @@ export interface ChallengeInsert {
   user_id: string | null;
   raw_description: string;
   domain: ChallengeDomain;
+  /** Multi-domain support (Epic 6). At least one domain required. */
+  domains: ChallengeDomain[];
   subdomain?: string | null;
   impact_reach?: string | null;
   summary?: string | null;
@@ -88,6 +92,8 @@ export interface Content {
   key_takeaways: string | null;
   metadata: Record<string, unknown>;
   primary_domain: ChallengeDomain | null;
+  /** Multi-domain support (Epic 6). */
+  domains: ChallengeDomain[];
   created_at: string;
 }
 
@@ -99,6 +105,8 @@ export interface ContentInsert {
   key_takeaways?: string | null;
   metadata?: Record<string, unknown>;
   primary_domain?: ChallengeDomain | null;
+  /** Multi-domain support (Epic 6). */
+  domains?: ChallengeDomain[];
 }
 
 export interface ContentChunk {

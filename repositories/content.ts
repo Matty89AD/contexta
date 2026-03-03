@@ -20,6 +20,7 @@ export async function createContent(
       key_takeaways: input.key_takeaways ?? null,
       metadata: input.metadata ?? {},
       primary_domain: input.primary_domain ?? null,
+      domains: input.domains ?? [],
     })
     .select()
     .single();

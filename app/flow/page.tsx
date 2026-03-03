@@ -72,7 +72,7 @@ export default function FlowPage() {
   const onSubmitChallenge = useCallback(
     async (body: {
       raw_description: string;
-      domain: string;
+      domains: string[];
       subdomain?: string;
       impact_reach?: string;
     }) => {
