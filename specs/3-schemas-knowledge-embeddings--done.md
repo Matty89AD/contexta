@@ -1,5 +1,7 @@
 # Epic 3: Schemas, knowledge & embeddings
 
+> **Status:** ✅ done  |  **As of:** 2026-03-02
+
 Define and maintain structured Challenge and Content schemas (reduced/minimal set for MVP), a minimal set of problem archetypes (5–7), curated source material, and embedding generation/storage. Decision patterns ("When X → do Y") are deferred to post-MVP.
 
 ## Scope

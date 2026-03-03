@@ -1,5 +1,7 @@
 # Epic 7: Hybrid RAG retrieval
 
+> **Status:** ✅ done  |  **As of:** 2026-03-03
+
 Add hybrid retrieval (vector + keyword) and merge/rerank to the matching engine so that both semantic similarity and exact term match improve the candidate set for recommendations. The existing challenge → recommendations flow and output (3–5 items with explanations) remain; only retrieval and ranking evolve. Content and chunk schema are extended with full-text index (tsvector) and optional raw text storage.
 
 ## Scope

@@ -119,6 +119,62 @@ EOF
 
 Stage only epic-related files. Do not stage `.env`, build artifacts, or unrelated changes.
 
+## Phase 7 — Update documentation
+
+After the commit is done, invoke the `/documentation` skill passing the epic slug as the argument:
+
+```
+/documentation <epic-slug>
+```
+
+This will update `documentation/DOCUMENTATION.md` to reflect every change introduced by this epic — new features, API changes, configuration additions, known limitations, and a new changelog entry.
+
+Wait for the documentation skill to finish before declaring the epic complete.
+
+## Phase 8 — Mark epic as done
+
+After documentation is committed, update the spec file to record its completion.
+
+### Status codes
+
+Every spec file uses the following status badge on the second line (directly after the `# Epic N:` heading):
+
+```
+> **Status:** <badge>  |  **As of:** YYYY-MM-DD
+```
+
+| Badge | Meaning |
+|-------|---------|
+| `🔲 planned` | Spec written; implementation not started |
+| `🚧 in-progress` | Being actively implemented |
+| `✅ done` | Fully implemented, tested, documented, and committed |
+
+### Steps
+
+1. **Read the spec file** to check whether a status badge line already exists (look for `> **Status:**`).
+   - If it **does not exist**, insert the badge block on the line immediately after the `# Epic N:` heading, followed by a blank line.
+   - If it **exists**, update only the badge value and the date.
+
+2. **Set the status to `✅ done`** and the date to today's date (`YYYY-MM-DD`).
+
+3. **Rename the spec file** — append `--done` before the `.md` extension:
+   ```bash
+   git mv specs/<original-name>.md specs/<original-name>--done.md
+   ```
+   Example: `specs/7-hybrid-rag-retrieval.md` → `specs/7-hybrid-rag-retrieval--done.md`
+
+4. **Commit the spec change**:
+   ```bash
+   git add specs/<original-name>--done.md
+   git commit -F - << 'EOF'
+   chore(<epic-slug>): mark spec as done
+
+   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+   EOF
+   ```
+
+The epic is now fully complete.
+
 ## Checklist before committing
 
 - [ ] All spec acceptance criteria satisfied; nothing from "Out of scope" included.
@@ -131,6 +187,8 @@ Stage only epic-related files. Do not stage `.env`, build artifacts, or unrelate
 - [ ] `npm run test:e2e` — all E2E tests pass across browsers.
 - [ ] Browser verification done (headed Playwright); no visual bugs.
 - [ ] Commit staged with only epic-related files; message references the epic.
+- [ ] `/documentation <epic-slug>` invoked and `documentation/DOCUMENTATION.md` committed.
+- [ ] Spec file updated to `✅ done` with today's date and renamed with `--done` suffix.
 
 ## Reference locations
 

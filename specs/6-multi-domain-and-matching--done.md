@@ -1,5 +1,7 @@
 # Epic 6: Multi-domain and matching
 
+> **Status:** ✅ done  |  **As of:** 2026-03-03
+
 Challenges and content (especially podcasts) often span multiple domains; a single `primary_domain` is limiting. Over-relying on domain match is risky—users can pick the wrong domain, and suitable advice can be missed when content is tagged with a different domain. This epic adds multi-domain modeling and makes matching safer by treating domain as a soft signal rather than a hard filter.
 
 ## Scope

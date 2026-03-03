@@ -1,5 +1,7 @@
 # Epic 4: Matching engine
 
+> **Status:** ✅ done  |  **As of:** 2026-03-02
+
 Implement the first two layers of the matching architecture (structured filter, semantic similarity) and produce a final ranked list of content for the Content_Recommender. Archetype classification and boosting are deferred to a follow-up.
 
 ## Scope

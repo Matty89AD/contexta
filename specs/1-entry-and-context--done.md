@@ -1,5 +1,7 @@
 # Epic 1: Entry, access & context collection
 
+> **Status:** ✅ done  |  **As of:** 2026-03-02
+
 Enable first-time users to enter the product without mandatory signup, see a clear first action, and complete context (role, company stage, team size, experience level) with a button to proceed to the challenge step.
 
 ## Scope

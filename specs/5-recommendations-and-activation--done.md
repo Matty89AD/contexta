@@ -1,5 +1,7 @@
 # Epic 5: Recommendations & activation
 
+> **Status:** ✅ done  |  **As of:** 2026-03-02
+
 Generate and present a prioritized, explainable content recommendation overview (3–5 items, one "most relevant") and provide clear activation CTAs (select, save, open) with tracking for product success measurement.
 
 ## Scope

@@ -1,5 +1,7 @@
 # Epic 2: Challenge flow & persistence
 
+> **Status:** ✅ done  |  **As of:** 2026-03-02
+
 Guide users to submit a product or leadership challenge with minimal friction, set expectations on time-to-value, show progress, and maintain session-level persistence so they can return to recommendations without re-entering.
 
 ## Scope
