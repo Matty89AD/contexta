@@ -6,9 +6,10 @@
  * precision@5 against manually annotated ground truth.
  *
  * Usage:
- *   npm run eval                  — run full eval
- *   npm run eval -- --dry-run    — print dataset only; no DB/AI calls
- *   npm run eval -- --check-db   — check which ground truth titles exist in the DB
+ *   npm run eval                                         — run full eval
+ *   npm run eval -- --dry-run                           — print dataset only; no DB/AI calls
+ *   npm run eval -- --check-db                          — check which ground truth titles exist in the DB
+ *   npm run eval -- --challenge CH-005 --challenge CH-009  — run specific challenges only
  *
  * Env (required unless --dry-run):
  *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -121,10 +122,10 @@ async function evalChallenge(
   };
 }
 
-function printResult(r: ChallengeResult, index: number): void {
+function printResult(r: ChallengeResult, index: number, total: number): void {
   const p3Label = r.p3.toFixed(2);
   const p5Label = r.p5.toFixed(2);
-  console.log(`\n[${index + 1}/15] ${r.id}`);
+  console.log(`\n[${index + 1}/${total}] ${r.id}`);
   console.log(`  Ground truth:   ${r.groundTruth.join(", ")}`);
   console.log(`  Retrieved (5):  ${r.retrievedTitles.slice(0, 5).join(", ") || "(none)"}`);
   console.log(
@@ -252,17 +253,33 @@ async function main() {
   const supabase = supabaseForCheck; // reuse client already created above
   const ai = createOpenRouterProvider();
 
-  console.log(`=== Contexta Eval Harness — ${EVAL_CHALLENGES.length} challenges ===`);
+  // --challenge CH-005 --challenge CH-009  (filter to specific IDs)
+  const challengeFilter = process.argv
+    .flatMap((arg, i, arr) => (arg === "--challenge" ? [arr[i + 1]] : []))
+    .filter(Boolean)
+    .map((id) => id.toUpperCase());
+
+  const challenges =
+    challengeFilter.length > 0
+      ? EVAL_CHALLENGES.filter((c) => challengeFilter.includes(c.id))
+      : EVAL_CHALLENGES;
+
+  if (challengeFilter.length > 0 && challenges.length === 0) {
+    console.error(`No challenges matched: ${challengeFilter.join(", ")}`);
+    process.exit(1);
+  }
+
+  console.log(`=== Contexta Eval Harness — ${challenges.length} challenge(s) ===`);
 
   const results: ChallengeResult[] = [];
-  for (let i = 0; i < EVAL_CHALLENGES.length; i++) {
-    const challenge = EVAL_CHALLENGES[i];
+  for (let i = 0; i < challenges.length; i++) {
+    const challenge = challenges[i];
     try {
       const result = await evalChallenge(supabase, ai, challenge);
       results.push(result);
-      printResult(result, i);
+      printResult(result, i, challenges.length);
     } catch (e) {
-      console.error(`\n[${i + 1}/15] ${challenge.id} FAILED:`, e);
+      console.error(`\n[${i + 1}/${challenges.length}] ${challenge.id} FAILED:`, e);
     }
   }
 
