@@ -8,7 +8,7 @@
  *
  * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENROUTER_API_KEY
  *      CHUNK_SIZE (default 1500), MAX_CHUNK_CHARS (default 8000) — Epic 7 configurable chunking
- * Optional: --title (default: filename), --url, --summary
+ * Optional: --title (default: filename), --url
  *           --domain (strategy|discovery|delivery|growth|leadership) — can be repeated for multi-domain (Epic 6)
  *           --chunk-size N, --max-chunk-chars N — override chunking params (Epic 7)
  */
@@ -68,7 +68,6 @@ function parseArgs(): {
   filePath: string;
   title?: string;
   url?: string;
-  summary?: string;
   domains: ChallengeDomain[];
   chunkSize: number;
   maxChunkChars: number;
@@ -92,8 +91,6 @@ function parseArgs(): {
       result.title = args[++i];
     } else if (args[i] === "--url" && args[i + 1]) {
       result.url = args[++i];
-    } else if (args[i] === "--summary" && args[i + 1]) {
-      result.summary = args[++i];
     } else if (args[i] === "--domain" && args[i + 1]) {
       const d = args[++i];
       if (VALID_DOMAINS.includes(d) && !result.domains.includes(d as ChallengeDomain)) {
@@ -111,7 +108,7 @@ function parseArgs(): {
 }
 
 async function main() {
-  const { filePath, title, url, summary, domains, chunkSize, maxChunkChars } = parseArgs();
+  const { filePath, title, url, domains, chunkSize, maxChunkChars } = parseArgs();
 
   const urlEnv = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -144,8 +141,6 @@ async function main() {
     source_type: "podcast",
     title: displayTitle,
     url: url ?? null,
-    summary: summary ?? null,
-    key_takeaways: null,
     domains: domains.length > 0 ? domains : undefined,
     chunks,
   });

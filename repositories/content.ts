@@ -17,9 +17,6 @@ export async function createContent(
       source_type: input.source_type,
       title: input.title,
       url: input.url ?? null,
-      summary: input.summary ?? null,
-      key_takeaways: input.key_takeaways ?? null,
-      metadata: input.metadata ?? {},
       primary_domain: input.primary_domain ?? null,
       domains: input.domains ?? [],
     })

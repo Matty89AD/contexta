@@ -131,8 +131,6 @@ async function main() {
         source_type: "podcast",
         title,
         url: null,
-        summary: null,
-        key_takeaways: null,
         domains: domains.length > 0 ? domains : undefined,
         chunks,
       });

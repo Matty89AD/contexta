@@ -102,9 +102,6 @@ export interface Content {
   source_type: ContentSourceType;
   title: string;
   url: string | null;
-  summary: string | null;
-  key_takeaways: string | null;
-  metadata: Record<string, unknown>;
   primary_domain: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). */
   domains: ChallengeDomain[];
@@ -123,9 +120,6 @@ export interface ContentInsert {
   source_type: ContentSourceType;
   title: string;
   url?: string | null;
-  summary?: string | null;
-  key_takeaways?: string | null;
-  metadata?: Record<string, unknown>;
   primary_domain?: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). */
   domains?: ChallengeDomain[];

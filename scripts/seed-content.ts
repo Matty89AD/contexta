@@ -26,8 +26,6 @@ const SAMPLE_CONTENT: Array<{
   source_type: ContentSourceType;
   title: string;
   url?: string;
-  summary?: string;
-  key_takeaways?: string;
   primary_domain?: ChallengeDomain;
   chunks: string[];
 }> = [
@@ -35,8 +33,6 @@ const SAMPLE_CONTENT: Array<{
     source_type: "article",
     title: "Prioritization frameworks for product teams",
     url: "https://example.com/prioritization",
-    summary: "A practical guide to choosing and applying prioritization frameworks (RICE, MoSCoW, value vs effort) in early-stage teams.",
-    key_takeaways: "Use one framework consistently; involve stakeholders in scoring; revisit priorities weekly.",
     primary_domain: "strategy",
     chunks: [
       "Prioritization frameworks help product teams focus on the right work. This guide covers RICE, MoSCoW, and value vs effort. Use one framework consistently rather than mixing. Involve key stakeholders in scoring to build alignment. Revisit priorities at least weekly as context changes.",
@@ -47,8 +43,6 @@ const SAMPLE_CONTENT: Array<{
     source_type: "framework",
     title: "Discovery and outcome-based roadmaps",
     url: "https://example.com/discovery",
-    summary: "Shift from output to outcome: define success metrics, run small experiments, and keep the roadmap flexible.",
-    key_takeaways: "Outcomes over outputs; small experiments; flexible roadmap.",
     primary_domain: "discovery",
     chunks: [
       "Outcome-based roadmaps focus on the result you want (e.g. increase activation) instead of a list of features. Define 2-3 outcomes per quarter. For each outcome, run small experiments (design, build, measure) rather than big launches. Keep the roadmap flexible: replace low-signal bets with new ideas.",
@@ -59,8 +53,6 @@ const SAMPLE_CONTENT: Array<{
     source_type: "podcast",
     title: "Leading without authority",
     url: "https://example.com/leadership",
-    summary: "How product managers influence without direct reports: clarity, alignment, and follow-through.",
-    key_takeaways: "Clarity of purpose; align early; follow through on commitments.",
     primary_domain: "leadership",
     chunks: [
       "Leading without authority starts with clarity: be clear on the problem, the success metric, and the plan. Share this in writing and in meetings so everyone can align. Align early with engineering, design, and stakeholders; don't wait until the end to get buy-in.",
@@ -76,8 +68,6 @@ async function main() {
       source_type: item.source_type,
       title: item.title,
       url: item.url ?? null,
-      summary: item.summary ?? null,
-      key_takeaways: item.key_takeaways ?? null,
       primary_domain: item.primary_domain ?? null,
       chunks: item.chunks,
     });

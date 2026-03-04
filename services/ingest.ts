@@ -10,13 +10,10 @@ export interface ContentToIngest {
   source_type: ContentSourceType;
   title: string;
   url?: string | null;
-  summary?: string | null;
-  key_takeaways?: string | null;
   /** Primary domain for backward compat. Use `domains` for multi-domain (Epic 6). */
   primary_domain?: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). When provided, overrides primary_domain derivation. */
   domains?: ChallengeDomain[];
-  metadata?: Record<string, unknown>;
   chunks: string[];
 }
 
@@ -37,9 +34,6 @@ export async function ingestContent(
     source_type: input.source_type,
     title: input.title,
     url: input.url ?? null,
-    summary: input.summary ?? null,
-    key_takeaways: input.key_takeaways ?? null,
-    metadata: input.metadata ?? {},
     primary_domain: effectiveDomains[0] ?? null,
     domains: effectiveDomains,
   } as ContentInsert);
