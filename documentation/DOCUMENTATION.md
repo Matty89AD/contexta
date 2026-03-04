@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.2 &nbsp;|&nbsp; **Last updated:** 2026-03-04 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.3 &nbsp;|&nbsp; **Last updated:** 2026-03-04 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -16,6 +16,7 @@
    - [3.5 Content Ingestion](#35-content-ingestion)
    - [3.6 Content Intelligence Service](#36-content-intelligence-service)
    - [3.7 Authentication & Profiles](#37-authentication--profiles)
+   - [3.8 Challenge Eval Harness](#38-challenge-eval-harness)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -324,6 +325,36 @@ Exactly one item is marked "most relevant." Save and Select actions are not avai
 
 ---
 
+### 3.8 Challenge Eval Harness
+
+**What it does**: Measures the quality of the matching engine by running a fixed set of 15 synthetic test challenges through the full retrieval pipeline and comparing the results against manually annotated ground truth. This gives the team a repeatable precision score they can track as the knowledge base grows or the matching engine changes.
+
+**What the user sees**: Nothing — this is an internal quality tool run by the team, not an end-user feature.
+
+**How it works**:
+- 15 synthetic product and leadership challenges are stored in a typed dataset, each with three manually selected "correct" content items.
+- The harness generates a real embedding for each challenge description, runs the full hybrid retrieval pipeline (vector search + keyword search), and deduplicates the results to find the top 5 unique content items.
+- It compares those results against the expected matches and calculates two metrics for each challenge:
+  - **precision@3** — what fraction of the 3 expected items appear in the top 3 results
+  - **precision@5** — what fraction of the 3 expected items appear in the top 5 results
+- After all 15 challenges run, the harness prints aggregate precision scores and hit rates.
+
+**Key design decisions**:
+- The harness does not create any database records during a run — it calls the retrieval layer directly.
+- Title comparison is case-insensitive and strips file extensions to ensure consistent matching.
+- A `--dry-run` flag prints the dataset without making any API calls, useful for verifying the dataset before a full run.
+
+**Script**: `npm run eval`
+
+**When to run it**:
+- After ingesting new content, to check whether precision improved or regressed.
+- After changing scoring weights or matching configuration, to validate the impact.
+- As a baseline measurement before experimenting with new matching strategies.
+
+**Status**: Implemented
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -401,6 +432,9 @@ All settings are controlled via environment variables. They do not require a cod
 **"Some content items show extraction confidence of 0"**
 - These failed the AI metadata extraction step. Run `npm run backfill-intelligence` to retry. If the issue persists, the content may be too short or too noisy for reliable extraction.
 
+**"I want to measure whether a configuration change improved matching quality"**
+- Run `npm run eval` before and after your change. Compare mean precision@3 and precision@5 between the two runs to see whether the change helped.
+
 **Note**: The three scoring weights (`STRUCTURED_FIT_WEIGHT`, `EMBEDDING_SIMILARITY_WEIGHT`, `KEYWORD_RELEVANCE_WEIGHT`) are additive and do not need to sum to 1. Each is applied independently to its component, and the sum becomes the final ranking score.
 
 ---
@@ -421,7 +455,8 @@ The following are intentional decisions for the current version. They are not bu
 - **Unauthenticated challenges are not persisted** — if a user closes the browser before signing up, their challenge and recommendations cannot be recovered.
 - **No multi-hop or agent-based reasoning** — the matching pipeline is a single-pass retrieval and ranking. Graph databases, multi-step reasoning, and agent orchestration are non-goals.
 - **Content Intelligence Service has no timeout guard** — if the AI provider is slow or unresponsive during ingestion, the extraction step can hang indefinitely. Affected items can be retried with the backfill script.
-- **No matching quality evaluation** — there is no automated test harness to measure recommendation precision against expected results. This is addressed in Epic 9 (planned).
+- **Eval harness has no CI integration** — the evaluation script is run manually by the team. It is not automatically triggered on code changes or content updates.
+- **Eval precision targets are not set** — the harness measures a baseline; no minimum precision threshold is enforced or tracked automatically.
 
 ---
 
@@ -429,8 +464,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
-| **Epic 9 — Challenge Evaluation Harness** | An automated script that runs the 15 synthetic challenge test cases through the matching engine, compares results against manually annotated ground-truth matches, and reports precision scores (precision@3, precision@5). Used to validate and monitor matching quality as the knowledge base grows. | Planned (next) |
-| Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost content items that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
+| Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost content items that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (next) |
 | Audience-targeting metadata | Tag content items with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
 | Challenge history & saved items | Allow signed-in users to view past challenges and their recommendations; save specific content items for later. | Planned (post-MVP) |
@@ -444,6 +478,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-04 | 1.3 | Epic 9 | Added Challenge Eval Harness (section 3.8): 15-challenge typed dataset, `npm run eval` script that runs hybrid retrieval against each challenge and reports mean precision@3 and precision@5 against annotated ground truth. Updated Known Limitations (eval limitations noted). Updated Future Epics table (Epic 9 removed from planned; archetype classification is now next). Added eval-specific tuning guidance in section 6. |
 | 2026-03-04 | 1.2 | Epic 8 | Added Content Intelligence Service (section 3.6): automated AI extraction of topics, keywords, author, publication date, content category, language, and confidence score per content item; chunk-type classification (9 types) and key concept extraction per chunk. Updated Data Model section to reflect new metadata fields on Content Items and Content Chunks. Added tuning guidance for confidence score and key concepts. Updated Known Limitations and Future Epics table. |
 | 2026-03-04 | 1.1 | 3, 4, 6, 7 | Merged Matching Engine, Recommendations, and Hybrid RAG Retrieval into a single section (3.3). Expanded keyword search documentation: stop word stripping, Snowball stemming, AND-logic matching, and ts_rank_cd normalisation. Added scoring formula table and match reason label reference. Renumbered sections 3.4–3.6 accordingly. |
 | 2026-03-03 | 1.0 | all (1–7) | Initial documentation covering all seven implemented epics: context collection, challenge flow, schemas and embeddings, matching engine, recommendations and activation, multi-domain support, and hybrid RAG retrieval. |
