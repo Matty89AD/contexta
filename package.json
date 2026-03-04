@@ -11,6 +11,7 @@
     "ingest-transcript": "node -r tsconfig-paths/register -r tsx/cjs scripts/ingest-transcript.ts",
     "ingest-content-batch": "node -r tsconfig-paths/register -r tsx/cjs scripts/ingest-content-batch.ts",
     "backfill-intelligence": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-intelligence.ts",
+    "backfill-domains": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-domains.ts",
     "eval": "node -r tsconfig-paths/register -r tsx/cjs scripts/eval-matching.ts",
     "test": "vitest run",
     "test:watch": "vitest",
