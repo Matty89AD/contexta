@@ -90,7 +90,61 @@ async function evalChallenge(
   const embedding = await ai.generateEmbedding(challenge.raw_description);
 
   if (debug) {
-    console.log(`  [debug] embedding dims: ${embedding.length}`);
+    const norm = Math.sqrt(embedding.reduce((s, v) => s + v * v, 0));
+    const nanCount = embedding.filter((v) => isNaN(v)).length;
+    console.log(`  [debug] embedding dims: ${embedding.length}  norm: ${norm.toFixed(6)}  NaN values: ${nanCount}`);
+
+    // Direct chunk count — confirms the DB has rows at query time
+    const { count: chunkCount, error: countErr } = await supabase
+      .from("content_chunks")
+      .select("*", { count: "exact", head: true })
+      .not("embedding", "is", null);
+    console.log(
+      `  [debug] content_chunks with non-null embedding: ${countErr ? `error: ${countErr.message}` : chunkCount}`
+    );
+
+    // Synthetic unit-vector test — detects IVFFlat empty-centroid bug
+    // If this returns rows but the real embedding returns 0, the IVFFlat index
+    // has bad centroids (built on empty table); fix: REINDEX + increase probes.
+    const dim = 1536;
+    const synth = Array(dim).fill(1 / Math.sqrt(dim));
+    const { data: synthData, error: synthErr } = await supabase.rpc("match_content_chunks", {
+      query_embedding: synth,
+      match_count: 3,
+    });
+    const synthInfo = synthErr
+      ? `error: ${synthErr.message}`
+      : Array.isArray(synthData)
+      ? `array(${synthData.length} rows)`
+      : String(synthData);
+    console.log(`  [debug] synthetic embedding test → ${synthInfo}`);
+
+    // Raw Supabase RPC call — bypasses runMatching to inspect the response directly
+    const { data: vecData, error: vecErr } = await supabase.rpc("match_content_chunks", {
+      query_embedding: embedding,
+      match_count: 5,
+    });
+    const vecInfo = vecErr
+      ? `error: ${vecErr.message}`
+      : vecData === null
+      ? "data: null (no error)"
+      : Array.isArray(vecData)
+      ? `data: array(${vecData.length} rows)`
+      : `data: ${typeof vecData}`;
+    console.log(`  [debug] raw vector RPC → ${vecInfo}`);
+
+    const { data: kwData, error: kwErr } = await supabase.rpc(
+      "keyword_match_content_chunks",
+      { query_text: challenge.raw_description, match_count: 5 }
+    );
+    const kwInfo = kwErr
+      ? `error: ${kwErr.message}`
+      : kwData === null
+      ? "data: null (no error)"
+      : Array.isArray(kwData)
+      ? `data: array(${kwData.length} rows)`
+      : `data: ${typeof kwData}`;
+    console.log(`  [debug] raw keyword RPC → ${kwInfo}`);
   }
 
   // Run hybrid retrieval (vector + keyword) — no DB record created (R6)
