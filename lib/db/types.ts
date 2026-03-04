@@ -34,10 +34,9 @@ export type ChallengeDomain = (typeof CHALLENGE_DOMAINS)[number];
 
 export const CONTENT_SOURCE_TYPES = [
   "podcast",
-  "article",
-  "framework",
-  "playbook",
-  "case_study",
+  "video",
+  "website",
+  "book",
 ] as const;
 export type ContentSourceType = (typeof CONTENT_SOURCE_TYPES)[number];
 
@@ -110,7 +109,6 @@ export interface Content {
   keywords: string[];
   author: string | null;
   publication_date: string | null;
-  content_category: string | null;
   language: string;
   extraction_confidence: number | null;
   created_at: string;
@@ -128,7 +126,6 @@ export interface ContentInsert {
   keywords?: string[];
   author?: string | null;
   publication_date?: string | null;
-  content_category?: string | null;
   language?: string;
   extraction_confidence?: number | null;
 }

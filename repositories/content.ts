@@ -53,7 +53,6 @@ export async function updateContentIntelligence(
     keywords: string[];
     author: string | null;
     publication_date: string | null;
-    content_category: string | null;
     language: string;
     extraction_confidence: number;
   }

@@ -10,7 +10,6 @@ npm run build         # Production build
 npm run lint          # ESLint
 npm run test:e2e      # Run Playwright E2E tests (headless)
 npm run test:e2e:ui   # Run Playwright E2E tests (interactive UI)
-npm run seed          # Seed sample content + embeddings into Supabase
 npm run ingest-transcript  # Ingest knowledge base transcript
 ```
 
@@ -54,6 +53,7 @@ Defined in `requirements/q-and-a.md` and enforced in DB/Zod schemas:
 - **team_size**: `1-5` | `6-15` | `16-50` | `51+`
 - **experience_level**: `junior` | `mid` | `senior` | `lead`
 - **domain**: `strategy` | `discovery` | `delivery` | `growth` | `leadership`
+- **source_type**: `podcast` | `video` | `website` | `book`
 
 ### Matching engine
 

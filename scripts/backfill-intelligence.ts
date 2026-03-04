@@ -86,7 +86,6 @@ async function main() {
         keywords: intel.keywords,
         author: intel.author,
         publication_date: intel.publication_date,
-        content_category: intel.content_category,
         language: intel.language,
         extraction_confidence: intel.extraction_confidence,
       });

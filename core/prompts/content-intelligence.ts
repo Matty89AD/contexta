@@ -29,9 +29,6 @@ export const contentIntelligenceOutputSchema = z.object({
     .string()
     .nullable()
     .describe("ISO date string (YYYY-MM-DD) if detectable, else null"),
-  content_category: z
-    .string()
-    .describe("Single label for the content category, e.g. 'product management', 'growth strategy'"),
   language: z.string().default("en").describe("ISO 639-1 language code"),
   extraction_confidence: z
     .number()
@@ -76,7 +73,6 @@ Return a single JSON object with exactly these fields:
 - keywords: array of 4–10 specific terms, frameworks, or methodologies mentioned (e.g. "RICE scoring", "Shape Up", "Jobs-to-be-Done")
 - author: name of the primary speaker or author if clearly identifiable, else null
 - publication_date: ISO date string (YYYY-MM-DD) if detectable from the text, else null
-- content_category: single descriptive label (e.g. "product discovery", "delivery & execution", "growth & retention")
 - language: ISO 639-1 code (almost always "en")
 - extraction_confidence: float 0.0–1.0 reflecting how complete and reliable the extraction is
 - chunks: array of exactly ${chunks.length} objects (one per chunk, same order), each with:

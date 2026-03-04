@@ -75,7 +75,6 @@ function buildFallback(chunkCount: number): ContentIntelligenceOutput {
     keywords: [],
     author: null,
     publication_date: null,
-    content_category: "uncategorized",
     language: "en",
     extraction_confidence: 0,
     chunks: Array.from({ length: chunkCount }, () => ({
