@@ -1,6 +1,6 @@
 # Epic 9: Challenge Test Dataset + Eval Harness
 
-> **Status:** 🚧 in-progress  |  **As of:** 2026-03-04
+> **Status:** ✅ done  |  **As of:** 2026-03-04
 
 Run the 15 test challenges from `data/ChallengeTestData.md` through the live matching engine and measure precision@3 / precision@5 against manually annotated ground truth. No UI changes; no DB schema changes.
 
