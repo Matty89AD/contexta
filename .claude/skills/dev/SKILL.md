@@ -121,13 +121,29 @@ Stage only epic-related files. Do not stage `.env`, build artifacts, or unrelate
 
 ## Phase 7 — Update documentation
 
-After the commit is done, invoke the `/documentation` skill passing the epic slug as the argument:
+After the commit, collect context and invoke `/documentation` with a rich argument so it can skip a full codebase re-explore:
 
-```
-/documentation <epic-slug>
-```
+1. **Get changed files** — run:
+   ```bash
+   git diff HEAD~1 --name-only
+   ```
+   Collect the output as a comma-separated list (e.g. `services/matching.ts,repositories/content.ts`).
 
-This will update `documentation/DOCUMENTATION.md` to reflect every change introduced by this epic — new features, API changes, configuration additions, known limitations, and a new changelog entry.
+2. **Get the commit summary** — run:
+   ```bash
+   git log -1 --pretty=%s
+   ```
+
+3. **Invoke the skill** with all three pieces:
+   ```
+   /documentation <epic-slug> --changed-files="<comma-separated list>" --summary="<commit subject>"
+   ```
+   Example:
+   ```
+   /documentation epic-7 --changed-files="services/matching.ts,repositories/content.ts,supabase/migrations/007_tsvector.sql" --summary="feat(epic-7): hybrid RAG retrieval — tsvector keyword search + reranking"
+   ```
+
+This allows `/documentation` to do targeted reads of only the changed files instead of a full codebase re-explore, saving significant context and tokens.
 
 Wait for the documentation skill to finish before declaring the epic complete.
 
@@ -157,15 +173,11 @@ Every spec file uses the following status badge on the second line (directly aft
 
 2. **Set the status to `✅ done`** and the date to today's date (`YYYY-MM-DD`).
 
-3. **Rename the spec file** — append `--done` before the `.md` extension:
-   ```bash
-   git mv specs/<original-name>.md specs/<original-name>--done.md
-   ```
-   Example: `specs/7-hybrid-rag-retrieval.md` → `specs/7-hybrid-rag-retrieval--done.md`
+   **Do not rename or copy the file.** Update it in place. The spec file keeps its original name throughout its lifetime.
 
-4. **Commit the spec change**:
+3. **Commit the spec change**:
    ```bash
-   git add specs/<original-name>--done.md
+   git add specs/<original-name>.md
    git commit -F - << 'EOF'
    chore(<epic-slug>): mark spec as done
 
@@ -188,7 +200,7 @@ The epic is now fully complete.
 - [ ] Browser verification done (headed Playwright); no visual bugs.
 - [ ] Commit staged with only epic-related files; message references the epic.
 - [ ] `/documentation <epic-slug>` invoked and `documentation/DOCUMENTATION.md` committed.
-- [ ] Spec file updated to `✅ done` with today's date and renamed with `--done` suffix.
+- [ ] Spec file updated in place to `✅ done` with today's date (no rename, no copy).
 
 ## Reference locations
 

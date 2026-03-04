@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.0 &nbsp;|&nbsp; **Last updated:** 2026-03-03 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.1 &nbsp;|&nbsp; **Last updated:** 2026-03-04 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -11,12 +11,10 @@
 3. [Feature Reference](#3-feature-reference)
    - [3.1 Context Collection](#31-context-collection)
    - [3.2 Challenge Submission](#32-challenge-submission)
-   - [3.3 Matching Engine](#33-matching-engine)
-   - [3.4 Recommendations](#34-recommendations)
-   - [3.5 Multi-Domain Support](#35-multi-domain-support)
-   - [3.6 Hybrid RAG Retrieval](#36-hybrid-rag-retrieval)
-   - [3.7 Content Ingestion](#37-content-ingestion)
-   - [3.8 Authentication & Profiles](#38-authentication--profiles)
+   - [3.3 Matching Engine & Recommendations](#33-matching-engine--recommendations)
+   - [3.4 Multi-Domain Support](#34-multi-domain-support)
+   - [3.5 Content Ingestion](#35-content-ingestion)
+   - [3.6 Authentication & Profiles](#36-authentication--profiles)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -124,53 +122,101 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 ---
 
-### 3.3 Matching Engine
+### 3.3 Matching Engine & Recommendations
 
-**What it does**: Finds the most relevant chunks of content from the knowledge base for a given challenge, using a combination of domain matching, AI semantic similarity, and keyword search.
+**What it does**: Finds the most relevant content from the knowledge base for a given challenge, ranks it using three complementary scoring signals, and uses an AI model to produce 3–5 curated recommendations with plain-language explanations.
 
-**What the user sees**: Nothing directly — this runs invisibly in the background. The results feed the Recommendations step.
-
-**How it works (plain English)**:
-1. The AI generates an embedding (a numerical representation) of the challenge summary and problem statement.
-2. A **vector search** finds the most semantically similar content chunks from the database.
-3. A **keyword search** finds chunks that match the specific words the user used.
-4. Both lists are merged and deduplicated.
-5. Each chunk is scored on three dimensions: how well it matches the domain(s) the user selected, how semantically similar it is, and how well it matches keywords.
-6. The top 6–8 highest-scoring chunks are passed to the recommendations AI.
-
-**Business rules**:
-- Domain matching is a soft boost, not a hard filter — content from other domains can still appear if it is semantically relevant.
-- Keyword search failure is non-fatal; the system falls back to vector search only.
-- Weights for each scoring dimension are configurable via environment variables.
-
-**Status**: Implemented (all three layers: structured domain, semantic similarity, keyword)
+**What the user sees**: Nothing during the matching phase — this runs invisibly in the background. The output is the recommendation cards shown in Step 3 of the flow.
 
 ---
 
-### 3.4 Recommendations
+#### Pipeline overview
 
-**What it does**: Takes the top-scored content chunks and uses an AI model to select 3–5 items, write a short explanation for each, and identify the single most relevant one.
+The full pipeline runs in sequence when the user submits their challenge:
 
-**What the user sees**: A labelled list of 3–5 content cards. The most relevant item is visually highlighted with a "Most relevant" badge and a darker border. Each card shows the content title, a short explanation, and an **Open** button.
-
-**What data it surfaces**:
-- Content title
-- 1–2 sentence explanation of relevance to the user's specific challenge
-- Match reason label (e.g. "Matches your focus area" for domain-matched content)
-- Open button (links to the content URL)
-
-**Business rules**:
-- Exactly one item is marked "most relevant."
-- The Open button is disabled if the content has no URL.
-- If no content is available at all, an empty state message is shown.
-- Framework steps and thought leader suggestions are not shown in the current version.
-- Save and Select actions are not available; Open is the only CTA.
-
-**Status**: Implemented
+1. **AI summary** — The challenge description and user context are sent to an AI model, which generates a concise summary and a focused problem statement.
+2. **Embedding** — That combined text is converted into a numerical vector (an embedding) that captures its semantic meaning.
+3. **Dual retrieval** — Two independent searches run simultaneously against the knowledge base (described below).
+4. **Merge and deduplicate** — Results from both searches are combined into a single candidate list. A chunk that appeared in both searches is flagged as a stronger match.
+5. **Scoring and ranking** — Every candidate is scored across three dimensions. The scores are summed into a final ranking score.
+6. **LLM recommendation pass** — The top 6–8 highest-scoring chunks are sent to an AI model, which selects 3–5 items, writes a relevance explanation for each, and identifies the single most relevant one.
 
 ---
 
-### 3.5 Multi-Domain Support
+#### The two retrieval methods
+
+**Semantic search (vector search)**
+
+The challenge embedding is compared against the embedding stored for every content chunk using cosine similarity. This finds content that is *conceptually* close to the challenge — even if different words are used. For example, a challenge about "not knowing which feature to build next" will surface content about prioritisation frameworks even if the word "prioritisation" was never written.
+
+**Keyword search (full-text search)**
+
+The raw challenge text is passed to PostgreSQL's built-in full-text search engine (`tsvector`/`tsquery`) using the `english` language configuration. This finds content chunks where the *same words* appear — useful for precise terminology, framework names, methodologies, and product jargon.
+
+How the keyword search processes the query text:
+
+- **Stop words are stripped** — common English words that carry little meaning are discarded before matching. These include function words like *the*, *a*, *an*, *is*, *are*, *was*, *were*, *of*, *in*, *on*, *at*, *to*, *for*, *with*, *and*, *or*, *but*, *not*, *by*, *from*, *as*, *this*, *that*, *it*, *be*, *have*, *do*, *will*, *would*, *can*, *could* — and approximately 170 others defined in PostgreSQL's English stop-word list. Writing "I need help with the strategy for my team" is equivalent to writing "need help strategy team."
+
+- **Words are stemmed** — the remaining words are reduced to their root form using the Snowball English stemmer, so that different inflections of the same word match each other. Examples: "prioritizing" → `prioritiz`, "challenges" → `challeng`, "strategies" → `strategi`, "delivering" → `deliv`, "leadership" → `leadership`, "discovery" → `discoveri`. The same stemming is applied to the content chunks at ingestion time, so "we were prioritising features" in a chunk will match a challenge that mentions "feature prioritization."
+
+- **What is actually used for matching** — the stemmed, non-stop-word tokens that remain. A content chunk must contain *all* of these tokens to be considered a match (logical AND). If a challenge description reduces to three meaningful tokens after processing, every returned chunk contains all three.
+
+- **Ranking within keyword results** — matching chunks are ranked by `ts_rank_cd` with normalization 8, which divides the raw rank by the number of unique words in the chunk. This prevents long chunks from unfairly dominating just because they contain more words overall.
+
+Keyword search failure is non-fatal. If the search returns no results or encounters an error (for example, if the full-text index has not yet been built for a chunk), the pipeline silently falls back to vector-only results.
+
+---
+
+#### Scoring formula
+
+Each candidate chunk in the merged list receives a final score calculated as:
+
+```
+finalScore = (STRUCTURED_FIT_WEIGHT × domainScore)
+           + (EMBEDDING_SIMILARITY_WEIGHT × semanticScore)
+           + (KEYWORD_RELEVANCE_WEIGHT × keywordScore)
+```
+
+| Component | How it is calculated | Default weight |
+|-----------|---------------------|---------------|
+| **Domain score** | 1.0 if the content's domain(s) overlap with the challenge domain(s); 0.5 otherwise | 0.3 |
+| **Semantic score** | Cosine similarity between the challenge embedding and the chunk embedding (0–1) | 0.7 |
+| **Keyword score** | `ts_rank_cd` relevance from the full-text search, normalised (0–1) | 0.3 |
+
+All three weights are additive and independent — they do not need to sum to 1. Each weight is configurable via environment variable (see Section 6).
+
+Domain scoring is a soft boost: content from other domains can still appear if its semantic or keyword score is high enough. It is never a hard filter.
+
+---
+
+#### Match reason labels
+
+Each recommendation surfaces a match reason label that tells the user *why* an item was selected:
+
+| Label | Meaning |
+|-------|---------|
+| **Matches your focus area** (`structured_fit`) | The content's domain overlaps with at least one domain the user selected |
+| **Hybrid match** (`hybrid`) | The chunk appeared in *both* the semantic search and the keyword search |
+| **Keyword match** (`keyword`) | The chunk was found by keyword search but not by semantic similarity |
+| **Semantic match** (`semantic`) | The chunk was found by semantic similarity only |
+
+---
+
+#### What the user sees in Step 3
+
+A labelled list of 3–5 content cards. The most relevant item is visually highlighted with a "Most relevant" badge and a darker border. Each card shows:
+- The content title
+- A 1–2 sentence explanation of why it was selected for this specific challenge
+- A match reason label
+- An **Open** button linking to the content URL (disabled if no URL is available)
+
+Exactly one item is marked "most relevant." Save and Select actions are not available; Open is the only CTA. Framework steps and thought leader suggestions are not shown in the current version.
+
+**Status**: Implemented (domain matching, semantic similarity, keyword search, hybrid reranking, recommendations)
+
+---
+
+### 3.4 Multi-Domain Support
 
 **What it does**: Allows users to select more than one domain when submitting a challenge, and ensures content that spans multiple domains is matched accordingly.
 
@@ -186,28 +232,7 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 ---
 
-### 3.6 Hybrid RAG Retrieval
-
-**What it does**: Improves the quality of content matching by combining two complementary search methods — AI semantic similarity (understanding meaning) and keyword search (matching exact terms) — and merging the results.
-
-**What the user sees**: No visible change. The recommendations may be more accurate, especially when the user's challenge description contains specific terminology.
-
-**How it works (plain English)**:
-- The system runs two searches simultaneously against the knowledge base.
-- The first search finds content that is *semantically similar* to the challenge (captures intent and meaning).
-- The second search finds content where the *same words* appear (captures precision and terminology).
-- Results from both searches are combined; if a piece of content appears in both, it gets a higher combined score.
-- Keyword search is a graceful fallback — if it fails or finds nothing, the system still returns results from the semantic search alone.
-
-**Business rules**:
-- The balance between semantic and keyword weight is configurable.
-- Keyword search only runs on content that has been indexed (existing content is auto-indexed; new content is indexed on ingestion).
-
-**Status**: Implemented
-
----
-
-### 3.7 Content Ingestion
+### 3.5 Content Ingestion
 
 **What it does**: Allows curated content (podcasts, articles, frameworks, playbooks, case studies) to be loaded into the knowledge base so it becomes available for matching.
 
@@ -228,7 +253,7 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 ---
 
-### 3.8 Authentication & Profiles
+### 3.6 Authentication & Profiles
 
 **What it does**: Lets users create an account to save their challenges and return to them later. Authentication is prompted after the user has already seen their recommendations — not before.
 
@@ -358,4 +383,5 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-04 | 1.1 | 3, 4, 6, 7 | Merged Matching Engine, Recommendations, and Hybrid RAG Retrieval into a single section (3.3). Expanded keyword search documentation: stop word stripping, Snowball stemming, AND-logic matching, and ts_rank_cd normalisation. Added scoring formula table and match reason label reference. Renumbered sections 3.4–3.6 accordingly. |
 | 2026-03-03 | 1.0 | all (1–7) | Initial documentation covering all seven implemented epics: context collection, challenge flow, schemas and embeddings, matching engine, recommendations and activation, multi-domain support, and hybrid RAG retrieval. |

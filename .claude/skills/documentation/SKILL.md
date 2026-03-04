@@ -31,13 +31,33 @@ is implemented. Never include raw code blocks in the final document.
 
 ## Phase 2 — Explore the codebase
 
+First, parse `$ARGUMENTS` to extract:
+- **epic** — the first positional token (e.g. `epic-7`) or `all` if absent.
+- **`--changed-files=...`** — optional comma-separated list of file paths passed by `/dev`.
+- **`--summary=...`** — optional one-line description of what changed, passed by `/dev`.
+
+---
+
+### Fast path (when `--changed-files` is provided)
+
+Skip the Explore subagent entirely. Instead:
+
+1. Read each file listed in `--changed-files` directly using the Read tool.
+2. Additionally read any spec file matching the epic name (e.g. `specs/*<epic>*.md`) to confirm scope and out-of-scope items.
+3. `documentation/DOCUMENTATION.md` was already read in Phase 1 — no further broad exploration needed.
+4. Proceed directly to Phase 3 using the `--summary` value as the basis for the changelog entry.
+
+---
+
+### Full path (when `--changed-files` is absent, e.g. `/documentation all`)
+
 Use an `Explore` subagent with `thoroughness: "very thorough"` to gather:
 
-### Specs & requirements
+#### Specs & requirements
 - All files in `specs/*.md` — read scope, acceptance criteria, and out-of-scope.
 - `requirements/spec.md` and `requirements/q-and-a.md` — product decisions and enums.
 
-### Implemented features (what is actually in code today)
+#### Implemented features (what is actually in code today)
 - `supabase/migrations/*.sql` — what tables and columns exist; what RPCs exist.
 - `lib/db/types.ts` — the canonical enum values and data shapes.
 - `services/*.ts` — what the system actually does (matching, ingestion, challenge pipeline).
@@ -47,7 +67,7 @@ Use an `Explore` subagent with `thoroughness: "very thorough"` to gather:
 - `core/prompts/*.ts` — what the AI generates (summaries, recommendations).
 - `e2e/*.spec.ts` — what user journeys are tested (useful proxy for "what's live").
 
-### What is NOT yet implemented
+#### What is NOT yet implemented
 - Compare spec epic list against migration/service/component evidence. Note gaps.
 
 ---
