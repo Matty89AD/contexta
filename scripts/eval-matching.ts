@@ -6,11 +6,13 @@
  * precision@5 against manually annotated ground truth.
  *
  * Usage:
- *   npm run eval
- *   npm run eval -- --dry-run   (print dataset only; no DB/AI calls)
+ *   npm run eval                  — run full eval
+ *   npm run eval -- --dry-run    — print dataset only; no DB/AI calls
+ *   npm run eval -- --check-db   — check which ground truth titles exist in the DB
  *
  * Env (required unless --dry-run):
- *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENROUTER_API_KEY, TOP_K
+ *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ *   OPENROUTER_API_KEY, TOP_K  (not required for --check-db)
  */
 import "dotenv/config";
 import { config } from "dotenv";
@@ -130,8 +132,88 @@ function printResult(r: ChallengeResult, index: number): void {
   );
 }
 
+// ---------------------------------------------------------------------------
+// --check-db mode
+// ---------------------------------------------------------------------------
+
+async function checkDb(supabase: SupabaseClient): Promise<void> {
+  const { data, error } = await supabase
+    .from("content")
+    .select("title")
+    .order("title");
+
+  if (error) {
+    console.error("Failed to query content table:", error.message);
+    process.exit(1);
+  }
+
+  const dbTitles: string[] = (data ?? []).map((r: { title: string }) => r.title);
+  const dbNormalized = new Set(dbTitles.map(normalizeTitle));
+
+  console.log(`\n=== DB TITLE CHECK ===`);
+  console.log(`\nDB has ${dbTitles.length} content item(s). Normalised titles:`);
+  for (const t of dbTitles) {
+    console.log(`  • ${normalizeTitle(t)}  (raw: "${t}")`);
+  }
+
+  // Collect every unique ground truth title across all challenges
+  const gtTitles = new Map<string, string>(); // normalised → original
+  for (const c of EVAL_CHALLENGES) {
+    for (const gt of c.ground_truth) {
+      const norm = normalizeTitle(gt);
+      if (!gtTitles.has(norm)) gtTitles.set(norm, gt);
+    }
+  }
+
+  console.log(`\nGROUND TRUTH COVERAGE (${gtTitles.size} unique expected titles):\n`);
+
+  const missing: string[] = [];
+  for (const [norm, original] of Array.from(gtTitles.entries()).sort()) {
+    if (dbNormalized.has(norm)) {
+      console.log(`  ✓  ${norm}`);
+    } else {
+      console.log(`  ✗  ${norm}  ← MISSING`);
+      missing.push(original);
+
+      // Show closest DB titles (any DB title that shares the first word)
+      const firstWord = norm.split(" ")[0];
+      const candidates = dbTitles
+        .map(normalizeTitle)
+        .filter((t) => t.startsWith(firstWord));
+      if (candidates.length > 0) {
+        console.log(`       closest in DB: ${candidates.join(", ")}`);
+      }
+    }
+  }
+
+  console.log(`\nSUMMARY`);
+  console.log(`  Unique GT titles:   ${gtTitles.size}`);
+  console.log(`  Found in DB:        ${gtTitles.size - missing.length}`);
+  console.log(`  Missing from DB:    ${missing.length}`);
+  if (missing.length > 0) {
+    console.log(`  Missing:            ${missing.join(", ")}`);
+  }
+
+  // Show challenges impacted by missing titles
+  if (missing.length > 0) {
+    const missingNorm = new Set(missing.map(normalizeTitle));
+    console.log(`\nCHALLENGES AFFECTED BY MISSING TITLES:`);
+    for (const c of EVAL_CHALLENGES) {
+      const affected = c.ground_truth.filter((gt) => missingNorm.has(normalizeTitle(gt)));
+      if (affected.length > 0) {
+        console.log(`  ${c.id}: missing ${affected.join(", ")}`);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
 async function main() {
   const isDryRun = process.argv.includes("--dry-run");
+  const isCheckDb = process.argv.includes("--check-db");
 
   if (isDryRun) {
     console.log("=== DRY RUN — dataset only, no DB/AI calls ===\n");
@@ -150,6 +232,14 @@ async function main() {
     console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
     process.exit(1);
   }
+
+  const supabaseForCheck = createClient(urlEnv, key);
+
+  if (isCheckDb) {
+    await checkDb(supabaseForCheck);
+    return;
+  }
+
   if (!process.env.OPENROUTER_API_KEY) {
     console.error("Missing OPENROUTER_API_KEY");
     process.exit(1);
@@ -159,7 +249,7 @@ async function main() {
     process.exit(1);
   }
 
-  const supabase = createClient(urlEnv, key);
+  const supabase = supabaseForCheck; // reuse client already created above
   const ai = createOpenRouterProvider();
 
   console.log(`=== Contexta Eval Harness — ${EVAL_CHALLENGES.length} challenges ===`);
