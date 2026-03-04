@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Flow page", () => {
-  test("shows Step 1 of 3 and context step", async ({ page }) => {
+  test("shows context step on load", async ({ page }) => {
     await page.goto("/flow");
-    await expect(page.getByText("Step 1 of 3")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Your context" })).toBeVisible();
     await expect(page.getByText("Role", { exact: true }).first()).toBeVisible();
   });
@@ -35,7 +34,7 @@ test.describe("Flow page", () => {
     await page.getByRole("button", { name: "Junior" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await expect(page.getByText("Step 2 of 3")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Describe your challenge" })).toBeVisible();
     await expect(
       page.getByText(/Get personalized content recommendations in ~3 minutes/)
     ).toBeVisible();
@@ -44,7 +43,7 @@ test.describe("Flow page", () => {
     ).toBeVisible();
   });
 
-  test("back from challenge step returns to context with step 1", async ({
+  test("back from challenge step returns to context step", async ({
     page,
   }) => {
     await page.goto("/flow");
@@ -53,10 +52,9 @@ test.describe("Flow page", () => {
     await page.getByRole("button", { name: "1-5" }).click();
     await page.getByRole("button", { name: "Junior" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Step 2 of 3")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Describe your challenge" })).toBeVisible();
 
     await page.getByRole("button", { name: "Back to context" }).click();
-    await expect(page.getByText("Step 1 of 3")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Your context" })).toBeVisible();
   });
 });

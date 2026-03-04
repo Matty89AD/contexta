@@ -10,6 +10,8 @@ export function ChallengeStep({
   loading,
   error,
   onBack,
+  initialDescription,
+  initialDomains,
 }: {
   contextData?: ContextData | null;
   onSubmit: (body: {
@@ -21,9 +23,11 @@ export function ChallengeStep({
   loading: boolean;
   error: string | null;
   onBack?: () => void;
+  initialDescription?: string;
+  initialDomains?: string[];
 }) {
-  const [rawDescription, setRawDescription] = useState("");
-  const [domains, setDomains] = useState<string[]>([]);
+  const [rawDescription, setRawDescription] = useState(initialDescription ?? "");
+  const [domains, setDomains] = useState<string[]>(initialDomains ?? []);
   const [subdomain, setSubdomain] = useState("");
   const [impactReach, setImpactReach] = useState("");
 
@@ -49,7 +53,7 @@ export function ChallengeStep({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <p className="text-zinc-600">
+      <p className="text-zinc-600 dark:text-zinc-400">
         Get personalized content recommendations in ~3 minutes. Describe your
         product or leadership challenge in a few sentences. What&apos;s
         blocking you or your team?
@@ -58,14 +62,14 @@ export function ChallengeStep({
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-zinc-500 hover:text-zinc-700 underline"
+          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
         >
           ← Back to context
         </button>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 mb-2">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           Challenge description *
         </label>
         <textarea
@@ -73,15 +77,15 @@ export function ChallengeStep({
           onChange={(e) => setRawDescription(e.target.value)}
           placeholder="e.g. We have too many ideas and no clear way to prioritize. Stakeholders push for their features and we end up spreading ourselves thin."
           rows={4}
-          className="w-full rounded-lg border border-zinc-200 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-3 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           required
           minLength={10}
         />
-        <p className="text-xs text-zinc-500 mt-1">At least 10 characters</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">At least 10 characters</p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 mb-2">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           Domain(s) *{" "}
           <span className="text-zinc-400 font-normal">(select one or more)</span>
         </label>
@@ -93,8 +97,8 @@ export function ChallengeStep({
               onClick={() => toggleDomain(d)}
               className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
                 domains.includes(d)
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500"
               }`}
             >
               {DOMAIN_LABELS[d]}
@@ -104,7 +108,7 @@ export function ChallengeStep({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 mb-2">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           Subdomain (optional)
         </label>
         <input
@@ -112,12 +116,12 @@ export function ChallengeStep({
           value={subdomain}
           onChange={(e) => setSubdomain(e.target.value)}
           placeholder="e.g. roadmap, OKRs"
-          className="w-full rounded-lg border border-zinc-200 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-3 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 mb-2">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           Impact &amp; reach (optional)
         </label>
         <input
@@ -125,12 +129,12 @@ export function ChallengeStep({
           value={impactReach}
           onChange={(e) => setImpactReach(e.target.value)}
           placeholder="Who is affected? What's at stake?"
-          className="w-full rounded-lg border border-zinc-200 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-3 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">
+        <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 px-4 py-2 rounded-lg">
           {error}
         </p>
       )}
@@ -138,7 +142,7 @@ export function ChallengeStep({
       <button
         type="submit"
         disabled={!canSubmit || loading}
-        className="w-full rounded-lg bg-zinc-900 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-800 transition"
+        className="w-full rounded-lg bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition"
       >
         {loading ? "Getting recommendations…" : "Get recommendations"}
       </button>

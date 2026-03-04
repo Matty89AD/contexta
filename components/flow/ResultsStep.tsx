@@ -35,16 +35,16 @@ export function ResultsStep({
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-zinc-500 hover:text-zinc-700 underline"
+          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
         >
           ← Edit challenge
         </button>
       )}
       <div>
-        <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wide">
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
           Your challenge
         </h2>
-        <p className="mt-2 text-zinc-900">{result.summary}</p>
+        <p className="mt-2 text-zinc-900 dark:text-zinc-100">{result.summary}</p>
       </div>
 
       <div>
@@ -57,20 +57,20 @@ export function ResultsStep({
               key={rec.contentId}
               className={`rounded-lg border p-4 ${
                 rec.isMostRelevant
-                  ? "border-zinc-900 bg-zinc-50"
-                  : "border-zinc-200 bg-white"
+                  ? "border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950"
+                  : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-zinc-900">{rec.title}</p>
+                  <p className="font-medium text-zinc-900 dark:text-zinc-100">{rec.title}</p>
                   {rec.isMostRelevant && (
-                    <span className="inline-block mt-1 text-xs font-medium text-zinc-600 bg-zinc-200 px-2 py-0.5 rounded">
+                    <span className="inline-block mt-1 text-xs font-medium text-indigo-700 dark:text-indigo-200 bg-indigo-100 dark:bg-indigo-900 px-2 py-0.5 rounded">
                       Most relevant
                     </span>
                   )}
-                  <p className="mt-2 text-sm text-zinc-600">{rec.explanation}</p>
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{rec.explanation}</p>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
                     {matchReasonLabel(rec.matchReason)}
                   </p>
                 </div>
@@ -79,12 +79,12 @@ export function ResultsStep({
                     <button
                       type="button"
                       onClick={() => handleOpen(rec.contentId, rec.title, rec.url!)}
-                      className="rounded-lg bg-zinc-900 text-white px-4 py-2 text-sm font-medium hover:bg-zinc-800 transition"
+                      className="rounded-lg bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700 transition"
                     >
                       Open
                     </button>
                   ) : (
-                    <span className="rounded-lg bg-zinc-200 text-zinc-500 px-4 py-2 text-sm font-medium cursor-not-allowed">
+                    <span className="rounded-lg bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 px-4 py-2 text-sm font-medium cursor-not-allowed">
                       Open
                     </span>
                   )}
@@ -94,23 +94,26 @@ export function ResultsStep({
           ))}
         </ul>
         {result.recommendations.length === 0 && (
-          <p className="text-zinc-500">
+          <p className="text-zinc-500 dark:text-zinc-400">
             No matching content yet. Add more curated content to get
             recommendations.
           </p>
         )}
       </div>
 
-      <div className="pt-4 border-t border-zinc-200">
-        <p className="text-sm text-zinc-600">
-          Sign up to save your challenges and recommendations and return to them
-          later.
+      <div className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-5">
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          Save your challenges and recommendations
+        </p>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Create a free account to return to your results and track your
+          progress over time.
         </p>
         <a
           href="/login"
-          className="inline-block mt-2 text-sm font-medium text-zinc-900 underline hover:no-underline"
+          className="inline-block mt-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline hover:no-underline"
         >
-          Create account
+          Create account →
         </a>
       </div>
     </div>

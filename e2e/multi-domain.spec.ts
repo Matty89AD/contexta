@@ -8,7 +8,7 @@ test.describe("Multi-domain challenge step (Epic 6)", () => {
     await page.getByRole("button", { name: "1-5" }).click();
     await page.getByRole("button", { name: "Junior" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Step 2 of 3")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Describe your challenge" })).toBeVisible();
   }
 
   test("shows multi-select domain label", async ({ page }) => {
@@ -24,19 +24,19 @@ test.describe("Multi-domain challenge step (Epic 6)", () => {
     await page.getByRole("button", { name: "Strategy" }).click();
     await page.getByRole("button", { name: "Leadership" }).click();
 
-    await expect(page.getByRole("button", { name: "Strategy" })).toHaveClass(/bg-zinc-900/);
-    await expect(page.getByRole("button", { name: "Leadership" })).toHaveClass(/bg-zinc-900/);
+    await expect(page.getByRole("button", { name: "Strategy" })).toHaveClass(/bg-indigo-600/);
+    await expect(page.getByRole("button", { name: "Leadership" })).toHaveClass(/bg-indigo-600/);
   });
 
   test("clicking an active domain deselects it", async ({ page }) => {
     await goToChallengeStep(page);
 
     await page.getByRole("button", { name: "Strategy" }).click();
-    await expect(page.getByRole("button", { name: "Strategy" })).toHaveClass(/bg-zinc-900/);
+    await expect(page.getByRole("button", { name: "Strategy" })).toHaveClass(/bg-indigo-600/);
 
     // Click again to deselect
     await page.getByRole("button", { name: "Strategy" }).click();
-    await expect(page.getByRole("button", { name: "Strategy" })).not.toHaveClass(/bg-zinc-900/);
+    await expect(page.getByRole("button", { name: "Strategy" })).not.toHaveClass(/bg-indigo-600/);
   });
 
   test("submit is disabled with no domain selected", async ({ page }) => {

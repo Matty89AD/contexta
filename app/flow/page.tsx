@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { ContextStep } from "@/components/flow/ContextStep";
 import { ChallengeStep } from "@/components/flow/ChallengeStep";
 import { ResultsStep } from "@/components/flow/ResultsStep";
+import { Header } from "@/components/Header";
 import type { ContextData } from "@/components/flow/ContextStep";
 import type { ChallengeResult } from "@/services/challenge";
 import { FLOW_CONTEXT_STORAGE_KEY } from "@/lib/constants";
@@ -18,7 +20,54 @@ function logEvent(event: string, properties?: Record<string, unknown>) {
   }).catch(() => {});
 }
 
-export default function FlowPage() {
+function StepIndicator({ step }: { step: Step }) {
+  const steps = [
+    { key: "context" as Step, label: "Context" },
+    { key: "challenge" as Step, label: "Challenge" },
+    { key: "results" as Step, label: "Recommendations" },
+  ];
+  const currentIndex = steps.findIndex((s) => s.key === step);
+
+  return (
+    <div className="flex items-start justify-center mb-8">
+      {steps.map((s, i) => (
+        <div key={s.key} className="flex items-start">
+          <div className="flex flex-col items-center w-24">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 ${
+                i <= currentIndex
+                  ? "bg-indigo-600 border-indigo-600 text-white"
+                  : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 text-zinc-400 dark:text-zinc-500"
+              }`}
+            >
+              {i < currentIndex ? "✓" : i + 1}
+            </div>
+            <span className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400 text-center leading-tight px-1">
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className={`h-px w-8 mt-4 flex-shrink-0 ${
+                i < currentIndex ? "bg-indigo-600" : "bg-zinc-200 dark:bg-zinc-700"
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FlowContent() {
+  const searchParams = useSearchParams();
+  const prefillDescription = searchParams?.get("description") ?? "";
+  const prefillDomains =
+    searchParams
+      ?.get("domains")
+      ?.split(",")
+      .filter(Boolean) ?? [];
+
   const [step, setStep] = useState<Step>("context");
   const [contextData, setContextData] = useState<ContextData | null>(null);
   const [initialContextFromStorage, setInitialContextFromStorage] =
@@ -40,13 +89,19 @@ export default function FlowPage() {
           "team_size" in parsed &&
           "experience_level" in parsed
         ) {
-          setInitialContextFromStorage(parsed as ContextData);
+          const ctx = parsed as ContextData;
+          setInitialContextFromStorage(ctx);
+          if (prefillDescription) {
+            // Skip context step — saved context + prefill description available
+            setContextData(ctx);
+            setStep("challenge");
+          }
         }
       }
     } catch {
       // ignore
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (step === "context") logEvent("context_step_started");
@@ -94,7 +149,7 @@ export default function FlowPage() {
         }
         setResult(data);
         setStep("results");
-      } catch (e) {
+      } catch {
         setError("Network error. Please try again.");
       } finally {
         setLoading(false);
@@ -104,13 +159,13 @@ export default function FlowPage() {
   );
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <Header />
       <div className="max-w-2xl mx-auto px-4 py-8">
+        <StepIndicator step={step} />
+
         <div className="mb-8">
-          <p className="text-sm text-zinc-500">
-            Step {step === "context" ? 1 : step === "challenge" ? 2 : 3} of 3
-          </p>
-          <h1 className="text-2xl font-semibold mt-1">
+          <h1 className="text-2xl font-semibold dark:text-zinc-100">
             {step === "context" && "Your context"}
             {step === "challenge" && "Describe your challenge"}
             {step === "results" && "Recommendations"}
@@ -132,6 +187,8 @@ export default function FlowPage() {
             loading={loading}
             error={error}
             onBack={() => setStep("context")}
+            initialDescription={prefillDescription || undefined}
+            initialDomains={prefillDomains.length > 0 ? prefillDomains : undefined}
           />
         )}
 
@@ -142,6 +199,14 @@ export default function FlowPage() {
           />
         )}
       </div>
-    </main>
+    </div>
+  );
+}
+
+export default function FlowPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" />}>
+      <FlowContent />
+    </Suspense>
   );
 }
