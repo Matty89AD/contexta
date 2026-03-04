@@ -41,6 +41,20 @@ export const CONTENT_SOURCE_TYPES = [
 ] as const;
 export type ContentSourceType = (typeof CONTENT_SOURCE_TYPES)[number];
 
+/** Chunk type enum (Epic 8 — Content Intelligence Service). */
+export const CHUNK_TYPES = [
+  "framework",
+  "example",
+  "principle",
+  "case_study",
+  "tool",
+  "warning",
+  "summary",
+  "introduction",
+  "discussion",
+] as const;
+export type ChunkType = (typeof CHUNK_TYPES)[number];
+
 export interface Profile {
   id: string;
   role: ProfileRole;
@@ -94,6 +108,14 @@ export interface Content {
   primary_domain: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). */
   domains: ChallengeDomain[];
+  /** Epic 8 — Content Intelligence Service fields. */
+  topics: string[];
+  keywords: string[];
+  author: string | null;
+  publication_date: string | null;
+  content_category: string | null;
+  language: string;
+  extraction_confidence: number | null;
   created_at: string;
 }
 
@@ -107,6 +129,14 @@ export interface ContentInsert {
   primary_domain?: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). */
   domains?: ChallengeDomain[];
+  /** Epic 8 — Content Intelligence Service fields (optional at insert; populated after extraction). */
+  topics?: string[];
+  keywords?: string[];
+  author?: string | null;
+  publication_date?: string | null;
+  content_category?: string | null;
+  language?: string;
+  extraction_confidence?: number | null;
 }
 
 export interface ContentChunk {
@@ -115,6 +145,9 @@ export interface ContentChunk {
   body: string;
   embedding: number[] | null;
   chunk_index: number;
+  /** Epic 8 — Content Intelligence Service fields. */
+  chunk_type: ChunkType | null;
+  key_concepts: string[];
   created_at: string;
 }
 
@@ -123,6 +156,9 @@ export interface ContentChunkInsert {
   body: string;
   embedding: number[];
   chunk_index: number;
+  /** Epic 8 — optional; populated after intelligence extraction. */
+  chunk_type?: ChunkType | null;
+  key_concepts?: string[];
 }
 
 export interface ChunkWithContent {

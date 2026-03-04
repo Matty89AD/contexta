@@ -4,6 +4,7 @@ import type {
   ContentInsert,
   ContentChunk,
   ContentChunkInsert,
+  ChunkType,
 } from "@/lib/db/types";
 
 export async function createContent(
@@ -44,6 +45,57 @@ export async function createContentChunk(
     .single();
   if (error) throw error;
   return data as ContentChunk;
+}
+
+/** Update document-level intelligence fields on a content record (Epic 8). */
+export async function updateContentIntelligence(
+  supabase: SupabaseClient,
+  contentId: string,
+  intel: {
+    topics: string[];
+    keywords: string[];
+    author: string | null;
+    publication_date: string | null;
+    content_category: string | null;
+    language: string;
+    extraction_confidence: number;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from("content")
+    .update(intel)
+    .eq("id", contentId);
+  if (error) throw error;
+}
+
+/** Update chunk-level intelligence fields on a content_chunk record (Epic 8). */
+export async function updateChunkIntelligence(
+  supabase: SupabaseClient,
+  chunkId: string,
+  intel: {
+    chunk_type: ChunkType;
+    key_concepts: string[];
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from("content_chunks")
+    .update(intel)
+    .eq("id", chunkId);
+  if (error) throw error;
+}
+
+/** Load all chunks for a content record ordered by chunk_index (Epic 8 backfill). */
+export async function listChunksByContentId(
+  supabase: SupabaseClient,
+  contentId: string
+): Promise<ContentChunk[]> {
+  const { data, error } = await supabase
+    .from("content_chunks")
+    .select("*")
+    .eq("content_id", contentId)
+    .order("chunk_index", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as ContentChunk[];
 }
 
 export async function getContentById(

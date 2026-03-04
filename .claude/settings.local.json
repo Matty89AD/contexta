@@ -10,7 +10,9 @@
       "Bash(git stash pop)",
       "Bash(lsof:*)",
       "Bash(git mv:*)",
-      "Skill(*)"
+      "Skill(*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

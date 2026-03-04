@@ -174,3 +174,83 @@ Use these fixed values in the app and database (Postgres enums or check constrai
 | Q13 | Activation CTAs | "Open" only for MVP. |
 | Q14 | Decision patterns | Defer "When X → do Y (unless Z)" to post-MVP. |
 | Q15 | Analytics | Server/console logging with consistent event shape for future integration. |
+| Q16 | Content Intelligence implementation | New `services/content-intelligence.ts` module called from the ingest pipeline (not a standalone microservice). |
+| Q17 | Metadata extraction scope | LLM extracts general PRD fields only (topics, keywords, author, date, category, language, confidence). Audience-targeting fields (`target_roles`, `target_stages`, `target_experience_levels`) are out of scope for Epic 8. |
+| Q18 | Metadata storage | Dedicated typed columns via migration (not jsonb); GIN indexes on array fields. |
+| Q19 | Chunk-level metadata | In scope for Epic 8: `chunk_type` text and `key_concepts text[]` columns on `content_chunks`. |
+| Q20 | Challenge dataset evaluation | Both automated scoring (precision@3/5) and manual review — but evals are Epic 9 (deferred). |
+| Q21 | Challenge dataset epic | Separate Epic 9, after Epic 8 enriches the content. |
+
+---
+
+## Epic 8 — Content Intelligence Service (open questions)
+
+*Please answer below each question. Only append your answers; do not remove the questions.*
+
+---
+
+### Implementation model
+
+**Q16.** The PRD describes a standalone "Content Intelligence Service" with its own API. In our codebase, ingestion lives in `services/ingest.ts`. Should the Content Intelligence Service be:
+(a) A new `services/content-intelligence.ts` module called during ingestion (fits existing architecture), or
+(b) A future standalone microservice — meaning we only define the interface/schema now and defer the actual service?
+
+a
+**A16.**
+
+---
+
+### Metadata extraction: LLM vs. manual
+
+**Q17.** The PRD implies LLM-automated extraction of fields like topics, keywords, author, and publication_date. For Contexta-specific audience fields (`target_roles`, `target_stages`, `target_experience_levels`), an LLM could make a guess but they'd need human review to be reliable. Should we:
+(a) LLM extracts all fields (general + audience targeting) — curator reviews before publishing,
+(b) LLM extracts only general fields (topics, keywords, author, date); audience targeting fields are manually specified at ingest time, or
+(c) Audience targeting fields are out of scope for this epic entirely?
+
+c
+
+**A17.**
+
+---
+
+### Schema: jsonb vs. dedicated columns
+
+**Q18.** New metadata fields can be stored two ways:
+(a) Inside the existing `content.metadata` jsonb column — no migration needed, queryable but not indexed,
+(b) As dedicated typed columns via a new migration — indexed, strongly typed, queryable with filters.
+The PRD's goal of "metadata filtering / ranking" eventually needs (b) for high-use fields like `topics` and `target_roles`. Should we start with (a) and migrate later, or go straight to (b) for the fields we're confident about?
+
+b
+**A18.**
+
+---
+
+### Chunk-level metadata
+
+**Q19.** My earlier proposal also suggested adding a `chunk_metadata` jsonb column to `content_chunks` with `chunk_type` (framework, example, principle, tool, warning) and `key_concepts` (string[]). This would improve retrieval precision by surfacing actionable chunks over intro material. Is chunk-level metadata in scope for this epic, or a later one?
+
+in scope
+
+**A19.**
+
+---
+
+### Challenge test dataset scope
+
+**Q20.** You mentioned providing a `data/challenge_dataset.md`. For validating matching quality, should the evaluation be:
+(a) Manual review — run challenges through the app, eyeball results,
+(b) Automated script — loads the dataset, runs each challenge through the matching engine, compares ranked results to expected matches, outputs precision@3 / precision@5, or
+(c) Both — automated script for repeatability, with the dataset also serving as manual reference?
+
+c (later with evals)
+
+**A20.**
+
+---
+
+### Challenge dataset and this epic
+
+**Q21.** Should the challenge test dataset + evaluation harness be part of this same epic, or a separate Epic 9 that runs after Epic 8 enriches the content?
+
+separate
+**A21.**

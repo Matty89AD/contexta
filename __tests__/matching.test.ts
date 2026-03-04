@@ -57,11 +57,13 @@ vi.mock("@/core/config", () => ({
     TOP_K: 5,
     STRUCTURED_FIT_WEIGHT: 0.3,
     EMBEDDING_SIMILARITY_WEIGHT: 0.7,
+    KEYWORD_RELEVANCE_WEIGHT: 0.3,
   }),
 }));
 
 vi.mock("@/repositories/embeddings", () => ({
   findSimilarChunks: vi.fn(),
+  findChunksByKeyword: vi.fn().mockResolvedValue([]),
 }));
 
 import { runMatching } from "@/services/matching";
@@ -81,6 +83,8 @@ function makeChunk(
       body: "sample chunk body",
       embedding: null,
       chunk_index: 0,
+      chunk_type: null,
+      key_concepts: [],
       created_at: "2025-01-01T00:00:00Z",
     },
     content: {
@@ -93,6 +97,13 @@ function makeChunk(
       metadata: {},
       primary_domain: primaryDomain,
       domains: contentDomains,
+      topics: [],
+      keywords: [],
+      author: null,
+      publication_date: null,
+      content_category: null,
+      language: "en",
+      extraction_confidence: null,
       created_at: "2025-01-01T00:00:00Z",
     },
     similarity,
@@ -108,7 +119,7 @@ describe("runMatching – Epic 6 behavior", () => {
 
   it("returns empty array when no candidates exist", async () => {
     vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue([]);
-    const result = await runMatching(fakeSupa, [0.1, 0.2], ["strategy"]);
+    const result = await runMatching(fakeSupa, [0.1, 0.2], ["strategy"], "test challenge");
     expect(result).toHaveLength(0);
   });
 
@@ -120,7 +131,7 @@ describe("runMatching – Epic 6 behavior", () => {
     ];
     vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue(candidates);
 
-    const result = await runMatching(fakeSupa, [0.1], ["strategy"]);
+    const result = await runMatching(fakeSupa, [0.1], ["strategy"], "test challenge");
 
     // All three should be in results (not filtered out)
     const ids = result.map((r) => r.chunkWithContent.content.id);
@@ -136,7 +147,7 @@ describe("runMatching – Epic 6 behavior", () => {
     ];
     vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue(candidates);
 
-    const result = await runMatching(fakeSupa, [0.1], ["strategy"]);
+    const result = await runMatching(fakeSupa, [0.1], ["strategy"], "test challenge");
 
     // Domain-matching content should rank higher due to structured fit boost
     // finalScore(match)    = 0.3*1   + 0.7*0.75 = 0.300 + 0.525 = 0.825
@@ -152,7 +163,7 @@ describe("runMatching – Epic 6 behavior", () => {
     ];
     vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue(candidates);
 
-    const result = await runMatching(fakeSupa, [0.1], ["strategy"]);
+    const result = await runMatching(fakeSupa, [0.1], ["strategy"], "test challenge");
     const byId = Object.fromEntries(
       result.map((r) => [r.chunkWithContent.content.id, r])
     );
@@ -171,7 +182,8 @@ describe("runMatching – Epic 6 behavior", () => {
     const result = await runMatching(
       fakeSupa,
       [0.1],
-      ["strategy", "leadership"]
+      ["strategy", "leadership"],
+      "test challenge"
     );
 
     const byId = Object.fromEntries(
@@ -188,7 +200,7 @@ describe("runMatching – Epic 6 behavior", () => {
     ];
     vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue(candidates);
 
-    const result = await runMatching(fakeSupa, [0.1], ["strategy"]);
+    const result = await runMatching(fakeSupa, [0.1], ["strategy"], "test challenge");
     expect(result[0].matchReason).toBe("structured_fit");
   });
 
@@ -198,7 +210,8 @@ describe("runMatching – Epic 6 behavior", () => {
     );
     vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue(candidates);
 
-    const result = await runMatching(fakeSupa, [0.1], ["strategy"]);
-    expect(result.length).toBeLessThanOrEqual(5);
+    const result = await runMatching(fakeSupa, [0.1], ["strategy"], "test challenge");
+    // RETURN_TOP=8 is the hard cap; TOP_K is a minimum fetch count, not a return limit
+    expect(result.length).toBeLessThanOrEqual(8);
   });
 });

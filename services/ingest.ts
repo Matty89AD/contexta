@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AIProvider } from "@/core/ai/types";
 import * as contentRepo from "@/repositories/content";
-import type { ContentInsert, ContentSourceType } from "@/lib/db/types";
+import type { ContentChunk, ContentInsert, ContentSourceType } from "@/lib/db/types";
 import { ChallengeDomain } from "@/lib/db/types";
+import { extractContentIntelligence } from "@/services/content-intelligence";
 import { logger } from "@/core/logger";
 
 export interface ContentToIngest {
@@ -43,6 +44,7 @@ export async function ingestContent(
     domains: effectiveDomains,
   } as ContentInsert);
 
+  const createdChunks: ContentChunk[] = [];
   for (let i = 0; i < input.chunks.length; i++) {
     const body = input.chunks[i];
     let embedding: number[];
@@ -56,11 +58,53 @@ export async function ingestContent(
       });
       throw e;
     }
-    await contentRepo.createContentChunk(supabase, {
+    const chunk = await contentRepo.createContentChunk(supabase, {
       content_id: content.id,
       body,
       embedding,
       chunk_index: i,
+    });
+    createdChunks.push(chunk);
+  }
+
+  // Epic 8: extract and store content intelligence (non-fatal — ingest succeeds even if this fails)
+  try {
+    const intel = await extractContentIntelligence(
+      ai,
+      input.title,
+      input.chunks,
+      input.source_type
+    );
+
+    await contentRepo.updateContentIntelligence(supabase, content.id, {
+      topics: intel.topics,
+      keywords: intel.keywords,
+      author: intel.author,
+      publication_date: intel.publication_date,
+      content_category: intel.content_category,
+      language: intel.language,
+      extraction_confidence: intel.extraction_confidence,
+    });
+
+    for (let i = 0; i < createdChunks.length; i++) {
+      const chunkIntel = intel.chunks[i];
+      if (chunkIntel) {
+        await contentRepo.updateChunkIntelligence(supabase, createdChunks[i].id, {
+          chunk_type: chunkIntel.chunk_type,
+          key_concepts: chunkIntel.key_concepts,
+        });
+      }
+    }
+
+    logger.info("Content intelligence extracted", {
+      contentId: content.id,
+      topics: intel.topics,
+      confidence: intel.extraction_confidence,
+    });
+  } catch (e) {
+    logger.error("Content intelligence extraction failed (non-fatal)", {
+      contentId: content.id,
+      error: e,
     });
   }
 

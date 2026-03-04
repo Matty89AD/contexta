@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.1 &nbsp;|&nbsp; **Last updated:** 2026-03-04 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.2 &nbsp;|&nbsp; **Last updated:** 2026-03-04 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -14,7 +14,8 @@
    - [3.3 Matching Engine & Recommendations](#33-matching-engine--recommendations)
    - [3.4 Multi-Domain Support](#34-multi-domain-support)
    - [3.5 Content Ingestion](#35-content-ingestion)
-   - [3.6 Authentication & Profiles](#36-authentication--profiles)
+   - [3.6 Content Intelligence Service](#36-content-intelligence-service)
+   - [3.7 Authentication & Profiles](#37-authentication--profiles)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -163,6 +164,8 @@ How the keyword search processes the query text:
 
 - **Ranking within keyword results** — matching chunks are ranked by `ts_rank_cd` with normalization 8, which divides the raw rank by the number of unique words in the chunk. This prevents long chunks from unfairly dominating just because they contain more words overall.
 
+- **Enhanced by key concepts** — since Epic 8, the full-text index on each chunk also includes extracted key concepts (specific framework names and terminology identified during ingestion). This means a chunk about "opportunity solution tree" will now also match keyword searches for those exact terms, even if they appear only implicitly in the chunk body.
+
 Keyword search failure is non-fatal. If the search returns no results or encounters an error (for example, if the full-text index has not yet been built for a chunk), the pipeline silently falls back to vector-only results.
 
 ---
@@ -234,26 +237,75 @@ Exactly one item is marked "most relevant." Save and Select actions are not avai
 
 ### 3.5 Content Ingestion
 
-**What it does**: Allows curated content (podcasts, articles, frameworks, playbooks, case studies) to be loaded into the knowledge base so it becomes available for matching.
+**What it does**: Allows curated content (podcasts, articles, frameworks, playbooks, case studies) to be loaded into the knowledge base so it becomes available for matching. Since Epic 8, ingestion also automatically extracts structured metadata from each content item using an AI model.
 
 **What the user sees**: Nothing — this is an internal process run by the team, not an end-user feature.
 
-**What it does technically (plain English)**:
+**What it does (plain English)**:
 - Content is broken into chunks of approximately 1,500 characters.
 - Each chunk gets an AI embedding (a numerical fingerprint) stored for semantic search.
 - Each chunk also gets a full-text search index entry stored for keyword search.
-- The content record is saved with its title, source type, domains, summary, and URL.
+- An AI model analyses the full content and automatically extracts document-level metadata (topics, keywords, author, category, language) and classifies each chunk by type and key concepts.
+- The content record is saved with its title, source type, domains, summary, URL, and all extracted metadata.
 
 **Configuration available**:
 - Chunk size target (default 1,500 characters) configurable via environment variable or command-line flag.
 - Maximum chunk size (default 8,000 characters) also configurable.
-- One or more domains can be assigned to each content item.
+- One or more domains can be assigned to each content item at ingest time.
 
-**Status**: Implemented (CLI script `npm run ingest-transcript`)
+**Scripts available**:
+- Ingest a single transcript file: `npm run ingest-transcript`
+- Batch-ingest all transcript files from a folder: `npm run ingest-content-batch`
+- Re-run metadata extraction on existing content: `npm run backfill-intelligence`
+
+**Status**: Implemented
 
 ---
 
-### 3.6 Authentication & Profiles
+### 3.6 Content Intelligence Service
+
+**What it does**: Automatically extracts structured metadata from every content item at the time of ingestion. A single AI call per content item analyses the full text and classifies both the document as a whole and each individual chunk within it.
+
+**What the user sees**: Nothing directly. The extracted metadata improves the quality of keyword search results and lays the foundation for future metadata-based filtering and discovery features.
+
+**What it extracts at the document level**:
+- **Topics** — 2 to 6 high-level subject tags (e.g. "continuous discovery", "stakeholder alignment")
+- **Keywords** — 4 to 10 specific terms, framework names, or methodologies mentioned (e.g. "opportunity solution tree", "RICE scoring")
+- **Author** — the name of the primary speaker or author, when clearly identifiable
+- **Publication date** — an approximate date if detectable from the content
+- **Content category** — a single descriptive label summarising the content area (e.g. "product discovery", "growth & retention")
+- **Language** — ISO language code (almost always English for the current knowledge base)
+- **Extraction confidence** — a 0–1 score indicating how complete and reliable the extraction was
+
+**What it extracts at the chunk level**:
+- **Chunk type** — classifies each chunk into one of nine categories (see table below)
+- **Key concepts** — up to 5 specific named concepts, frameworks, or methods mentioned in that chunk
+
+**Chunk type classifications**:
+
+| Type | When it applies |
+|------|----------------|
+| **Framework** | A structured model, method, or named process is described (e.g. Shape Up, the opportunity solution tree) |
+| **Principle** | A rule, mental model, or guideline is stated as general advice |
+| **Example** | A concrete story, anecdote, or specific illustration of how something was applied |
+| **Case study** | An extended real-world application with context and outcome |
+| **Tool** | A specific technique, template, or tactical action a practitioner can directly apply |
+| **Warning** | An anti-pattern, common mistake, or caveat to watch out for |
+| **Summary** | Synthesises or recaps the broader content |
+| **Introduction** | The host's opening words, guest introduction, or sponsor reads (typically the first 1–2 chunks of a podcast only) |
+| **Discussion** | Substantive interview dialogue that does not fit a more specific type; the default for mid-episode Q&A exchanges |
+
+**Business rules**:
+- Metadata extraction runs automatically at the end of every ingest call. It is non-fatal — if the AI call fails, the content and its chunks are still saved and available for matching.
+- Records that failed extraction (confidence score of 0) are retried by the backfill script on the next run.
+- The `--force` flag on the backfill script re-processes all records, including previously successful ones — useful after prompt improvements.
+- Topics and key concepts are included in the full-text search index, enriching keyword retrieval without any changes to the matching engine.
+
+**Status**: Implemented
+
+---
+
+### 3.7 Authentication & Profiles
 
 **What it does**: Lets users create an account to save their challenges and return to them later. Authentication is prompted after the user has already seen their recommendations — not before.
 
@@ -280,8 +332,8 @@ The following describes what information the system stores, in plain language. C
 |--------|-------------------|----------------------|-------------------|
 | **User Profile** | One record per signed-in user | Role, company stage, team size, experience level, timestamps | The user themselves only |
 | **Challenge** | One record per challenge submitted by a signed-in user | Raw description, AI-generated summary, domain(s) selected, optional subdomain and impact text, link to the user who submitted it | The user themselves only |
-| **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s), any extra metadata (e.g. author, speaker) | Internal service only (not exposed to end users directly) |
-| **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item | Internal service only |
+| **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
+| **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only |
 
 ### Key rules
 
@@ -289,6 +341,7 @@ The following describes what information the system stores, in plain language. C
 - Content and content chunks are managed by the internal team only (no user-facing content management).
 - Challenges submitted anonymously (before sign-up) are not saved to the database.
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
+- Content items with an extraction confidence score of 0 were not successfully processed by the intelligence service and should be re-run with the backfill script.
 
 ---
 
@@ -340,9 +393,13 @@ All settings are controlled via environment variables. They do not require a cod
 
 **"Exact-term matching matters a lot for our knowledge base (e.g. framework names, jargon)"**
 - Increase `KEYWORD_RELEVANCE_WEIGHT` (e.g. to 0.5) to give more weight to the keyword search results.
+- Ensure content has been processed by the Content Intelligence Service — extracted key concepts significantly enrich the keyword index.
 
 **"Ingested content chunks feel too small / context is getting cut off"**
 - Increase `CHUNK_SIZE` (e.g. to 2,500) and `MAX_CHUNK_CHARS` (e.g. to 12,000). Re-ingest the affected content for changes to take effect.
+
+**"Some content items show extraction confidence of 0"**
+- These failed the AI metadata extraction step. Run `npm run backfill-intelligence` to retry. If the issue persists, the content may be too short or too noisy for reliable extraction.
 
 **Note**: The three scoring weights (`STRUCTURED_FIT_WEIGHT`, `EMBEDDING_SIMILARITY_WEIGHT`, `KEYWORD_RELEVANCE_WEIGHT`) are additive and do not need to sum to 1. Each is applied independently to its component, and the sum becomes the final ranking score.
 
@@ -356,12 +413,15 @@ The following are intentional decisions for the current version. They are not bu
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity and keyword matching.
 - **No framework steps or thought leader suggestions** — results show content titles and relevance explanations only. Actionable step-by-step frameworks and thought leader attribution are deferred.
-- **No admin content management UI** — content is added to the knowledge base via a command-line ingestion script, not a dashboard.
+- **No admin content management UI** — content is added to the knowledge base via command-line ingestion scripts, not a dashboard.
 - **No analytics dashboard** — user events are logged to the server console. There is no third-party analytics integration or internal dashboard in the current version.
 - **No Q&A or cited-answer format** — the product returns curated content links, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
+- **No audience-targeting metadata** — content items are not tagged by target role, company stage, or experience level. The domain overlap is the only structured signal in the matching score. Audience-targeting fields are deferred.
 - **No per-chunk domain tagging** — domain assignments apply to the whole content item, not to individual chunks within it.
 - **Unauthenticated challenges are not persisted** — if a user closes the browser before signing up, their challenge and recommendations cannot be recovered.
 - **No multi-hop or agent-based reasoning** — the matching pipeline is a single-pass retrieval and ranking. Graph databases, multi-step reasoning, and agent orchestration are non-goals.
+- **Content Intelligence Service has no timeout guard** — if the AI provider is slow or unresponsive during ingestion, the extraction step can hang indefinitely. Affected items can be retried with the backfill script.
+- **No matching quality evaluation** — there is no automated test harness to measure recommendation precision against expected results. This is addressed in Epic 9 (planned).
 
 ---
 
@@ -369,13 +429,14 @@ The following are intentional decisions for the current version. They are not bu
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
+| **Epic 9 — Challenge Evaluation Harness** | An automated script that runs the 15 synthetic challenge test cases through the matching engine, compares results against manually annotated ground-truth matches, and reports precision scores (precision@3, precision@5). Used to validate and monitor matching quality as the knowledge base grows. | Planned (next) |
 | Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost content items that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
+| Audience-targeting metadata | Tag content items with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
 | Challenge history & saved items | Allow signed-in users to view past challenges and their recommendations; save specific content items for later. | Planned (post-MVP) |
 | Thought leaders & framework steps | Surface author/speaker attribution alongside recommendations; offer 3–5 actionable steps per recommendation. | Planned (post-MVP) |
 | Analytics pipeline | Integrate server events with a third-party analytics tool (e.g. Segment, PostHog). Enable funnel analysis, recommendation quality tracking, and content performance reporting. | Planned (post-MVP) |
 | Content management UI | Allow internal team members to add, edit, tag, and retire content items via a web interface rather than the CLI. | Planned (post-MVP) |
-| Challenge history retrieval | Build a UI for signed-in users to browse past challenges and revisit their recommendations. | Planned (post-MVP) |
 
 ---
 
@@ -383,5 +444,6 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-04 | 1.2 | Epic 8 | Added Content Intelligence Service (section 3.6): automated AI extraction of topics, keywords, author, publication date, content category, language, and confidence score per content item; chunk-type classification (9 types) and key concept extraction per chunk. Updated Data Model section to reflect new metadata fields on Content Items and Content Chunks. Added tuning guidance for confidence score and key concepts. Updated Known Limitations and Future Epics table. |
 | 2026-03-04 | 1.1 | 3, 4, 6, 7 | Merged Matching Engine, Recommendations, and Hybrid RAG Retrieval into a single section (3.3). Expanded keyword search documentation: stop word stripping, Snowball stemming, AND-logic matching, and ts_rank_cd normalisation. Added scoring formula table and match reason label reference. Renumbered sections 3.4–3.6 accordingly. |
 | 2026-03-03 | 1.0 | all (1–7) | Initial documentation covering all seven implemented epics: context collection, challenge flow, schemas and embeddings, matching engine, recommendations and activation, multi-domain support, and hybrid RAG retrieval. |

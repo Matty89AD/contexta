@@ -9,6 +9,8 @@
     "lint": "next lint",
     "seed": "node -r tsconfig-paths/register -r tsx/cjs scripts/seed-content.ts",
     "ingest-transcript": "node -r tsconfig-paths/register -r tsx/cjs scripts/ingest-transcript.ts",
+    "ingest-content-batch": "node -r tsconfig-paths/register -r tsx/cjs scripts/ingest-content-batch.ts",
+    "backfill-intelligence": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-intelligence.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
