@@ -10,6 +10,7 @@
  *   npm run eval -- --dry-run                           — print dataset only; no DB/AI calls
  *   npm run eval -- --check-db                          — check which ground truth titles exist in the DB
  *   npm run eval -- --challenge CH-005 --challenge CH-009  — run specific challenges only
+ *   npm run eval -- --challenge CH-005 --debug              — show embedding dims + match counts
  *
  * Env (required unless --dry-run):
  *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -82,10 +83,15 @@ interface ChallengeResult {
 async function evalChallenge(
   supabase: SupabaseClient,
   ai: ReturnType<typeof createOpenRouterProvider>,
-  challenge: EvalChallenge
+  challenge: EvalChallenge,
+  debug = false
 ): Promise<ChallengeResult> {
   // Generate embedding for the raw challenge description
   const embedding = await ai.generateEmbedding(challenge.raw_description);
+
+  if (debug) {
+    console.log(`  [debug] embedding dims: ${embedding.length}`);
+  }
 
   // Run hybrid retrieval (vector + keyword) — no DB record created (R6)
   const ranked = await runMatching(
@@ -94,6 +100,10 @@ async function evalChallenge(
     challenge.domains as ChallengeDomain[],
     challenge.raw_description
   );
+
+  if (debug) {
+    console.log(`  [debug] runMatching returned ${ranked.length} ranked chunk(s)`);
+  }
 
   // Deduplicate by content ID, preserving rank order; keep top 5 unique contents
   const seenIds = new Set<string>();
@@ -254,6 +264,8 @@ async function main() {
   const ai = createOpenRouterProvider();
 
   // --challenge CH-005 --challenge CH-009  (filter to specific IDs)
+  const isDebug = process.argv.includes("--debug");
+
   const challengeFilter = process.argv
     .flatMap((arg, i, arr) => (arg === "--challenge" ? [arr[i + 1]] : []))
     .filter(Boolean)
@@ -275,7 +287,7 @@ async function main() {
   for (let i = 0; i < challenges.length; i++) {
     const challenge = challenges[i];
     try {
-      const result = await evalChallenge(supabase, ai, challenge);
+      const result = await evalChallenge(supabase, ai, challenge, isDebug);
       results.push(result);
       printResult(result, i, challenges.length);
     } catch (e) {
