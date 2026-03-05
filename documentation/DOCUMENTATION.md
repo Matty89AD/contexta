@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.4 &nbsp;|&nbsp; **Last updated:** 2026-03-05 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.5 &nbsp;|&nbsp; **Last updated:** 2026-03-05 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -18,6 +18,7 @@
    - [3.7 Authentication & Profiles](#37-authentication--profiles)
    - [3.8 Challenge Eval Harness](#38-challenge-eval-harness)
    - [3.9 Artifact Catalog](#39-artifact-catalog)
+   - [3.10 Artifact Detail Page](#310-artifact-detail-page)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -31,14 +32,14 @@
 
 Contexta is an AI-powered recommendation tool for product leaders. A user describes a professional challenge they are facing — a prioritisation crisis, an unclear strategy, a misaligned team — and the system responds with 3 to 5 curated **PM artifact recommendations** (frameworks, methodologies, and mental models) that are most relevant to that specific challenge and context.
 
-The core problem it solves: product leaders spend too much time searching for the right framework or methodology and too little time applying it. Generic search returns too much; asking a colleague takes too long. Contexta cuts through the noise by matching the user's exact situation — their role, company stage, team size, experience level, and the nature of their challenge — to a curated catalog of proven PM artifacts, using both AI embeddings and keyword matching to find the most relevant knowledge and then selecting the best artifacts from a known, trustworthy list.
+The core problem it solves: product leaders spend too much time searching for the right framework or methodology and too little time applying it. Generic search returns too much; asking a colleague takes too long. Contexta cuts through the noise by matching the user's exact situation — their role, company stage, team size, experience level, and the nature of their challenge — to a curated catalog of proven PM artifacts, using both AI embeddings and keyword matching to find the most relevant knowledge and then selecting the best artifacts from a known, trustworthy list. Once a user sees a recommendation they want to act on, they can open a dedicated artifact detail page for a deep-dive explanation, step-by-step guidance, thought-leader attribution, and knowledge base references — all personalised to their original challenge context.
 
 **Target user persona**: Founders, CPOs, Heads of Product, Senior PMs, and Associate PMs who are actively working through a product or leadership challenge and need actionable guidance immediately.
 
 **Three-step value loop**:
 1. **Context** — Tell us who you are and where your company is.
 2. **Challenge** — Describe the problem you are facing right now.
-3. **Recommendations** — Receive 3–5 tailored PM artifact cards with plain-language explanations of why each one fits your specific challenge.
+3. **Recommendations** — Receive 3–5 tailored PM artifact cards; open any card for a full deep-dive with AI-generated guidance.
 
 ---
 
@@ -70,9 +71,29 @@ The user sees their challenge summarised by the AI, followed by 3–5 **artifact
 - A brief description of the artifact's **use case** — what it is typically applied to
 - A 1–2 sentence **explanation** of why this specific artifact fits the challenge the user described
 
-Clicking any artifact card navigates to that artifact's detail page, where the user can explore it in depth. The challenge ID is passed along so the detail page can show relevant context.
+Clicking any artifact card navigates to that artifact's **detail page**, where the user can explore it in depth. The challenge ID is passed along automatically so the detail page can show personalised guidance.
 
 At the bottom of the results page, a prompt invites the user to create an account to save their challenges and return to them later.
+
+### Step 4 — Artifact Detail (optional, per artifact)
+
+After clicking any recommendation card, the user lands on a dedicated detail page for that artifact. The page layout has three areas:
+
+**Main content (with tabs):**
+- An **Overview tab** showing: the artifact's full description (3–5 sentences), a suitability card describing which company stages benefit most, and a thought leaders card listing 1–4 practitioners known for this artifact.
+- A **How to Use tab** showing: a 1–3 sentence intro and a numbered, vertical step-by-step guide (3–8 steps) explaining how to apply the artifact in practice.
+
+**Sidebar (sticky):**
+- A **Contexta Pro-Tipp** — a 2–3 sentence piece of personalised guidance. When the user arrived from a specific challenge, the tip is tailored to that challenge. When the page is visited without a challenge context, the tip gives general guidance for using the artifact effectively.
+- A **Save to Playbook** button — visible but non-functional in the current version (deferred to a future epic).
+
+**Knowledge base section (full-width, below the grid):**
+- A horizontal scrollable carousel of up to 5 content cards showing which podcast episodes, articles, videos, or books in the knowledge base mention this artifact. Each card shows the title, author, and source type.
+- If no knowledge base entries are found for this artifact, a plain empty-state message is shown instead.
+
+The page shows **skeleton loading states** for both the AI-generated content and the knowledge base carousel while data is loading — the page structure and artifact title are visible immediately.
+
+A **"Zurück zu den Empfehlungen"** back button returns the user to their previous view.
 
 ### Edge cases
 
@@ -81,6 +102,8 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 - **API failure**: a clear error message is shown; the user can retry.
 - **Not signed in**: the full flow works without an account. Data is held in the browser until sign-up.
 - **Signed in**: challenge records are saved to the user's profile in the database.
+- **Artifact detail without challenge context**: if the user navigates to `/artifacts/[slug]` without a challenge ID (e.g. directly or by sharing the URL), the Pro-Tipp shows generic guidance and the rest of the page renders normally.
+- **Artifact not found**: if the slug in the URL does not match any artifact in the catalog, the server returns a 404 page.
 
 ---
 
@@ -206,7 +229,7 @@ A labelled list of 3–5 artifact cards. The most relevant item is visually high
 - A **use-case line** summarising what the artifact is typically applied to
 - A **tailored explanation** of why this specific artifact fits the challenge the user just described
 
-Clicking any card navigates internally to the artifact detail page. Exactly one item is marked "most relevant." There is no external link button — navigation is entirely within the product.
+Clicking any card navigates to the artifact detail page (Step 4). Exactly one item is marked "most relevant." Navigation is entirely within the product.
 
 **Status**: Implemented (domain matching, semantic similarity, keyword search, hybrid reranking, artifact-based recommendations)
 
@@ -352,7 +375,7 @@ Clicking any card navigates internally to the artifact detail page. Exactly one 
 
 **What it does**: Maintains a curated, pre-seeded list of known PM frameworks and methodologies (collectively called "artifacts"). Every recommendation returned to users is drawn exclusively from this list — the AI selects the best matches but can never invent or suggest an artifact that is not in the catalog. This guarantees that all recommendations are well-defined, named practices rather than vague suggestions.
 
-**What the user sees**: Artifact names and domain badges on the recommendation cards in Step 3. Each artifact's title, use-case description, and associated domain(s) are displayed directly on the card.
+**What the user sees**: Artifact names and domain badges on the recommendation cards in Step 3. Each artifact's title, use-case description, and associated domain(s) are displayed directly on the card. Clicking any card opens the artifact's detail page.
 
 **Initial catalog**: 68 artifacts sourced from Lenny's Frameworks — a community-curated collection drawn from Lenny's Podcast. The catalog spans five practice domains and includes frameworks such as Jobs to be Done, RICE, Opportunity Solution Tree, Shape Up, and Growth Loops.
 
@@ -370,7 +393,45 @@ Clicking any card navigates internally to the artifact detail page. Exactly one 
 
 **Script**: `npm run seed-artifacts`
 
-**Status**: Implemented (catalog seeded with 68 artifacts; detail pages planned in Epic 11)
+**Status**: Implemented
+
+---
+
+### 3.10 Artifact Detail Page
+
+**What it does**: Provides a full-page deep-dive for any artifact in the catalog. On load, two parallel data calls fire independently — one AI call to generate the artifact explanation and one knowledge base search to find content mentioning the artifact. Both results populate the page as soon as they arrive, with skeleton placeholders shown in the meantime.
+
+**What the user sees**: A three-area layout:
+
+**Header**: The artifact's title, domain badge(s), and one-line use-case description — visible immediately on load with no waiting.
+
+**Main content (tabbed)**:
+- **Overview tab**: A 3–5 sentence description of what the artifact is and why it matters, a suitability card ("Best For") indicating which company stages benefit most from this artifact, and a thought leaders card listing 1–4 practitioners most associated with it.
+- **How to Use tab**: A 1–3 sentence introduction followed by a numbered, vertical step list (3–8 steps), each with a short title and a 1–2 sentence explanation of what to do and why.
+
+**Sidebar (sticky)**:
+- A "Contexta Pro-Tipp" card. When the user arrived from the flow with a known challenge, the tip is personalised to their specific situation. Without a challenge context, it gives general guidance for getting the most from the artifact.
+- A "Save to Playbook" button (visible, non-functional — deferred to a future epic).
+
+**Knowledge base section (below the grid)**:
+- A "Who talks about it" heading followed by a horizontal scrollable carousel of up to 5 content cards. Each card shows the content title, author, and source type badge (Podcast, Video, Article, Book).
+- The carousel finds content by searching the knowledge base for the artifact's title using full-text keyword search. Only one result per content item appears — if multiple chunks from the same podcast episode mention the artifact, the episode appears only once.
+- If no matching content is found, a plain empty-state message is shown.
+
+**What data it needs**:
+- **From the URL**: the artifact slug (to identify which artifact to display) and an optional challenge ID (to personalise the Pro-Tipp).
+- **From the AI**: description, company stage suitability, thought leaders, Pro-Tipp, how-to intro, and how-to steps.
+- **From the knowledge base**: up to 5 deduplicated content items that mention the artifact.
+
+**Business rules**:
+- If the artifact slug does not exist in the catalog, the server returns a 404.
+- The `cid` (challenge ID) query parameter is fully optional — the page renders completely without it; the Pro-Tipp falls back to generic guidance.
+- The AI detail call and the knowledge base call are independent — a failure in one does not block the other. If the AI call fails, an error message appears in the main content area while the knowledge base carousel still loads. If the knowledge base call fails, the carousel shows an empty state.
+- Skeleton loaders are shown for both async sections until their respective calls complete.
+- The "Save to Playbook" button is always visible but always disabled in the current version.
+- The back button always uses browser history navigation — it returns the user to wherever they came from.
+
+**Status**: Implemented
 
 ---
 
@@ -383,8 +444,8 @@ The following describes what information the system stores, in plain language. C
 | **User Profile** | One record per signed-in user | Role, company stage, team size, experience level, timestamps | The user themselves only |
 | **Challenge** | One record per challenge submitted by a signed-in user | Raw description, AI-generated summary, domain(s) selected, optional subdomain and impact text, link to the user who submitted it | The user themselves only |
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
-| **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only |
-| **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description | Surfaced to users on recommendation cards and (planned) artifact detail pages |
+| **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
+| **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description | Surfaced to users on recommendation cards and artifact detail pages |
 
 ### Key rules
 
@@ -404,6 +465,8 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | Endpoint | Purpose | Auth required | Key inputs | Key outputs |
 |----------|---------|--------------|-----------|------------|
 | `POST /api/challenges` | Submit a challenge; run the full AI matching and artifact recommendation pipeline | No (works anonymously) | Challenge description, domain(s), optional context fields | Challenge summary, 3–5 artifact recommendations (each with title, domains, use case, tailored explanation, and most-relevant flag) |
+| `POST /api/artifacts/[slug]/detail` | Generate AI-powered deep-dive content for a specific artifact | No | Artifact slug (in URL), optional challenge summary and domains (in body) | Description, company stage suitability, thought leaders, personalised Pro-Tipp, how-to intro, numbered how-to steps |
+| `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content that mentions a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
 | `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
@@ -414,6 +477,13 @@ All endpoints return JSON. All errors include a plain-text description of what w
 - The endpoint runs the full pipeline end-to-end: it generates an AI summary, runs two searches (semantic + keyword), reranks results, fetches the artifact catalog, and uses the AI to select and explain 3–5 artifacts. This is the most compute-intensive call in the product.
 - The AI selects artifacts strictly from the seeded catalog — it cannot return artifact names that are not in the database.
 - Typical response time target: under 5 seconds.
+
+### Notes on the artifact detail endpoint
+
+- Both the detail and knowledge endpoints are called in parallel by the artifact detail page client — neither blocks the other.
+- If the slug does not exist in the catalog, both endpoints return a 404.
+- The knowledge endpoint uses the same tsvector keyword search as the matching engine, deduplicating to one result per content item and returning up to 5.
+- A failure in the detail endpoint returns an error message in the main content area; the knowledge carousel is unaffected, and vice versa.
 
 ---
 
@@ -460,6 +530,9 @@ All settings are controlled via environment variables. They do not require a cod
 **"The artifact catalog needs to be expanded or updated"**
 - Add new entries to the seed script and run `npm run seed-artifacts`. The script is idempotent — existing artifacts are skipped automatically.
 
+**"The artifact detail knowledge base carousel shows few or no results for some artifacts"**
+- This is expected if the knowledge base does not yet contain content that explicitly mentions the artifact by name. Ingesting more content that references specific frameworks will enrich the carousel over time.
+
 **Note**: The three scoring weights (`STRUCTURED_FIT_WEIGHT`, `EMBEDDING_SIMILARITY_WEIGHT`, `KEYWORD_RELEVANCE_WEIGHT`) are additive and do not need to sum to 1. Each is applied independently to its component, and the sum becomes the final ranking score.
 
 ---
@@ -468,8 +541,8 @@ All settings are controlled via environment variables. They do not require a cod
 
 The following are intentional decisions for the current version. They are not bugs.
 
-- **No artifact detail pages** — artifact cards navigate to `/artifacts/[slug]` but no detail page exists yet. This is the scope of Epic 11. Clicking an artifact card currently leads to a page that has not been built.
-- **No "Save to Playbook" action** — users can view artifact recommendations but cannot save them to a personal collection. Deferred to a future epic.
+- **No "Save to Playbook" action** — users can view artifact details but cannot save artifacts to a personal collection. The button is visible on the detail page but non-functional. Deferred to a future epic.
+- **No content detail screen from knowledge carousel** — clicking a knowledge base card on the artifact detail page does not navigate anywhere in the current version. Content detail pages are planned for a future epic.
 - **No saved recommendations view** — users can see their current results, but there is no page to review past challenges or saved items. Sign-up persists challenge records in the database; retrieval UI is deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
@@ -483,6 +556,7 @@ The following are intentional decisions for the current version. They are not bu
 - **Content Intelligence Service has no timeout guard** — if the AI provider is slow or unresponsive during ingestion, the extraction step can hang indefinitely. Affected items can be retried with the backfill script.
 - **Eval harness has no CI integration** — the evaluation script is run manually by the team. It is not automatically triggered on code changes or content updates.
 - **Eval precision targets are not set** — the harness measures a baseline; no minimum precision threshold is enforced or tracked automatically.
+- **Artifact difficulty, progress, ratings, and comments** — the detail page does not include user progress indicators, difficulty ratings, peer comments, or social signals. These are explicitly out of scope for the current version.
 
 ---
 
@@ -490,8 +564,8 @@ The following are intentional decisions for the current version. They are not bu
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
-| Epic 11 — Artifact Detail Page | A full-page view for each artifact, including an AI-generated description, use-case guidance, example scenarios, and related artifacts. Navigated to from recommendation cards. | Planned (next) |
-| Save to Playbook | Allow users to save specific artifact recommendations to a personal collection for later reference. | Planned (post-MVP) |
+| Save to Playbook | Allow users to save specific artifact recommendations to a personal collection for later reference. The button already exists on the artifact detail page; backend logic and UI are deferred. | Planned (post-MVP) |
+| Content detail screen | A dedicated page for each content item (podcast episode, article, etc.) navigated to from the artifact detail knowledge base carousel. | Planned (post-MVP) |
 | Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost artifacts that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
 | Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
@@ -505,6 +579,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-05 | 1.5 | Epic 11 | Added Artifact Detail Page (section 3.10): full-page deep-dive for any artifact, with two parallel async data sources — an LLM call generating description, company stage suitability, thought leaders, personalised Pro-Tipp, and numbered how-to steps; and a keyword RAG call returning up to 5 deduplicated knowledge base content cards. Skeleton loading states shown for both sources. Tabs (Overview / How to Use), sticky sidebar with Pro-Tipp and a non-functional "Save to Playbook" button, and a horizontal knowledge carousel. Personalisation is challenge-aware when a cid param is present; falls back to generic guidance otherwise. Added two API endpoints: POST /api/artifacts/[slug]/detail and GET /api/artifacts/[slug]/knowledge. Updated User Flow Step 3 and added Step 4. Updated API Reference with new endpoints. Removed "No artifact detail pages" from Known Limitations. Updated Known Limitations and Future Epics to reflect scope changes. |
 | 2026-03-05 | 1.4 | Epic 10 | Recommendations now surface PM artifacts instead of raw content links. Added Artifact Catalog (section 3.9): 68 seeded PM frameworks from Lenny's Frameworks. Updated matching pipeline: the LLM step now selects from the known artifact list and returns artifact cards (title, domain badges, use-case, tailored explanation) instead of content URLs. Updated User Flow Step 3: clicking a recommendation navigates to the artifact detail page internally. Updated Data Model to add Artifacts entity. Added seed-artifacts script to section 3.5. Added Known Limitation for missing artifact detail pages (Epic 11). Updated Future Epics table (Epic 11 is now next). |
 | 2026-03-04 | 1.3 | Epic 9 | Added Challenge Eval Harness (section 3.8): 15-challenge typed dataset, `npm run eval` script that runs hybrid retrieval against each challenge and reports mean precision@3 and precision@5 against annotated ground truth. Updated Known Limitations (eval limitations noted). Updated Future Epics table (Epic 9 removed from planned; archetype classification is now next). Added eval-specific tuning guidance in section 6. |
 | 2026-03-04 | 1.2 | Epic 8 | Added Content Intelligence Service (section 3.6): automated AI extraction of topics, keywords, author, publication date, content category, language, and confidence score per content item; chunk-type classification (9 types) and key concept extraction per chunk. Updated Data Model section to reflect new metadata fields on Content Items and Content Chunks. Added tuning guidance for confidence score and key concepts. Updated Known Limitations and Future Epics table. |
