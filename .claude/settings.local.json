@@ -14,7 +14,10 @@
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
       "Bash(git checkout:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx shadcn@latest:*)",
+      "Bash(git stash:*)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

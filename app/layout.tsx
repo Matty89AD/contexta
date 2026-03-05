@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Nav } from "@/components/layout/Nav";
+import { Footer } from "@/components/layout/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,8 +25,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50`}>
-        {children}
+      <body className={`${inter.className} antialiased min-h-screen bg-background text-foreground flex flex-col`}>
+        <Nav />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );

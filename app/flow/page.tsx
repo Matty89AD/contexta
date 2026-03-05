@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { ContextStep } from "@/components/flow/ContextStep";
 import { ChallengeStep } from "@/components/flow/ChallengeStep";
 import { ResultsStep } from "@/components/flow/ResultsStep";
-import { Header } from "@/components/Header";
 import type { ContextData } from "@/components/flow/ContextStep";
 import type { ChallengeResult } from "@/services/challenge";
 import { FLOW_CONTEXT_STORAGE_KEY } from "@/lib/constants";
@@ -159,8 +158,7 @@ function FlowContent() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <Header />
+    <div className="min-h-[calc(100vh-3.5rem)]">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <StepIndicator step={step} />
 
@@ -205,7 +203,7 @@ function FlowContent() {
 
 export default function FlowPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" />}>
+    <Suspense fallback={<div className="min-h-[calc(100vh-3.5rem)]" />}>
       <FlowContent />
     </Suspense>
   );
