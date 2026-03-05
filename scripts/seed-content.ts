@@ -30,7 +30,7 @@ const SAMPLE_CONTENT: Array<{
   chunks: string[];
 }> = [
   {
-    source_type: "article",
+    source_type: "website",
     title: "Prioritization frameworks for product teams",
     url: "https://example.com/prioritization",
     primary_domain: "strategy",
@@ -40,7 +40,7 @@ const SAMPLE_CONTENT: Array<{
     ],
   },
   {
-    source_type: "framework",
+    source_type: "website",
     title: "Discovery and outcome-based roadmaps",
     url: "https://example.com/discovery",
     primary_domain: "discovery",

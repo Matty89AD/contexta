@@ -15,7 +15,7 @@ import { test, expect } from "@playwright/test";
 async function goToChallengeStep(page: import("@playwright/test").Page) {
   await page.goto("/flow");
   await page.getByRole("button", { name: "Founder" }).click();
-  await page.getByRole("button", { name: "Pre-Seed / Seed" }).click();
+  await page.getByRole("combobox").selectOption("preseed_seed");
   await page.getByRole("button", { name: "1-5" }).click();
   await page.getByRole("button", { name: "Junior" }).click();
   await page.getByRole("button", { name: "Continue" }).click();

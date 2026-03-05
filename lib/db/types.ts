@@ -159,3 +159,22 @@ export interface ChunkWithContent {
   /** Full-text keyword relevance score (0–1) from hybrid RAG retrieval (Epic 7). */
   keywordScore?: number;
 }
+
+/** Epic 10 — Artifact-Optimized Recommendations */
+export interface Artifact {
+  id: string;
+  slug: string;
+  title: string;
+  domains: string[];
+  use_case: string;
+  created_at: string;
+}
+
+export interface ArtifactRecommendation {
+  slug: string;
+  title: string;
+  domains: string[];
+  use_case: string;
+  explanation: string;
+  isMostRelevant: boolean;
+}

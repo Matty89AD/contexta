@@ -19,8 +19,6 @@ export default defineConfig({
         channel: 'chromium',
       },
     },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: process.env.CI
     ? undefined

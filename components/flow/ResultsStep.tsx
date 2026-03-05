@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Target, BookOpen } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BookOpen } from "lucide-react";
 import type { ChallengeResult } from "@/services/challenge";
 import type { ContextData } from "@/components/flow/ContextStep";
 import { ROLE_LABELS, DOMAIN_LABELS } from "@/lib/constants";
@@ -11,12 +12,6 @@ function logEvent(event: string, properties?: Record<string, unknown>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ event, properties }),
   }).catch(() => {});
-}
-
-function matchReasonLabel(reason: string): string {
-  return reason === "structured_fit"
-    ? "Matches your focus area"
-    : "Semantically relevant";
 }
 
 export function ResultsStep({
@@ -30,12 +25,11 @@ export function ResultsStep({
   domains?: string[];
   onBack?: () => void;
 }) {
-  const contentById = new Map(result.matches.map((m) => [m.content.id, m.content]));
+  const router = useRouter();
 
-  const handleOpen = (contentId: string, title: string, url: string) => {
-    logEvent("recommendation_opened", { content_id: contentId, title });
-    logEvent("activation_completed", { content_id: contentId, action: "open" });
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleOpen = (slug: string, title: string) => {
+    logEvent("artifact_opened", { slug, title });
+    router.push(`/artifacts/${slug}?cid=${result.challengeId}`);
   };
 
   return (
@@ -66,7 +60,7 @@ export function ResultsStep({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left column */}
         <div className="lg:col-span-1 space-y-4">
-          {/* Challenge Analysis card */}
+          {/* Challenge Summary card */}
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
             <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-4">Challenge Summary</h3>
             <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed mb-4 italic">&quot;{result.summary}&quot;</p>
@@ -98,67 +92,56 @@ export function ResultsStep({
           </div>
         </div>
 
-        {/* Right column */}
+        {/* Right column — artifact cards */}
         <div className="lg:col-span-2 space-y-4">
           {result.recommendations.length === 0 ? (
             <p className="text-zinc-500 dark:text-zinc-400">
-              No matching content yet. Add more curated content to get recommendations.
+              No matching artifacts yet. Seed the artifacts table to get recommendations.
             </p>
           ) : (
             result.recommendations.map((rec) => (
               <div
-                key={rec.contentId}
+                key={rec.slug}
                 className="group bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
+                onClick={() => handleOpen(rec.slug, rec.title)}
               >
                 {rec.isMostRelevant && (
                   <div className="absolute top-0 left-0 w-1 h-full bg-indigo-600" />
                 )}
 
-                {/* Top: tag + ExternalLink */}
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <span
-                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                        rec.isMostRelevant
-                          ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                      }`}
-                    >
-                      {rec.isMostRelevant ? "Most Relevant" : matchReasonLabel(rec.matchReason)}
-                    </span>
-                    <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      {rec.title}
-                    </h4>
-                    {contentById.get(rec.contentId)?.author && (
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                        by {contentById.get(rec.contentId)?.author}
-                      </p>
+                {/* Top: badge row */}
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {rec.isMostRelevant && (
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400">
+                        Most Relevant
+                      </span>
                     )}
-                  </div>
-                  <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950 transition-colors ml-4 shrink-0">
-                    {rec.url ? (
-                      <button
-                        type="button"
-                        onClick={() => handleOpen(rec.contentId, rec.title, rec.url!)}
-                        aria-label="Open resource"
+                    {rec.domains.map((d) => (
+                      <span
+                        key={d}
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
                       >
-                        <ExternalLink size={18} className="text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
-                      </button>
-                    ) : (
-                      <ExternalLink size={18} className="text-zinc-300 dark:text-zinc-600 cursor-not-allowed" />
-                    )}
+                        {DOMAIN_LABELS[d] ?? d}
+                      </span>
+                    ))}
                   </div>
                 </div>
+
+                {/* Title */}
+                <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  {rec.title}
+                </h4>
+
+                {/* Use-case */}
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3 font-medium">
+                  {rec.use_case}
+                </p>
 
                 {/* Explanation */}
-                <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-4 leading-relaxed">{rec.explanation}</p>
-
-                {/* Footer */}
-                <div className="flex items-center gap-4 text-xs text-zinc-400 dark:text-zinc-500">
-                  <span className="flex items-center gap-1">
-                    <Target size={14} /> {matchReasonLabel(rec.matchReason)}
-                  </span>
-                </div>
+                <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+                  {rec.explanation}
+                </p>
               </div>
             ))
           )}

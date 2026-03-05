@@ -2,8 +2,8 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AIProvider } from "@/core/ai/types";
 import * as challengesRepo from "@/repositories/challenges";
-import { runMatching, type MatchReason } from "@/services/matching";
-import { getConfig } from "@/core/config";
+import * as artifactsRepo from "@/repositories/artifacts";
+import { runMatching } from "@/services/matching";
 import {
   buildChallengeSummaryPrompt,
   challengeSummaryOutputSchema,
@@ -14,6 +14,8 @@ import {
 } from "@/core/prompts/recommendations";
 import { ValidationError, AIProviderError } from "@/core/errors";
 import { logger } from "@/core/logger";
+import type { ChunkWithContent, ArtifactRecommendation } from "@/lib/db/types";
+import type { ChallengeDomain } from "@/lib/db/types";
 
 /** Turn OpenAI/API errors into a short, user-safe message for the UI. */
 function aiErrorToUserMessage(e: unknown): string {
@@ -34,8 +36,6 @@ function aiErrorToUserMessage(e: unknown): string {
   }
   return "Failed to generate challenge summary. Check the server logs for details.";
 }
-import type { ChunkWithContent } from "@/lib/db/types";
-import type { ChallengeDomain } from "@/lib/db/types";
 
 const DOMAIN_VALUES = ["strategy", "discovery", "delivery", "growth", "leadership"] as const;
 
@@ -65,14 +65,7 @@ export interface ChallengeResult {
   problemStatement: string;
   desiredOutcomeStatement: string;
   matches: ChunkWithContent[];
-  recommendations: {
-    contentId: string;
-    title: string;
-    explanation: string;
-    isMostRelevant: boolean;
-    matchReason: MatchReason;
-    url?: string | null;
-  }[];
+  recommendations: ArtifactRecommendation[];
 }
 
 export async function runChallengePipeline(
@@ -162,59 +155,57 @@ export async function runChallengePipeline(
     textToEmbed
   );
   const matches = ranked.map((r) => r.chunkWithContent);
-  const matchReasonByContentId = new Map(
-    ranked.map((r) => [r.chunkWithContent.content.id, r.matchReason])
-  );
 
-  // 5. Generate recommendations (3-5 items, one most relevant)
+  // 5. Fetch known artifact list for the recommendations prompt (Epic 10)
+  const artifacts = await artifactsRepo.listArtifacts(supabase);
+
+  // 6. Generate artifact recommendations (3–5 items, one most relevant)
   const chunkPayloads = ranked.map((r) => ({
-    contentId: r.chunkWithContent.content.id,
-    title: r.chunkWithContent.content.title,
     body: r.chunkWithContent.chunk.body,
   }));
-  let recommendationsOutput: ReturnType<typeof recommendationsOutputSchema.parse>;
-  if (chunkPayloads.length > 0) {
+
+  let recommendations: ArtifactRecommendation[] = [];
+
+  if (artifacts.length > 0) {
     const recPrompt = buildRecommendationsPrompt(
       structured_summary,
       problem_statement,
-      chunkPayloads
+      chunkPayloads,
+      artifacts
     );
     try {
       const recText = await ai.generateText(recPrompt, { jsonMode: true });
-      recommendationsOutput = recommendationsOutputSchema.parse(
-        JSON.parse(recText)
-      );
+      const recOutput = recommendationsOutputSchema.parse(JSON.parse(recText));
+      const artifactBySlug = new Map(artifacts.map((a) => [a.slug, a]));
+      recommendations = recOutput.recommendations
+        .map((r) => {
+          const artifact = artifactBySlug.get(r.slug);
+          if (!artifact) return null;
+          return {
+            slug: artifact.slug,
+            title: artifact.title,
+            domains: artifact.domains,
+            use_case: artifact.use_case,
+            explanation: r.explanation,
+            isMostRelevant: r.is_most_relevant,
+          } satisfies ArtifactRecommendation;
+        })
+        .filter((r): r is ArtifactRecommendation => r !== null);
     } catch (e) {
-      logger.warn("Recommendations parse failed, using order", {
+      logger.warn("Recommendations parse failed, falling back to first artifacts", {
         challengeId: challenge.id,
         error: e,
       });
-      recommendationsOutput = {
-        recommendations: chunkPayloads.slice(0, 5).map((c, i) => ({
-          content_id: c.contentId,
-          title: c.title,
-          explanation: "Relevant to your challenge based on semantic match.",
-          is_most_relevant: i === 0,
-        })),
-      };
+      recommendations = artifacts.slice(0, 3).map((a, i) => ({
+        slug: a.slug,
+        title: a.title,
+        domains: a.domains,
+        use_case: a.use_case,
+        explanation: "Relevant to your challenge based on domain match.",
+        isMostRelevant: i === 0,
+      }));
     }
-  } else {
-    recommendationsOutput = { recommendations: [] };
   }
-
-  const contentById = new Map(matches.map((m) => [m.content.id, m.content]));
-  const recommendations = recommendationsOutput.recommendations.map((r) => {
-    const content = contentById.get(r.content_id);
-    const matchReason = matchReasonByContentId.get(r.content_id) ?? "semantic";
-    return {
-      contentId: r.content_id,
-      title: r.title,
-      explanation: r.explanation,
-      isMostRelevant: r.is_most_relevant,
-      matchReason,
-      url: content?.url ?? null,
-    };
-  });
 
   return {
     challengeId: challenge.id,

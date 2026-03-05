@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
 
+async function fillContext(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Founder" }).click();
+  await page.getByRole("combobox").selectOption("preseed_seed");
+  await page.getByRole("button", { name: "1-5" }).click();
+  await page.getByRole("button", { name: "Junior" }).click();
+}
+
 test.describe("Flow page", () => {
   test("shows context step on load", async ({ page }) => {
     await page.goto("/flow");
-    await expect(page.getByRole("heading", { name: "Your context" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tell us about yourself" })).toBeVisible();
     await expect(page.getByText("Role", { exact: true }).first()).toBeVisible();
   });
 
@@ -16,7 +23,7 @@ test.describe("Flow page", () => {
 
     await page.getByRole("button", { name: "Founder" }).click();
     await expect(continueBtn).toBeDisabled();
-    await page.getByRole("button", { name: "Pre-Seed / Seed" }).click();
+    await page.getByRole("combobox").selectOption("preseed_seed");
     await expect(continueBtn).toBeDisabled();
     await page.getByRole("button", { name: "1-5" }).click();
     await expect(continueBtn).toBeDisabled();
@@ -28,15 +35,12 @@ test.describe("Flow page", () => {
     page,
   }) => {
     await page.goto("/flow");
-    await page.getByRole("button", { name: "Founder" }).click();
-    await page.getByRole("button", { name: "Pre-Seed / Seed" }).click();
-    await page.getByRole("button", { name: "1-5" }).click();
-    await page.getByRole("button", { name: "Junior" }).click();
+    await fillContext(page);
     await page.getByRole("button", { name: "Continue" }).click();
 
     await expect(page.getByRole("heading", { name: "Describe your challenge" })).toBeVisible();
     await expect(
-      page.getByText(/Get personalized content recommendations in ~3 minutes/)
+      page.getByText(/What is currently blocking you or your team/)
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Back to context" })
@@ -47,14 +51,11 @@ test.describe("Flow page", () => {
     page,
   }) => {
     await page.goto("/flow");
-    await page.getByRole("button", { name: "Founder" }).click();
-    await page.getByRole("button", { name: "Pre-Seed / Seed" }).click();
-    await page.getByRole("button", { name: "1-5" }).click();
-    await page.getByRole("button", { name: "Junior" }).click();
+    await fillContext(page);
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(page.getByRole("heading", { name: "Describe your challenge" })).toBeVisible();
 
     await page.getByRole("button", { name: "Back to context" }).click();
-    await expect(page.getByRole("heading", { name: "Your context" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tell us about yourself" })).toBeVisible();
   });
 });
