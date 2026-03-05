@@ -29,6 +29,13 @@ export const EXPERIENCE_LABELS: Record<string, string> = {
   lead: "Lead",
 };
 
+export const SOURCE_TYPE_LABELS: Record<string, string> = {
+  podcast: "Podcast",
+  video: "Video",
+  website: "Article",
+  book: "Book",
+};
+
 export const DOMAIN_LABELS: Record<string, string> = {
   strategy: "Strategy",
   discovery: "Discovery",

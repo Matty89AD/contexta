@@ -5,14 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Bookmark } from "lucide-react";
 import type { Artifact } from "@/lib/db/types";
 import type { ArtifactDetailOutput, KnowledgeCard } from "@/services/artifact-detail";
-import { DOMAIN_LABELS } from "@/lib/constants";
-
-const SOURCE_TYPE_LABELS: Record<string, string> = {
-  podcast: "Podcast",
-  video: "Video",
-  website: "Article",
-  book: "Book",
-};
+import { DOMAIN_LABELS, SOURCE_TYPE_LABELS } from "@/lib/constants";
 
 function SkeletonBlock({ className }: { className?: string }) {
   return (
@@ -128,7 +121,7 @@ function KnowledgeCarousel({ cards }: { cards: KnowledgeCard[] }) {
           className="flex-shrink-0 w-64 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4"
         >
           <div className="mb-2">
-            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400">
               {SOURCE_TYPE_LABELS[card.source_type] ?? card.source_type}
             </span>
           </div>
@@ -272,18 +265,18 @@ export function ArtifactDetailClient({
         {/* Sidebar */}
         <div className="lg:col-span-1">
           <div className="sticky top-6 space-y-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6">
-              <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-4">
-                Contexta Pro-Tipp
+            <div className="bg-indigo-600 p-6 rounded-2xl text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900">
+              <h3 className="text-sm font-semibold text-indigo-200 uppercase tracking-widest mb-4">
+                Contexta Pro Tip
               </h3>
               {displayedProTip === null ? (
                 <div className="space-y-2">
-                  <SkeletonBlock className="h-4 w-full" />
-                  <SkeletonBlock className="h-4 w-full" />
-                  <SkeletonBlock className="h-4 w-2/3" />
+                  <div className="animate-pulse h-4 w-full bg-white/20 rounded" />
+                  <div className="animate-pulse h-4 w-full bg-white/20 rounded" />
+                  <div className="animate-pulse h-4 w-2/3 bg-white/20 rounded" />
                 </div>
               ) : displayedProTip ? (
-                <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">
+                <p className="text-indigo-100 text-sm leading-relaxed">
                   {displayedProTip}
                 </p>
               ) : null}
