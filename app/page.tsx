@@ -54,11 +54,11 @@ export default function HomePage() {
           Contexta
         </p>
         <h1 className="text-4xl font-semibold text-zinc-900 dark:text-zinc-100 max-w-xl leading-tight">
-          The right PM knowledge, matched to your exact challenge.
+          The right Product Management knowledge, matched to your exact challenge.
         </h1>
-        <p className="mt-4 text-xl text-zinc-500 dark:text-zinc-400 max-w-lg">
-          Describe what&apos;s blocking you. Get curated podcast episodes,
-          articles, and books — instantly.
+        <p className="mt-6 text-xl text-zinc-500 dark:text-zinc-400 max-w-lg">
+          Share what&apos;s blocking you. Get curated PM-Artifacts — the most relevant frameworks, 
+          principles, and real-world playbooks from the best product leaders.
         </p>
         <Link
           href="/flow"
@@ -74,7 +74,7 @@ export default function HomePage() {
       {/* How it works */}
       <section className="bg-white dark:bg-zinc-900 border-t border-b border-zinc-200 dark:border-zinc-700 py-16 px-6">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 text-center mb-10">
+          <h2 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100 text-center mb-10">
             How it works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -97,7 +97,7 @@ export default function HomePage() {
       {/* Example challenges */}
       <section className="py-16 px-6">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 text-center mb-10">
+          <h2 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100 text-center mb-10">
             What challenge are you facing today?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
