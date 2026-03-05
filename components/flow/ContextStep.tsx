@@ -72,7 +72,7 @@ export function ContextStep({
     <div className="space-y-8">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">Tell us about yourself</h1>
-        <p className="text-zinc-500 dark:text-zinc-400">We&apos;ll tailor PM-Artifacts based on your specific operational environment.</p>
+        <p className="text-zinc-500 dark:text-zinc-400">We&apos;ll tailor PM Artifacts based on your specific operational environment.</p>
       </div>
 
       <div>

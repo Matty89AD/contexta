@@ -1,0 +1,198 @@
+import React, { useState } from 'react';
+import { 
+  Brain, 
+  GraduationCap, 
+  Trophy, 
+  Target, 
+  Users, 
+  Zap, 
+  TrendingUp, 
+  Layers,
+  ChevronRight,
+  Search,
+  BookOpen,
+  ArrowRight
+} from 'lucide-react';
+
+const App = () => {
+  const [hoveredCard, setHoveredCard] = useState(null);
+
+  // Custom SVG Abstract Icons to mimic a premium tech feel
+  const AbstractIcon = ({ type }) => {
+    switch (type) {
+      case 'matching':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-indigo-400">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        );
+      case 'skills':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-blue-400">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity="0.2"/>
+          </svg>
+        );
+      case 'thought':
+        return (
+          <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 text-purple-400">
+            <path d="M12 3L4 9V21H20V9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M9 14H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        );
+      default:
+        return <Brain className="w-8 h-8" />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0b] text-gray-100 font-sans selection:bg-indigo-500/30">
+      {/* Navigation - Minimalist OpenRouter Style */}
+      <nav className="border-b border-white/5 bg-[#0a0a0b]/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white">C</div>
+            <span className="text-xl font-bold tracking-tight">Contexta</span>
+          </div>
+          <div className="flex items-center gap-6 text-sm text-gray-400">
+            <button className="hover:text-white transition-colors">Frameworks</button>
+            <button className="hover:text-white transition-colors">Playbooks</button>
+            <button className="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-full border border-white/10 transition-all">Sign In</button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="max-w-7xl mx-auto px-6 py-20">
+        <div className="mb-20">
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-medium mb-6">
+            <Zap size={14} />
+            <span>Now with 150+ PM Artifacts</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent leading-tight">
+            Everything you need <br />to grow as a PM.
+          </h1>
+          <p className="text-xl text-gray-400 max-w-2xl leading-relaxed">
+            Contexta matches you to the right knowledge at the right time. Scale your career with frameworks used by top product organizations.
+          </p>
+        </div>
+
+        {/* Features Section (Reimagining image_4c05a8.png) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-32">
+          {[
+            {
+              title: "Experience-based matching",
+              desc: "Get PM Artifacts matched to your challenge based on your role, stage, and experience level.",
+              type: "matching",
+              color: "indigo"
+            },
+            {
+              title: "Learn new skills",
+              desc: "Discover frameworks and playbooks curated to help you grow in your exact situation.",
+              type: "skills",
+              color: "blue"
+            },
+            {
+              title: "Top thought leaders",
+              desc: "Access insights from industry veterans, ranked specifically for your unique challenge.",
+              type: "thought",
+              color: "purple"
+            }
+          ].map((feat, i) => (
+            <div 
+              key={i}
+              className="group relative p-8 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all duration-300 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className={`w-14 h-14 rounded-xl bg-${feat.color}-500/10 flex items-center justify-center mb-6 border border-${feat.color}-500/20 group-hover:scale-110 transition-transform`}>
+                <AbstractIcon type={feat.type} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-white">{feat.title}</h3>
+              <p className="text-gray-400 leading-relaxed text-sm">{feat.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Challenges Section (Reimagining image_4c0586.png) */}
+        <div className="mb-32">
+          <h2 className="text-3xl font-bold mb-10 flex items-center gap-3">
+            <Target className="text-indigo-500" />
+            What challenge are you facing today?
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { text: "We have too many ideas and no clear prioritization framework", tag: "Strategy", icon: <Layers size={18} /> },
+              { text: "I struggle to align stakeholders on the roadmap", tag: "Strategy", icon: <Users size={18} /> },
+              { text: "Our team ships fast but rarely acts on user feedback", tag: "Discovery", icon: <Search size={18} /> },
+              { text: "I'm stepping into a leadership role and don't know where to start", tag: "Leadership", icon: <TrendingUp size={18} /> }
+            ].map((challenge, i) => (
+              <button 
+                key={i}
+                className="group flex items-center justify-between p-6 rounded-xl bg-white/[0.03] border border-white/5 hover:border-indigo-500/50 hover:bg-indigo-500/[0.04] transition-all text-left"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="text-gray-500 group-hover:text-indigo-400 transition-colors">
+                    {challenge.icon}
+                  </div>
+                  <div>
+                    <p className="text-gray-200 group-hover:text-white transition-colors font-medium mb-1">{challenge.text}</p>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-indigo-500/80 px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                      {challenge.tag}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" size={20} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats Section (Reimagining image_4c05c6.png) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-12 border-y border-white/5">
+          {[
+            { label: "PM Artifacts", val: "150+", sub: "Frameworks & Templates" },
+            { label: "Content Sources", val: "20+", sub: "Curated Libraries" },
+            { label: "Thought Leaders", val: "30+", sub: "Industry Experts" },
+            { label: "PM Domains", val: "6", sub: "Specialized Tracks" }
+          ].map((stat, i) => (
+            <div key={i} className="text-center md:text-left p-4">
+              <div className="text-3xl font-bold text-white mb-1">{stat.val}</div>
+              <div className="text-sm font-medium text-gray-400">{stat.label}</div>
+              <div className="text-[10px] text-gray-600 uppercase tracking-tighter mt-1">{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Section */}
+        <div className="mt-32 p-12 rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-700 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
+          <div className="relative z-10 text-center">
+            <h2 className="text-4xl font-bold mb-6">Ready to solve your next challenge?</h2>
+            <p className="text-indigo-100 mb-8 max-w-xl mx-auto opacity-90">
+              Join 5,000+ Product Managers who use Contexta to navigate complex product decisions.
+            </p>
+            <button className="bg-white text-indigo-600 px-8 py-4 rounded-full font-bold hover:scale-105 transition-transform flex items-center gap-2 mx-auto shadow-xl">
+              Get Started for Free <ArrowRight size={20} />
+            </button>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-white/5 text-sm text-gray-600 flex justify-between items-center">
+        <p>© 2024 Contexta. Built for Product People.</p>
+        <div className="flex gap-6">
+          <button className="hover:text-white">Privacy</button>
+          <button className="hover:text-white">Terms</button>
+          <button className="hover:text-white">Twitter</button>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;

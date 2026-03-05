@@ -43,7 +43,7 @@ export function ResultsStep({
       {/* Header row */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Your Recommended PM-Artifacts</h2>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Your Recommended PM Artifacts</h2>
           {contextData?.role && (
             <p className="text-zinc-500 dark:text-zinc-400">
               Based on your role as{" "}

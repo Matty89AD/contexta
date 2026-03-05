@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/layout/Footer";
-import { BrainCircuit, GraduationCap, Trophy } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, BrainCircuit, GraduationCap, Trophy, Zap } from "lucide-react";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { StatCard } from "@/components/ui/StatCard";
 import { FeatureCard } from "@/components/ui/FeatureCard";
@@ -9,10 +8,10 @@ import { StepCard } from "@/components/ui/StepCard";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 
 const STATS = [
-  { value: "150+", label: "PM Artifacts" },
-  { value: "20+", label: "Content Sources" },
-  { value: "30+", label: "Thought Leaders" },
-  { value: "6", label: "PM Domains" },
+  { value: "50+", label: "PM Artifacts" },
+  { value: "999+", label: "Content Sources" },
+  { value: "400+", label: "Thought Leaders" },
+  { value: "6+", label: "All PM Domains Covered" },
 ];
 
 const FEATURES = [
@@ -79,11 +78,15 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* Hero */}
       <section className="flex flex-col items-center justify-center py-24 px-6 text-center">
-        <h1 className="text-4xl font-semibold text-foreground max-w-xl leading-tight">
-          The right Product Management knowledge, matched to your exact challenge.
+        <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-medium mb-6">
+          <Zap size={14} />
+          <span>Now with 50+ PM Artifacts</span>
+        </div>
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight bg-gradient-to-b from-gray-400 to-black bg-clip-text text-transparent leading-tight">
+          Everything you need <br />to grow as a Product Manager
         </h1>
         <p className="mt-6 text-xl text-muted-foreground max-w-lg">
-          Share what&apos;s blocking you. Get curated PM-Artifacts — the most relevant frameworks,
+          Share what&apos;s blocking you. <br /> Get curated PM Artifacts — the most relevant frameworks,
           principles, and real-world playbooks from the best product leaders.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -94,10 +97,9 @@ export default function HomePage() {
             How it works
           </CTAButton>
         </div>
-        <div className="mt-5 flex items-center gap-3">
-          <Badge variant="secondary">No account needed</Badge>
-          <Badge variant="secondary">~3 minutes</Badge>
-        </div>
+        <p className="mt-6 text-sm text-muted-foreground max-w-lg">
+          No account needed. Get your first PM Artifacts in under 3 minutes.
+        </p>
       </section>
 
       {/* Metrics Strip */}
@@ -113,8 +115,8 @@ export default function HomePage() {
       <section className="px-6 py-16 bg-surface-1">
         <div className="max-w-6xl mx-auto">
           <SectionHeader
-            title="Everything you need to grow as a PM"
-            subtitle="Contexta matches you to the right knowledge at the right time."
+            title="Everything you need to grow as a Product Manager"
+            subtitle="Contexta matches you to the right PM Artifacts at the right time."
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {FEATURES.map((f) => (
@@ -158,6 +160,27 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      {/* CTA Banner */}
+      <section className="px-6 py-16 border-t border-border/60">
+        <div className="max-w-6xl mx-auto">
+          <div className="p-12 rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-700 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
+            <div className="relative z-10 text-center">
+              <h2 className="text-4xl font-bold text-white mb-6">Ready to solve your next challenge?</h2>
+              <p className="text-indigo-100 mb-8 max-w-xl mx-auto opacity-90">
+                Join the movement of Product Managers who use Contexta to navigate complex product decisions.
+              </p>
+              <Link
+                href="/flow"
+                className="bg-white text-indigo-600 px-8 py-4 rounded-full font-bold hover:scale-105 transition-transform inline-flex items-center gap-2 shadow-xl"
+              >
+                Get Started Now <ArrowRight size={20} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
