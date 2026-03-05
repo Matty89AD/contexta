@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.3 &nbsp;|&nbsp; **Last updated:** 2026-03-04 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.4 &nbsp;|&nbsp; **Last updated:** 2026-03-05 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -17,6 +17,7 @@
    - [3.6 Content Intelligence Service](#36-content-intelligence-service)
    - [3.7 Authentication & Profiles](#37-authentication--profiles)
    - [3.8 Challenge Eval Harness](#38-challenge-eval-harness)
+   - [3.9 Artifact Catalog](#39-artifact-catalog)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -28,16 +29,16 @@
 
 ## 1. Product Overview
 
-Contexta is an AI-powered recommendation tool for product leaders. A user describes a professional challenge they are facing — a prioritisation crisis, an unclear strategy, a misaligned team — and the system responds with 3 to 5 curated content recommendations (podcasts, articles, frameworks, playbooks, or case studies) that are most relevant to that specific challenge and context.
+Contexta is an AI-powered recommendation tool for product leaders. A user describes a professional challenge they are facing — a prioritisation crisis, an unclear strategy, a misaligned team — and the system responds with 3 to 5 curated **PM artifact recommendations** (frameworks, methodologies, and mental models) that are most relevant to that specific challenge and context.
 
-The core problem it solves: product leaders spend too much time searching for the right knowledge and too little time applying it. Generic search returns too much; asking a colleague takes too long. Contexta cuts through the noise by matching the user's exact situation — their role, company stage, team size, experience level, and the nature of their challenge — to a pre-curated knowledge base, using both AI embeddings and keyword matching.
+The core problem it solves: product leaders spend too much time searching for the right framework or methodology and too little time applying it. Generic search returns too much; asking a colleague takes too long. Contexta cuts through the noise by matching the user's exact situation — their role, company stage, team size, experience level, and the nature of their challenge — to a curated catalog of proven PM artifacts, using both AI embeddings and keyword matching to find the most relevant knowledge and then selecting the best artifacts from a known, trustworthy list.
 
 **Target user persona**: Founders, CPOs, Heads of Product, Senior PMs, and Associate PMs who are actively working through a product or leadership challenge and need actionable guidance immediately.
 
 **Three-step value loop**:
 1. **Context** — Tell us who you are and where your company is.
 2. **Challenge** — Describe the problem you are facing right now.
-3. **Recommendations** — Receive 3–5 tailored content items with plain-language explanations of why each one is relevant.
+3. **Recommendations** — Receive 3–5 tailored PM artifact cards with plain-language explanations of why each one fits your specific challenge.
 
 ---
 
@@ -49,7 +50,7 @@ The user lands on the home page and clicks **"Start with your challenge."** They
 
 ### Step 1 — Context (approximately 30 seconds)
 
-The user selects four options from button groups: their **role**, their **company stage**, their **team size**, and their **experience level**. Each field has a fixed set of options (no free text). The Continue button stays disabled until all four are filled in — the user must actively confirm each field. There is no automatic advance.
+The user fills in four fields about themselves: their **role**, their **company stage** (via a dropdown), their **team size**, and their **experience level**. Role, team size, and experience level use button groups; company stage uses a dropdown menu. The Continue button stays disabled until all four are filled in. There is no automatic advance.
 
 The selections are saved locally in the browser. If the user refreshes or navigates away and comes back, their answers are preserved.
 
@@ -63,16 +64,20 @@ A **Back** button at the top returns the user to Step 1 with their context prese
 
 ### Step 3 — Recommendations (results in approximately 3 minutes)
 
-The user sees their challenge summarised in 2–3 sentences by the AI, followed by 3–5 content recommendations. One recommendation is highlighted as **"most relevant."** Each item shows a title, a 1–2 sentence explanation of why it was selected, and an **Open** button.
+The user sees their challenge summarised by the AI, followed by 3–5 **artifact recommendation cards**. One card is highlighted as **"Most Relevant."** Each card shows:
+- The artifact name (e.g. "Jobs to be Done", "Opportunity Solution Tree")
+- One or more **domain badges** indicating the practice areas this artifact covers
+- A brief description of the artifact's **use case** — what it is typically applied to
+- A 1–2 sentence **explanation** of why this specific artifact fits the challenge the user described
 
-Clicking **Open** logs the interaction and opens the content URL in a new browser tab. If a content item has no URL, the button is disabled.
+Clicking any artifact card navigates to that artifact's detail page, where the user can explore it in depth. The challenge ID is passed along so the detail page can show relevant context.
 
 At the bottom of the results page, a prompt invites the user to create an account to save their challenges and return to them later.
 
 ### Edge cases
 
 - **Hitting Back from Step 3**: returns the user to the challenge form with their previous input intact.
-- **No matching content**: if the knowledge base has no relevant content, a message appears instead of recommendations.
+- **No matching artifacts**: if the artifact catalog is empty or the AI cannot select from it, a message appears instead of recommendations.
 - **API failure**: a clear error message is shown; the user can retry.
 - **Not signed in**: the full flow works without an account. Data is held in the browser until sign-up.
 - **Signed in**: challenge records are saved to the user's profile in the database.
@@ -85,11 +90,11 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 **What it does**: Captures four pieces of information about the user before they describe their challenge. This context is used to tailor the AI summary and to influence which content is most relevant.
 
-**What the user sees**: A form with four groups of selection buttons. No dropdowns, no text input. The user clicks one button per group.
+**What the user sees**: A form with button groups for role, team size, and experience level, and a dropdown for company stage. The user makes one selection per field.
 
 **What data it captures**:
 - Role (one of five fixed options)
-- Company stage (one of five fixed options)
+- Company stage (one of five fixed options, selected via dropdown)
 - Team size (one of four fixed options)
 - Experience level (one of four fixed options)
 
@@ -104,7 +109,7 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 ### 3.2 Challenge Submission
 
-**What it does**: Collects the user's challenge description and domain(s), then triggers the full AI pipeline (summary generation, embedding, matching, recommendations).
+**What it does**: Collects the user's challenge description and domain(s), then triggers the full AI pipeline (summary generation, embedding, matching, artifact recommendations).
 
 **What the user sees**: A text area for the description, domain selection buttons, optional subdomain and impact fields, and a submit button that shows a loading state during processing.
 
@@ -126,9 +131,9 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 ### 3.3 Matching Engine & Recommendations
 
-**What it does**: Finds the most relevant content from the knowledge base for a given challenge, ranks it using three complementary scoring signals, and uses an AI model to produce 3–5 curated recommendations with plain-language explanations.
+**What it does**: Finds the most relevant content from the knowledge base for a given challenge, ranks it using three complementary scoring signals, and uses an AI model to select 3–5 artifacts from the known artifact catalog — writing a tailored explanation for why each one fits the user's specific challenge.
 
-**What the user sees**: Nothing during the matching phase — this runs invisibly in the background. The output is the recommendation cards shown in Step 3 of the flow.
+**What the user sees**: Nothing during the matching phase — this runs invisibly in the background. The output is the artifact recommendation cards shown in Step 3 of the flow.
 
 ---
 
@@ -141,7 +146,7 @@ The full pipeline runs in sequence when the user submits their challenge:
 3. **Dual retrieval** — Two independent searches run simultaneously against the knowledge base (described below).
 4. **Merge and deduplicate** — Results from both searches are combined into a single candidate list. A chunk that appeared in both searches is flagged as a stronger match.
 5. **Scoring and ranking** — Every candidate is scored across three dimensions. The scores are summed into a final ranking score.
-6. **LLM recommendation pass** — The top 6–8 highest-scoring chunks are sent to an AI model, which selects 3–5 items, writes a relevance explanation for each, and identifies the single most relevant one.
+6. **Artifact selection pass** — The top-ranked chunks (as context) are sent to an AI model alongside the full catalog of known PM artifacts. The AI selects 3–5 artifacts by name from that catalog, writes a 1–2 sentence explanation for each one referencing the specific challenge, and identifies the single most relevant artifact. Importantly, the AI can only recommend artifacts that exist in the catalog — it cannot invent new ones.
 
 ---
 
@@ -193,30 +198,17 @@ Domain scoring is a soft boost: content from other domains can still appear if i
 
 ---
 
-#### Match reason labels
-
-Each recommendation surfaces a match reason label that tells the user *why* an item was selected:
-
-| Label | Meaning |
-|-------|---------|
-| **Matches your focus area** (`structured_fit`) | The content's domain overlaps with at least one domain the user selected |
-| **Hybrid match** (`hybrid`) | The chunk appeared in *both* the semantic search and the keyword search |
-| **Keyword match** (`keyword`) | The chunk was found by keyword search but not by semantic similarity |
-| **Semantic match** (`semantic`) | The chunk was found by semantic similarity only |
-
----
-
 #### What the user sees in Step 3
 
-A labelled list of 3–5 content cards. The most relevant item is visually highlighted with a "Most relevant" badge and a darker border. Each card shows:
-- The content title
-- A 1–2 sentence explanation of why it was selected for this specific challenge
-- A match reason label
-- An **Open** button linking to the content URL (disabled if no URL is available)
+A labelled list of 3–5 artifact cards. The most relevant item is visually highlighted with a "Most Relevant" badge and a darker left border. Each card shows:
+- The artifact name (e.g. "Jobs to be Done", "RICE Framework", "Opportunity Solution Tree")
+- One or more **domain badges** (e.g. "Discovery", "Strategy") showing which practice areas the artifact covers
+- A **use-case line** summarising what the artifact is typically applied to
+- A **tailored explanation** of why this specific artifact fits the challenge the user just described
 
-Exactly one item is marked "most relevant." Save and Select actions are not available; Open is the only CTA. Framework steps and thought leader suggestions are not shown in the current version.
+Clicking any card navigates internally to the artifact detail page. Exactly one item is marked "most relevant." There is no external link button — navigation is entirely within the product.
 
-**Status**: Implemented (domain matching, semantic similarity, keyword search, hybrid reranking, recommendations)
+**Status**: Implemented (domain matching, semantic similarity, keyword search, hybrid reranking, artifact-based recommendations)
 
 ---
 
@@ -258,6 +250,7 @@ Exactly one item is marked "most relevant." Save and Select actions are not avai
 - Ingest a single transcript file: `npm run ingest-transcript`
 - Batch-ingest all transcript files from a folder: `npm run ingest-content-batch`
 - Re-run metadata extraction on existing content: `npm run backfill-intelligence`
+- Seed the PM artifact catalog: `npm run seed-artifacts`
 
 **Status**: Implemented
 
@@ -355,6 +348,32 @@ Exactly one item is marked "most relevant." Save and Select actions are not avai
 
 ---
 
+### 3.9 Artifact Catalog
+
+**What it does**: Maintains a curated, pre-seeded list of known PM frameworks and methodologies (collectively called "artifacts"). Every recommendation returned to users is drawn exclusively from this list — the AI selects the best matches but can never invent or suggest an artifact that is not in the catalog. This guarantees that all recommendations are well-defined, named practices rather than vague suggestions.
+
+**What the user sees**: Artifact names and domain badges on the recommendation cards in Step 3. Each artifact's title, use-case description, and associated domain(s) are displayed directly on the card.
+
+**Initial catalog**: 68 artifacts sourced from Lenny's Frameworks — a community-curated collection drawn from Lenny's Podcast. The catalog spans five practice domains and includes frameworks such as Jobs to be Done, RICE, Opportunity Solution Tree, Shape Up, and Growth Loops.
+
+**What each artifact record contains**:
+- **Slug** — a URL-safe unique identifier used for internal navigation (e.g. `jobs-to-be-done`, `rice-framework`)
+- **Title** — the full display name of the artifact
+- **Domains** — one or more of the five practice areas: Strategy, Discovery, Delivery, Growth, Leadership
+- **Use case** — a one-line description of the situations this artifact is typically applied to
+
+**Business rules**:
+- The AI recommendations step only selects from artifacts already in the catalog — no hallucinated or invented artifact names can appear in results.
+- The catalog is seeded via a command-line script and is idempotent — running the seed script multiple times will not create duplicate entries.
+- The catalog can be expanded at any time by adding new entries and re-running the seed script.
+- Domain assignments on artifacts are independent from domain assignments on content items — they are separate catalogs.
+
+**Script**: `npm run seed-artifacts`
+
+**Status**: Implemented (catalog seeded with 68 artifacts; detail pages planned in Epic 11)
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -365,6 +384,7 @@ The following describes what information the system stores, in plain language. C
 | **Challenge** | One record per challenge submitted by a signed-in user | Raw description, AI-generated summary, domain(s) selected, optional subdomain and impact text, link to the user who submitted it | The user themselves only |
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only |
+| **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description | Surfaced to users on recommendation cards and (planned) artifact detail pages |
 
 ### Key rules
 
@@ -373,6 +393,7 @@ The following describes what information the system stores, in plain language. C
 - Challenges submitted anonymously (before sign-up) are not saved to the database.
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
 - Content items with an extraction confidence score of 0 were not successfully processed by the intelligence service and should be re-run with the backfill script.
+- Artifacts are a separate catalog from content items. They are not derived from content ingestion — they are seeded directly and represent the fixed set of recommendations the AI can choose from.
 
 ---
 
@@ -382,15 +403,16 @@ All endpoints return JSON. All errors include a plain-text description of what w
 
 | Endpoint | Purpose | Auth required | Key inputs | Key outputs |
 |----------|---------|--------------|-----------|------------|
-| `POST /api/challenges` | Submit a challenge; run the full AI matching and recommendation pipeline | No (works anonymously) | Challenge description, domain(s), optional context fields | Challenge summary, 3–5 recommendations with explanations, match reasons, and content URLs |
+| `POST /api/challenges` | Submit a challenge; run the full AI matching and artifact recommendation pipeline | No (works anonymously) | Challenge description, domain(s), optional context fields | Challenge summary, 3–5 artifact recommendations (each with title, domains, use case, tailored explanation, and most-relevant flag) |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
-| `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (content ID, title, etc.) | Empty response (fire-and-forget) |
+| `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
 
 ### Notes on the challenges endpoint
 
 - The context fields (role, company stage, etc.) are optional at the API level; the UI always sends them when available.
-- The endpoint runs the full pipeline end-to-end: it generates an AI summary, runs two searches (semantic + keyword), reranks results, and generates recommendation explanations. This is the most compute-intensive call in the product.
+- The endpoint runs the full pipeline end-to-end: it generates an AI summary, runs two searches (semantic + keyword), reranks results, fetches the artifact catalog, and uses the AI to select and explain 3–5 artifacts. This is the most compute-intensive call in the product.
+- The AI selects artifacts strictly from the seeded catalog — it cannot return artifact names that are not in the database.
 - Typical response time target: under 5 seconds.
 
 ---
@@ -401,7 +423,7 @@ All settings are controlled via environment variables. They do not require a cod
 
 | Setting | What it controls | Default | Range / Options | Required |
 |---------|----------------|---------|----------------|----------|
-| `TOP_K` | How many top content chunks are returned by the matching engine and passed to the recommendations AI. Higher values mean the AI has more content to choose from, potentially improving recommendation diversity. | — | 1–20 (integer) | **Yes** |
+| `TOP_K` | How many top content chunks are returned by the matching engine and passed to the recommendations AI. Higher values mean the AI has more context to inform its artifact selection, potentially improving recommendation quality. | — | 1–20 (integer) | **Yes** |
 | `STRUCTURED_FIT_WEIGHT` | How much the domain overlap between the challenge and a content item influences its final score. | 0.3 | 0–1 (float) | No |
 | `EMBEDDING_SIMILARITY_WEIGHT` | How much the AI semantic similarity between the challenge and a content chunk influences its final score. | 0.7 | 0–1 (float) | No |
 | `KEYWORD_RELEVANCE_WEIGHT` | How much keyword (full-text) match relevance influences the final score. | 0.3 | 0–1 (float) | No |
@@ -416,9 +438,9 @@ All settings are controlled via environment variables. They do not require a cod
 
 **"Recommendations feel too generic or off-topic"**
 - Try increasing `STRUCTURED_FIT_WEIGHT` (e.g. to 0.5) so domain alignment counts more in the final score.
-- If your knowledge base has a lot of content, also try increasing `TOP_K` (e.g. to 10) so the AI has more candidates to choose from.
+- If your knowledge base has a lot of content, also try increasing `TOP_K` (e.g. to 10) so the AI has more context chunks to inform its artifact selection.
 
-**"Recommendations feel too narrow — we're missing relevant content from other domains"**
+**"Recommendations feel too narrow — we're missing relevant artifacts from other domains"**
 - Reduce `STRUCTURED_FIT_WEIGHT` (e.g. to 0.1) to let semantic similarity dominate.
 - Ensure `EMBEDDING_SIMILARITY_WEIGHT` is at 0.7 or higher.
 
@@ -435,6 +457,9 @@ All settings are controlled via environment variables. They do not require a cod
 **"I want to measure whether a configuration change improved matching quality"**
 - Run `npm run eval` before and after your change. Compare mean precision@3 and precision@5 between the two runs to see whether the change helped.
 
+**"The artifact catalog needs to be expanded or updated"**
+- Add new entries to the seed script and run `npm run seed-artifacts`. The script is idempotent — existing artifacts are skipped automatically.
+
 **Note**: The three scoring weights (`STRUCTURED_FIT_WEIGHT`, `EMBEDDING_SIMILARITY_WEIGHT`, `KEYWORD_RELEVANCE_WEIGHT`) are additive and do not need to sum to 1. Each is applied independently to its component, and the sum becomes the final ranking score.
 
 ---
@@ -443,14 +468,15 @@ All settings are controlled via environment variables. They do not require a cod
 
 The following are intentional decisions for the current version. They are not bugs.
 
-- **No saved recommendations view** — users can open content immediately, but there is no page to review past challenges or saved items. Sign-up persists challenge records in the database; retrieval UI is deferred.
+- **No artifact detail pages** — artifact cards navigate to `/artifacts/[slug]` but no detail page exists yet. This is the scope of Epic 11. Clicking an artifact card currently leads to a page that has not been built.
+- **No "Save to Playbook" action** — users can view artifact recommendations but cannot save them to a personal collection. Deferred to a future epic.
+- **No saved recommendations view** — users can see their current results, but there is no page to review past challenges or saved items. Sign-up persists challenge records in the database; retrieval UI is deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
-- **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity and keyword matching.
-- **No framework steps or thought leader suggestions** — results show content titles and relevance explanations only. Actionable step-by-step frameworks and thought leader attribution are deferred.
+- **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
 - **No admin content management UI** — content is added to the knowledge base via command-line ingestion scripts, not a dashboard.
 - **No analytics dashboard** — user events are logged to the server console. There is no third-party analytics integration or internal dashboard in the current version.
-- **No Q&A or cited-answer format** — the product returns curated content links, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
-- **No audience-targeting metadata** — content items are not tagged by target role, company stage, or experience level. The domain overlap is the only structured signal in the matching score. Audience-targeting fields are deferred.
+- **No Q&A or cited-answer format** — the product returns curated artifact recommendations, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
+- **No audience-targeting metadata** — artifacts and content items are not tagged by target role, company stage, or experience level. Domain overlap is the only structured signal in the matching score.
 - **No per-chunk domain tagging** — domain assignments apply to the whole content item, not to individual chunks within it.
 - **Unauthenticated challenges are not persisted** — if a user closes the browser before signing up, their challenge and recommendations cannot be recovered.
 - **No multi-hop or agent-based reasoning** — the matching pipeline is a single-pass retrieval and ranking. Graph databases, multi-step reasoning, and agent orchestration are non-goals.
@@ -464,11 +490,12 @@ The following are intentional decisions for the current version. They are not bu
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
-| Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost content items that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (next) |
-| Audience-targeting metadata | Tag content items with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
+| Epic 11 — Artifact Detail Page | A full-page view for each artifact, including an AI-generated description, use-case guidance, example scenarios, and related artifacts. Navigated to from recommendation cards. | Planned (next) |
+| Save to Playbook | Allow users to save specific artifact recommendations to a personal collection for later reference. | Planned (post-MVP) |
+| Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost artifacts that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
+| Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
 | Challenge history & saved items | Allow signed-in users to view past challenges and their recommendations; save specific content items for later. | Planned (post-MVP) |
-| Thought leaders & framework steps | Surface author/speaker attribution alongside recommendations; offer 3–5 actionable steps per recommendation. | Planned (post-MVP) |
 | Analytics pipeline | Integrate server events with a third-party analytics tool (e.g. Segment, PostHog). Enable funnel analysis, recommendation quality tracking, and content performance reporting. | Planned (post-MVP) |
 | Content management UI | Allow internal team members to add, edit, tag, and retire content items via a web interface rather than the CLI. | Planned (post-MVP) |
 
@@ -478,6 +505,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-05 | 1.4 | Epic 10 | Recommendations now surface PM artifacts instead of raw content links. Added Artifact Catalog (section 3.9): 68 seeded PM frameworks from Lenny's Frameworks. Updated matching pipeline: the LLM step now selects from the known artifact list and returns artifact cards (title, domain badges, use-case, tailored explanation) instead of content URLs. Updated User Flow Step 3: clicking a recommendation navigates to the artifact detail page internally. Updated Data Model to add Artifacts entity. Added seed-artifacts script to section 3.5. Added Known Limitation for missing artifact detail pages (Epic 11). Updated Future Epics table (Epic 11 is now next). |
 | 2026-03-04 | 1.3 | Epic 9 | Added Challenge Eval Harness (section 3.8): 15-challenge typed dataset, `npm run eval` script that runs hybrid retrieval against each challenge and reports mean precision@3 and precision@5 against annotated ground truth. Updated Known Limitations (eval limitations noted). Updated Future Epics table (Epic 9 removed from planned; archetype classification is now next). Added eval-specific tuning guidance in section 6. |
 | 2026-03-04 | 1.2 | Epic 8 | Added Content Intelligence Service (section 3.6): automated AI extraction of topics, keywords, author, publication date, content category, language, and confidence score per content item; chunk-type classification (9 types) and key concept extraction per chunk. Updated Data Model section to reflect new metadata fields on Content Items and Content Chunks. Added tuning guidance for confidence score and key concepts. Updated Known Limitations and Future Epics table. |
 | 2026-03-04 | 1.1 | 3, 4, 6, 7 | Merged Matching Engine, Recommendations, and Hybrid RAG Retrieval into a single section (3.3). Expanded keyword search documentation: stop word stripping, Snowball stemming, AND-logic matching, and ts_rank_cd normalisation. Added scoring formula table and match reason label reference. Renumbered sections 3.4–3.6 accordingly. |
