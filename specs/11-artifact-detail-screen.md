@@ -1,6 +1,6 @@
 # Epic 11: Artifact Detail Screen
 
-> **Status:** 🔲 pending
+> **Status:** ✅ done  |  **As of:** 2026-03-05
 
 Add a dedicated artifact detail page (`/artifacts/[slug]`) that gives users a deep-dive view of a recommended PM artifact. On load, two parallel async calls fire: (1) an LLM call that generates the overview description, suitability metadata, thought leaders, how-to-use steps, and a personalised "Contexta Pro-Tipp"; (2) a keyword-based RAG call that finds up to 5 unique content items mentioning the artifact (the "who talks about it" carousel). A skeleton loader is shown while data loads. Navigation back to the recommendations list is provided.
 
