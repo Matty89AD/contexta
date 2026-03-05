@@ -82,7 +82,7 @@ export default function HomePage() {
           <Zap size={14} />
           <span>Now with 50+ PM Artifacts</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight bg-gradient-to-b from-gray-400 to-black bg-clip-text text-transparent leading-tight">
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight bg-gradient-to-b from-gray-500 to-black bg-clip-text text-transparent leading-tight">
           Everything you need <br />to grow as a Product Manager
         </h1>
         <p className="mt-6 text-xl text-muted-foreground max-w-lg">
