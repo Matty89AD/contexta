@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { getArtifactBySlug } from "@/repositories/artifacts";
 import { getArtifactKnowledge } from "@/services/artifact-detail";
+import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
 import { NotFoundError, AppError } from "@/core/errors";
 
 export async function GET(
@@ -14,7 +15,8 @@ export async function GET(
     const artifact = await getArtifactBySlug(supabase, slug);
     if (!artifact) throw new NotFoundError(`Artifact not found: ${slug}`);
 
-    const cards = await getArtifactKnowledge(supabase, artifact.title);
+    const ai = createOpenRouterProvider();
+    const cards = await getArtifactKnowledge(supabase, artifact, ai);
     return NextResponse.json({ cards });
   } catch (e) {
     if (e instanceof NotFoundError) {

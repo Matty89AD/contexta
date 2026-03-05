@@ -12,9 +12,9 @@ import {
   buildRecommendationsPrompt,
   recommendationsOutputSchema,
 } from "@/core/prompts/recommendations";
-import { ValidationError, AIProviderError } from "@/core/errors";
+import { ValidationError, AIProviderError, NotFoundError } from "@/core/errors";
 import { logger } from "@/core/logger";
-import type { ChunkWithContent, ArtifactRecommendation } from "@/lib/db/types";
+import type { ArtifactRecommendation } from "@/lib/db/types";
 import type { ChallengeDomain } from "@/lib/db/types";
 
 /** Turn OpenAI/API errors into a short, user-safe message for the UI. */
@@ -59,31 +59,37 @@ const challengeInputSchema = z.object({
 
 export type ChallengeInput = z.infer<typeof challengeInputSchema>;
 
-export interface ChallengeResult {
+/** Returned by phase 1 — summary available immediately after first LLM call. */
+export interface ChallengePhase1Result {
   challengeId: string;
   summary: string;
   problemStatement: string;
   desiredOutcomeStatement: string;
-  matches: ChunkWithContent[];
+}
+
+/** Returned by phase 2 — artifact recommendations after second LLM call. */
+export interface ChallengePhase2Result {
   recommendations: ArtifactRecommendation[];
 }
 
-export async function runChallengePipeline(
+/**
+ * Phase 1: parse input → create DB record → generate summary → persist.
+ * Returns as soon as the summary LLM call completes (~10-12s).
+ */
+export async function runChallengePhase1(
   supabase: SupabaseClient,
   ai: AIProvider,
   input: unknown,
   userId: string | null
-): Promise<ChallengeResult> {
+): Promise<ChallengePhase1Result> {
   const parsed = challengeInputSchema.safeParse(input);
   if (!parsed.success) {
     throw new ValidationError(parsed.error.message);
   }
   const { raw_description, domains, subdomain, impact_reach, context } = parsed.data;
-
-  // Primary domain = first in array (for backward compat column)
   const primaryDomain = domains[0] as ChallengeDomain;
 
-  // 1. Create challenge record (summary updated after LLM)
+  // 1. Create challenge record
   const challenge = await challengesRepo.createChallenge(supabase, {
     user_id: userId,
     raw_description,
@@ -94,11 +100,7 @@ export async function runChallengePipeline(
   });
 
   // 2. Generate structured summary (context-aware when provided)
-  const summaryPrompt = buildChallengeSummaryPrompt(
-    raw_description,
-    domains,
-    context
-  );
+  const summaryPrompt = buildChallengeSummaryPrompt(raw_description, domains, context);
   let summaryText: string;
   try {
     summaryText = await ai.generateText(summaryPrompt, { jsonMode: true });
@@ -111,9 +113,8 @@ export async function runChallengePipeline(
     });
     throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
-  const summaryParsed = challengeSummaryOutputSchema.safeParse(
-    JSON.parse(summaryText)
-  );
+
+  const summaryParsed = challengeSummaryOutputSchema.safeParse(JSON.parse(summaryText));
   const structured_summary = summaryParsed.success
     ? summaryParsed.data.structured_summary
     : summaryText;
@@ -124,52 +125,77 @@ export async function runChallengePipeline(
     ? summaryParsed.data.desired_outcome_statement
     : "";
 
-  await challengesRepo.updateChallengeSummary(
-    supabase,
-    challenge.id,
-    structured_summary
-  );
+  // 3. Persist all three fields for phase-2 use
+  await challengesRepo.updateChallengeAnalysis(supabase, challenge.id, {
+    summary: structured_summary,
+    problem_statement,
+    desired_outcome_statement,
+  });
 
-  // 3. Embedding for search (combine summary + problem + outcome)
-  const textToEmbed = [structured_summary, problem_statement, desired_outcome_statement]
+  return {
+    challengeId: challenge.id,
+    summary: structured_summary,
+    problemStatement: problem_statement,
+    desiredOutcomeStatement: desired_outcome_statement,
+  };
+}
+
+/**
+ * Phase 2: embed summary → hybrid matching → LLM recommendations.
+ * Runs after phase 1; challengeId fetches stored summary/problem fields from DB.
+ */
+export async function runChallengePhase2(
+  supabase: SupabaseClient,
+  ai: AIProvider,
+  challengeId: string
+): Promise<ChallengePhase2Result> {
+  const challenge = await challengesRepo.getChallengeById(supabase, challengeId);
+  if (!challenge) throw new NotFoundError(`Challenge not found: ${challengeId}`);
+
+  const textToEmbed = [
+    challenge.summary,
+    challenge.problem_statement,
+    challenge.desired_outcome_statement,
+  ]
     .filter(Boolean)
     .join("\n");
+
+  // Embedding + artifact list in parallel
   let embedding: number[];
+  let allArtifacts: Awaited<ReturnType<typeof artifactsRepo.listArtifacts>>;
   try {
-    embedding = await ai.generateEmbedding(textToEmbed);
+    [embedding, allArtifacts] = await Promise.all([
+      ai.generateEmbedding(textToEmbed),
+      artifactsRepo.listArtifacts(supabase),
+    ]);
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e);
-    logger.error("Embedding failed", {
-      challengeId: challenge.id,
-      detail,
-      cause: e instanceof Error ? e.cause : undefined,
-    });
+    logger.error("Embedding or artifact fetch failed", { challengeId, detail });
     throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
 
-  // 4. Matching engine — hybrid retrieval: vector + keyword, reranked (Epic 7)
+  // Hybrid matching
   const ranked = await runMatching(
     supabase,
     embedding,
-    domains as ChallengeDomain[],
+    challenge.domains as ChallengeDomain[],
     textToEmbed
   );
-  const matches = ranked.map((r) => r.chunkWithContent);
 
-  // 5. Fetch known artifact list for the recommendations prompt (Epic 10)
-  const artifacts = await artifactsRepo.listArtifacts(supabase);
+  // Filter artifacts by domain overlap (~70% token reduction)
+  const domainFiltered = allArtifacts.filter((a) =>
+    a.domains.some((d) => (challenge.domains as string[]).includes(d))
+  );
+  const artifacts = domainFiltered.length > 0 ? domainFiltered : allArtifacts;
 
-  // 6. Generate artifact recommendations (3–5 items, one most relevant)
-  const chunkPayloads = ranked.map((r) => ({
-    body: r.chunkWithContent.chunk.body,
-  }));
-
+  // LLM recommendations
+  const chunkPayloads = ranked.map((r) => ({ body: r.chunkWithContent.chunk.body }));
   let recommendations: ArtifactRecommendation[] = [];
 
   if (artifacts.length > 0) {
     const recPrompt = buildRecommendationsPrompt(
-      structured_summary,
-      problem_statement,
+      challenge.summary ?? "",
+      challenge.problem_statement ?? "",
       chunkPayloads,
       artifacts
     );
@@ -193,7 +219,7 @@ export async function runChallengePipeline(
         .filter((r): r is ArtifactRecommendation => r !== null);
     } catch (e) {
       logger.warn("Recommendations parse failed, falling back to first artifacts", {
-        challengeId: challenge.id,
+        challengeId,
         error: e,
       });
       recommendations = artifacts.slice(0, 3).map((a, i) => ({
@@ -207,12 +233,5 @@ export async function runChallengePipeline(
     }
   }
 
-  return {
-    challengeId: challenge.id,
-    summary: structured_summary,
-    problemStatement: problem_statement,
-    desiredOutcomeStatement: desired_outcome_statement,
-    matches,
-    recommendations,
-  };
+  return { recommendations };
 }

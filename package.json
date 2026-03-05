@@ -13,6 +13,7 @@
     "backfill-domains": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-domains.ts",
     "eval": "node -r tsconfig-paths/register -r tsx/cjs scripts/eval-matching.ts",
     "seed-artifacts": "tsx scripts/seed-artifacts.ts",
+    "backfill-artifact-details": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-artifact-details.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

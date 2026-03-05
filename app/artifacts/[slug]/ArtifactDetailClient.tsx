@@ -158,16 +158,16 @@ export function ArtifactDetailClient({
   const [detail, setDetail] = useState<ArtifactDetailOutput | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(true);
+  // pro_tip is separate: null = loading (only when challengeSummary present), undefined = not applicable
+  const [proTip, setProTip] = useState<string | null | undefined>(
+    challengeSummary ? null : undefined
+  );
   const [cards, setCards] = useState<KnowledgeCard[] | null>(null);
   const [cardsLoading, setCardsLoading] = useState(true);
 
   useEffect(() => {
-    // Fire two parallel async calls on mount
-    fetch(`/api/artifacts/${artifact.slug}/detail`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ challengeSummary, challengeDomains }),
-    })
+    // 1. Static detail — fast DB read
+    fetch(`/api/artifacts/${artifact.slug}/detail`)
       .then((r) => r.json())
       .then((data: ArtifactDetailOutput & { error?: string }) => {
         if (data.error) setDetailError(data.error);
@@ -176,12 +176,29 @@ export function ArtifactDetailClient({
       .catch(() => setDetailError("Failed to load artifact detail."))
       .finally(() => setDetailLoading(false));
 
+    // 2. Personalised pro_tip — separate LLM call, only when challenge context exists
+    if (challengeSummary) {
+      fetch(`/api/artifacts/${artifact.slug}/pro-tip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeSummary, challengeDomains }),
+      })
+        .then((r) => r.json())
+        .then((data: { pro_tip?: string | null }) => setProTip(data.pro_tip ?? undefined))
+        .catch(() => setProTip(undefined));
+    }
+
+    // 3. Knowledge cards — parallel vector search
     fetch(`/api/artifacts/${artifact.slug}/knowledge`)
       .then((r) => r.json())
       .then((data: { cards?: KnowledgeCard[] }) => setCards(data.cards ?? []))
       .catch(() => setCards([]))
       .finally(() => setCardsLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Merge: use personalised pro_tip once loaded, fall back to static detail's generic one
+  const displayedProTip =
+    proTip !== undefined ? proTip : detail?.pro_tip ?? null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -259,15 +276,15 @@ export function ArtifactDetailClient({
               <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-4">
                 Contexta Pro-Tipp
               </h3>
-              {detailLoading ? (
+              {displayedProTip === null ? (
                 <div className="space-y-2">
                   <SkeletonBlock className="h-4 w-full" />
                   <SkeletonBlock className="h-4 w-full" />
                   <SkeletonBlock className="h-4 w-2/3" />
                 </div>
-              ) : detail ? (
+              ) : displayedProTip ? (
                 <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">
-                  {detail.pro_tip}
+                  {displayedProTip}
                 </p>
               ) : null}
             </div>

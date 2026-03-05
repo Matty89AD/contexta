@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { ContextStep } from "@/components/flow/ContextStep";
 import { ChallengeStep } from "@/components/flow/ChallengeStep";
+import { LoadingStep } from "@/components/flow/LoadingStep";
 import { ResultsStep } from "@/components/flow/ResultsStep";
 import type { ContextData } from "@/components/flow/ContextStep";
-import type { ChallengeResult } from "@/services/challenge";
+import type { ChallengePhase1Result } from "@/services/challenge";
+import type { ArtifactRecommendation } from "@/lib/db/types";
 import { FLOW_CONTEXT_STORAGE_KEY } from "@/lib/constants";
 
-type Step = "context" | "challenge" | "results";
+type Step = "context" | "challenge" | "loading" | "results";
 
 function logEvent(event: string, properties?: Record<string, unknown>) {
   fetch("/api/events", {
@@ -22,11 +24,13 @@ function logEvent(event: string, properties?: Record<string, unknown>) {
 
 function StepIndicator({ step }: { step: Step }) {
   const steps = [
-    { key: "context" as Step, label: "Context" },
-    { key: "challenge" as Step, label: "Challenge" },
-    { key: "results" as Step, label: "Recommendations" },
+    { key: "context" as const, label: "Context" },
+    { key: "challenge" as const, label: "Challenge" },
+    { key: "results" as const, label: "Recommendations" },
   ];
-  const currentIndex = steps.findIndex((s) => s.key === step);
+  // During loading we're transitioning to results — show results as current
+  const indicatorStep = step === "loading" ? "results" : step;
+  const currentIndex = steps.findIndex((s) => s.key === indicatorStep);
 
   return (
     <div className="max-w-xl mx-auto mb-12">
@@ -78,9 +82,9 @@ function FlowContent() {
   const [contextData, setContextData] = useState<ContextData | null>(null);
   const [initialContextFromStorage, setInitialContextFromStorage] =
     useState<ContextData | null>(null);
-  const [result, setResult] = useState<ChallengeResult | null>(null);
+  const [phase1, setPhase1] = useState<ChallengePhase1Result | null>(null);
+  const [recommendations, setRecommendations] = useState<ArtifactRecommendation[] | null>(null);
   const [submittedDomains, setSubmittedDomains] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -131,33 +135,48 @@ function FlowContent() {
   }, []);
 
   const onSubmitChallenge = useCallback(
-    async (body: {
-      raw_description: string;
-      domains: string[];
-    }) => {
-      setLoading(true);
+    async (body: { raw_description: string; domains: string[] }) => {
       setError(null);
       setSubmittedDomains(body.domains);
+      setPhase1(null);
+      setRecommendations(null);
+      setStep("loading");
+
+      // Phase 1 — summary
+      let p1: ChallengePhase1Result;
       try {
         const res = await fetch("/api/challenges", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...body,
-            context: contextData ?? undefined,
-          }),
+          body: JSON.stringify({ ...body, context: contextData ?? undefined }),
         });
         const data = await res.json();
         if (!res.ok) {
           setError(data.error ?? "Something went wrong");
+          setStep("challenge");
           return;
         }
-        setResult(data);
-        setStep("results");
+        p1 = data as ChallengePhase1Result;
       } catch {
         setError("Network error. Please try again.");
-      } finally {
-        setLoading(false);
+        setStep("challenge");
+        return;
+      }
+
+      // Show results page immediately with summary; recommendations load next
+      setPhase1(p1);
+      setRecommendations(null); // skeleton state
+      setStep("results");
+
+      // Phase 2 — recommendations (fire and update)
+      try {
+        const res = await fetch(`/api/challenges/${p1.challengeId}/recommendations`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        setRecommendations(data.recommendations ?? []);
+      } catch {
+        setRecommendations([]); // empty on error — don't crash the page
       }
     },
     [contextData]
@@ -181,7 +200,7 @@ function FlowContent() {
             <ChallengeStep
               contextData={contextData}
               onSubmit={onSubmitChallenge}
-              loading={loading}
+              loading={false}
               error={error}
               onBack={() => setStep("context")}
               initialDescription={prefillDescription || undefined}
@@ -189,9 +208,12 @@ function FlowContent() {
             />
           )}
 
-          {step === "results" && result && (
+          {step === "loading" && <LoadingStep />}
+
+          {step === "results" && phase1 && (
             <ResultsStep
-              result={result}
+              result={phase1}
+              recommendations={recommendations}
               contextData={contextData}
               domains={submittedDomains}
               onBack={() => setStep("challenge")}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/services/auth";
-import { runChallengePipeline } from "@/services/challenge";
+import { runChallengePhase1 } from "@/services/challenge";
 import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
 import {
   AppError,
@@ -26,12 +26,7 @@ export async function POST(request: Request) {
             : "AI provider is not configured.";
       return NextResponse.json({ error: msg }, { status: 502 });
     }
-    const result = await runChallengePipeline(
-      supabase,
-      ai,
-      body,
-      user?.id ?? null
-    );
+    const result = await runChallengePhase1(supabase, ai, body, user?.id ?? null);
     return NextResponse.json(result);
   } catch (e) {
     if (e instanceof ValidationError) {

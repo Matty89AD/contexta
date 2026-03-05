@@ -82,6 +82,9 @@ export interface Challenge {
   subdomain: string | null;
   impact_reach: string | null;
   summary: string | null;
+  /** Epic 11 — stored after phase-1 LLM call for use in phase-2 recommendations. */
+  problem_statement: string | null;
+  desired_outcome_statement: string | null;
   created_at: string;
 }
 
@@ -167,6 +170,8 @@ export interface Artifact {
   title: string;
   domains: string[];
   use_case: string;
+  /** Pre-generated LLM detail (Epic 11). Null if not yet generated. */
+  detail?: unknown;
   created_at: string;
 }
 

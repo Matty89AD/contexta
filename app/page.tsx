@@ -8,7 +8,7 @@ import { StepCard } from "@/components/ui/StepCard";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 
 const STATS = [
-  { value: "50+", label: "PM Artifacts" },
+  { value: "50+", label: "PM Artifacts", description: "test" },
   { value: "999+", label: "Content Sources" },
   { value: "400+", label: "Thought Leaders" },
   { value: "6+", label: "All PM Domains Covered" },
@@ -104,7 +104,7 @@ export default function HomePage() {
 
       {/* Metrics Strip */}
       <section className="px-6 py-10 border-t border-border/60">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-2">
           {STATS.map((stat) => (
             <StatCard key={stat.label} value={stat.value} label={stat.label} />
           ))}

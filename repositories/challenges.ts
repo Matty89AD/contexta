@@ -22,14 +22,14 @@ export async function createChallenge(
   return data as Challenge;
 }
 
-export async function updateChallengeSummary(
+export async function updateChallengeAnalysis(
   supabase: SupabaseClient,
   id: string,
-  summary: string
+  fields: { summary: string; problem_statement: string; desired_outcome_statement: string }
 ): Promise<void> {
   const { error } = await supabase
     .from("challenges")
-    .update({ summary })
+    .update(fields)
     .eq("id", id);
   if (error) throw error;
 }
