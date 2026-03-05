@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.5 &nbsp;|&nbsp; **Last updated:** 2026-03-05 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.6 &nbsp;|&nbsp; **Last updated:** 2026-03-05 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -59,13 +59,23 @@ The selections are saved locally in the browser. If the user refreshes or naviga
 
 The user describes their challenge in a free-text field. They also select one or more **domains** (Strategy, Discovery, Delivery, Growth, Leadership) that best describe the area their challenge falls under. Optionally they can add a subdomain and describe the impact and reach of the problem.
 
-The **Get recommendations** button becomes active only when the description has at least 10 characters and at least one domain is selected. Clicking it triggers the AI pipeline. The button shows a loading state while results are being generated.
+The **Get recommendations** button becomes active only when the description has at least 10 characters and at least one domain is selected. Clicking it immediately transitions the screen to a loading state — the user does not wait on the challenge form.
 
 A **Back** button at the top returns the user to Step 1 with their context preserved.
 
-### Step 3 — Recommendations (results in approximately 3 minutes)
+### Loading screen (approximately 10–12 seconds)
 
-The user sees their challenge summarised by the AI, followed by 3–5 **artifact recommendation cards**. One card is highlighted as **"Most Relevant."** Each card shows:
+After the user submits their challenge, a full-screen loading animation replaces the challenge form immediately. The screen cycles through four status messages — "Analyzing your challenge…", "Searching the knowledge base…", "Matching PM frameworks…", "Preparing your results…" — with animated progress dots that advance as each phase completes. The step indicator at the top of the page advances to show the user they are progressing towards the Recommendations step.
+
+This loading phase covers the AI summary generation — the first and most time-consuming step of the pipeline.
+
+### Step 3 — Results: Summary (immediate on phase-1 completion)
+
+As soon as the AI summary is ready, the results page appears with the **challenge summary card** visible in the left column. The user can immediately read the AI's interpretation of their challenge, including the domain badges. The right column shows skeleton placeholders while the artifact recommendations are being generated in the background.
+
+### Step 3 — Results: Recommendations (approximately 10–12 seconds after summary appears)
+
+Once the recommendation engine finishes, the skeleton cards in the right column are replaced by 3–5 **artifact recommendation cards**. One card is highlighted as **"Most Relevant."** Each card shows:
 - The artifact name (e.g. "Jobs to be Done", "Opportunity Solution Tree")
 - One or more **domain badges** indicating the practice areas this artifact covers
 - A brief description of the artifact's **use case** — what it is typically applied to
@@ -77,21 +87,24 @@ At the bottom of the results page, a prompt invites the user to create an accoun
 
 ### Step 4 — Artifact Detail (optional, per artifact)
 
-After clicking any recommendation card, the user lands on a dedicated detail page for that artifact. The page layout has three areas:
+After clicking any recommendation card, the user lands on a dedicated detail page for that artifact. The page fires three independent data requests in parallel on load — the page structure and artifact header are visible immediately with no waiting.
+
+**Static content (loads in under 1 second for pre-generated artifacts):**
+- The artifact's title, domain badges, and one-line use-case description appear in the header with no delay.
+- The **Overview tab** and **How to Use tab** content — the description, suitability card, thought leaders, and numbered steps — are stored in the database and served instantly for any artifact that has been pre-generated via the backfill script.
 
 **Main content (with tabs):**
 - An **Overview tab** showing: the artifact's full description (3–5 sentences), a suitability card describing which company stages benefit most, and a thought leaders card listing 1–4 practitioners known for this artifact.
 - A **How to Use tab** showing: a 1–3 sentence intro and a numbered, vertical step-by-step guide (3–8 steps) explaining how to apply the artifact in practice.
 
 **Sidebar (sticky):**
-- A **Contexta Pro-Tipp** — a 2–3 sentence piece of personalised guidance. When the user arrived from a specific challenge, the tip is tailored to that challenge. When the page is visited without a challenge context, the tip gives general guidance for using the artifact effectively.
+- A **Contexta Pro-Tipp** card. When the user arrived from the flow with a known challenge, a separate AI call generates a personalised 2–3 sentence tip tailored to that challenge — this loads independently in a few seconds while the rest of the page is already visible. Without a challenge context, the stored generic guidance appears immediately alongside the static content.
 - A **Save to Playbook** button — visible but non-functional in the current version (deferred to a future epic).
 
 **Knowledge base section (full-width, below the grid):**
-- A horizontal scrollable carousel of up to 5 content cards showing which podcast episodes, articles, videos, or books in the knowledge base mention this artifact. Each card shows the title, author, and source type.
-- If no knowledge base entries are found for this artifact, a plain empty-state message is shown instead.
-
-The page shows **skeleton loading states** for both the AI-generated content and the knowledge base carousel while data is loading — the page structure and artifact title are visible immediately.
+- A "Who talks about it" heading followed by a horizontal scrollable carousel of up to 5 content cards showing which podcast episodes, articles, videos, or books in the knowledge base are semantically related to this artifact. Each card shows the title, author, and source type badge. The search uses AI vector similarity — meaning it finds conceptually related content even if the artifact name does not appear verbatim in the transcript.
+- Only one result per content item appears — if multiple chunks from the same podcast episode are related, the episode appears only once.
+- If no relevant content is found, a plain empty-state message is shown.
 
 A **"Zurück zu den Empfehlungen"** back button returns the user to their previous view.
 
@@ -99,11 +112,13 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 - **Hitting Back from Step 3**: returns the user to the challenge form with their previous input intact.
 - **No matching artifacts**: if the artifact catalog is empty or the AI cannot select from it, a message appears instead of recommendations.
-- **API failure**: a clear error message is shown; the user can retry.
+- **API failure during phase 1**: a clear error message is shown on the challenge step; the user can retry.
+- **API failure during phase 2**: the summary is already visible; the recommendations area shows an empty state instead of skeleton cards.
 - **Not signed in**: the full flow works without an account. Data is held in the browser until sign-up.
 - **Signed in**: challenge records are saved to the user's profile in the database.
-- **Artifact detail without challenge context**: if the user navigates to `/artifacts/[slug]` without a challenge ID (e.g. directly or by sharing the URL), the Pro-Tipp shows generic guidance and the rest of the page renders normally.
+- **Artifact detail without challenge context**: if the user navigates to an artifact page without a challenge ID (e.g. directly or by sharing the URL), the Pro-Tipp shows the stored generic guidance immediately and no extra AI call is made.
 - **Artifact not found**: if the slug in the URL does not match any artifact in the catalog, the server returns a 404 page.
+- **Artifact detail not yet pre-generated**: if the backfill script has not run for a given artifact, the static content is generated on the fly on the first visit and stored for future visits.
 
 ---
 
@@ -132,9 +147,9 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 ### 3.2 Challenge Submission
 
-**What it does**: Collects the user's challenge description and domain(s), then triggers the full AI pipeline (summary generation, embedding, matching, artifact recommendations).
+**What it does**: Collects the user's challenge description and domain(s), then triggers the AI pipeline in two asynchronous phases. Phase 1 generates the challenge summary; Phase 2 generates artifact recommendations. The user sees a loading screen during Phase 1, and the results page with the summary appears as soon as Phase 1 completes — without waiting for Phase 2.
 
-**What the user sees**: A text area for the description, domain selection buttons, optional subdomain and impact fields, and a submit button that shows a loading state during processing.
+**What the user sees**: A text area for the description, domain selection buttons, optional subdomain and impact fields, and a submit button. On submit, the screen transitions immediately to an animated loading screen with cycling status messages. Once the summary is ready, the results page renders with the summary visible and skeleton placeholders for the recommendation cards. Recommendations populate the skeletons when Phase 2 finishes.
 
 **What data it captures**:
 - Challenge description (required, 10–5,000 characters)
@@ -146,7 +161,8 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 - Description must be at least 10 characters.
 - At least one domain must be selected.
 - The context from Step 1 is silently attached to the submission and passed to the AI.
-- If the submission fails (network error, AI error), a user-friendly error message is shown.
+- If Phase 1 fails (network error, AI error), the loading screen reverts to the challenge form with a clear error message. The user can retry.
+- If Phase 2 fails, the summary and challenge card remain visible; the recommendation area shows an empty state instead of crashing.
 
 **Status**: Implemented
 
@@ -162,14 +178,22 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 #### Pipeline overview
 
-The full pipeline runs in sequence when the user submits their challenge:
+The pipeline runs in two phases. Phase 1 runs on challenge submission; Phase 2 runs in the background while the user is already reading their challenge summary.
 
-1. **AI summary** — The challenge description and user context are sent to an AI model, which generates a concise summary and a focused problem statement.
-2. **Embedding** — That combined text is converted into a numerical vector (an embedding) that captures its semantic meaning.
-3. **Dual retrieval** — Two independent searches run simultaneously against the knowledge base (described below).
-4. **Merge and deduplicate** — Results from both searches are combined into a single candidate list. A chunk that appeared in both searches is flagged as a stronger match.
-5. **Scoring and ranking** — Every candidate is scored across three dimensions. The scores are summed into a final ranking score.
-6. **Artifact selection pass** — The top-ranked chunks (as context) are sent to an AI model alongside the full catalog of known PM artifacts. The AI selects 3–5 artifacts by name from that catalog, writes a 1–2 sentence explanation for each one referencing the specific challenge, and identifies the single most relevant artifact. Importantly, the AI can only recommend artifacts that exist in the catalog — it cannot invent new ones.
+**Phase 1 (challenge summary — runs on submission):**
+
+1. **AI summary** — The challenge description and user context are sent to an AI model, which generates a concise summary, a focused problem statement, and a desired outcome statement.
+2. **Persist** — All three fields are saved to the database against the challenge record, ready for Phase 2.
+3. **Return** — The summary and challenge ID are returned to the client immediately. The results page renders with the summary visible.
+
+**Phase 2 (artifact recommendations — runs in parallel after Phase 1):**
+
+4. **Embedding + artifact fetch (parallel)** — The combined text of the summary, problem statement, and desired outcome statement is converted into a numerical vector (an embedding). Simultaneously, the artifact catalog is fetched from the database. Both happen at the same time.
+5. **Dual retrieval** — Two independent searches run simultaneously against the knowledge base (described below).
+6. **Merge and deduplicate** — Results from both searches are combined into a single candidate list. A chunk appearing in both searches is flagged as a stronger match.
+7. **Scoring and ranking** — Every candidate is scored across three dimensions. The scores are summed into a final ranking score.
+8. **Domain-filtered artifact selection** — The artifact catalog is filtered to artifacts whose domains overlap with the user's chosen challenge domains before being passed to the AI. This typically reduces the catalog from 68 artifacts to 10–20 candidates, making the AI call faster and more focused. If no domain overlap exists, the full catalog is used as a fallback.
+9. **Artifact selection pass** — The top-ranked chunks (as context) and the filtered artifact list are sent to an AI model. The AI selects 3–5 artifacts by name from the filtered list, writes a 1–2 sentence explanation for each one referencing the specific challenge, and identifies the single most relevant artifact. The AI can only recommend artifacts from the provided list — it cannot invent new ones.
 
 ---
 
@@ -203,12 +227,6 @@ Keyword search failure is non-fatal. If the search returns no results or encount
 
 Each candidate chunk in the merged list receives a final score calculated as:
 
-```
-finalScore = (STRUCTURED_FIT_WEIGHT × domainScore)
-           + (EMBEDDING_SIMILARITY_WEIGHT × semanticScore)
-           + (KEYWORD_RELEVANCE_WEIGHT × keywordScore)
-```
-
 | Component | How it is calculated | Default weight |
 |-----------|---------------------|---------------|
 | **Domain score** | 1.0 if the content's domain(s) overlap with the challenge domain(s); 0.5 otherwise | 0.3 |
@@ -231,7 +249,7 @@ A labelled list of 3–5 artifact cards. The most relevant item is visually high
 
 Clicking any card navigates to the artifact detail page (Step 4). Exactly one item is marked "most relevant." Navigation is entirely within the product.
 
-**Status**: Implemented (domain matching, semantic similarity, keyword search, hybrid reranking, artifact-based recommendations)
+**Status**: Implemented (domain matching, semantic similarity, keyword search, hybrid reranking, artifact-based recommendations, two-phase pipeline)
 
 ---
 
@@ -245,6 +263,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 - At least one domain is required.
 - Up to five domains can be selected simultaneously.
 - Domain overlap is treated as a scoring boost, not an exclusion rule — content from domains the user did not select can still appear if it is semantically relevant.
+- The artifact list passed to the AI recommendations step is filtered to artifacts whose domains match the selected challenge domains, reducing the candidate set and improving both speed and relevance.
 - All existing single-domain content continues to work correctly (backward compatible).
 
 **Status**: Implemented
@@ -274,6 +293,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 - Batch-ingest all transcript files from a folder: `npm run ingest-content-batch`
 - Re-run metadata extraction on existing content: `npm run backfill-intelligence`
 - Seed the PM artifact catalog: `npm run seed-artifacts`
+- Pre-generate and store AI detail for all artifacts: `npm run backfill-artifact-details`
 
 **Status**: Implemented
 
@@ -384,14 +404,15 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 - **Title** — the full display name of the artifact
 - **Domains** — one or more of the five practice areas: Strategy, Discovery, Delivery, Growth, Leadership
 - **Use case** — a one-line description of the situations this artifact is typically applied to
+- **Pre-generated detail** — a stored AI-generated block containing the artifact's description, suitability, thought leaders, generic Pro-Tipp, and how-to steps. Generated once and reused on every page load.
 
 **Business rules**:
-- The AI recommendations step only selects from artifacts already in the catalog — no hallucinated or invented artifact names can appear in results.
+- The AI recommendations step only selects from artifacts matching the challenge's domains — no hallucinated or invented artifact names can appear in results.
 - The catalog is seeded via a command-line script and is idempotent — running the seed script multiple times will not create duplicate entries.
-- The catalog can be expanded at any time by adding new entries and re-running the seed script.
+- The catalog can be expanded at any time by adding new entries and re-running the seed script, followed by the backfill script to pre-generate their detail.
 - Domain assignments on artifacts are independent from domain assignments on content items — they are separate catalogs.
 
-**Script**: `npm run seed-artifacts`
+**Scripts**: `npm run seed-artifacts` to seed the catalog; `npm run backfill-artifact-details` to pre-generate AI detail for all artifacts.
 
 **Status**: Implemented
 
@@ -399,35 +420,40 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ### 3.10 Artifact Detail Page
 
-**What it does**: Provides a full-page deep-dive for any artifact in the catalog. On load, two parallel data calls fire independently — one AI call to generate the artifact explanation and one knowledge base search to find content mentioning the artifact. Both results populate the page as soon as they arrive, with skeleton placeholders shown in the meantime.
+**What it does**: Provides a full-page deep-dive for any artifact in the catalog. On load, three independent data requests fire in parallel — static artifact content (from the database), a personalised Pro-Tipp (from the AI, only when a challenge context is present), and knowledge base content cards (from a vector similarity search). Each section renders as soon as its data arrives, with skeleton placeholders shown in the meantime.
 
-**What the user sees**: A three-area layout:
+**What the user sees**: A three-area layout with the header and page structure visible immediately.
 
-**Header**: The artifact's title, domain badge(s), and one-line use-case description — visible immediately on load with no waiting.
+**Header**: The artifact's title, domain badge(s), and one-line use-case description — present immediately on load.
 
 **Main content (tabbed)**:
-- **Overview tab**: A 3–5 sentence description of what the artifact is and why it matters, a suitability card ("Best For") indicating which company stages benefit most from this artifact, and a thought leaders card listing 1–4 practitioners most associated with it.
-- **How to Use tab**: A 1–3 sentence introduction followed by a numbered, vertical step list (3–8 steps), each with a short title and a 1–2 sentence explanation of what to do and why.
+- **Overview tab**: A 3–5 sentence description of what the artifact is and why it matters, a suitability card ("Best For") indicating which company stages benefit most, and a thought leaders card listing 1–4 practitioners most associated with it.
+- **How to Use tab**: A 1–3 sentence introduction followed by a numbered, vertical step list (3–8 steps), each with a short title and a 1–2 sentence explanation.
+
+Both tabs load from the pre-generated database record — for any artifact that has been through the backfill process, this content appears in under one second with no AI call needed.
 
 **Sidebar (sticky)**:
-- A "Contexta Pro-Tipp" card. When the user arrived from the flow with a known challenge, the tip is personalised to their specific situation. Without a challenge context, it gives general guidance for getting the most from the artifact.
+- A "Contexta Pro-Tipp" card. When the user arrived from the flow with a known challenge, a separate AI call generates a personalised 2–3 sentence tip tailored to that specific challenge — this loads in a few seconds while the rest of the page content is already visible. Without challenge context, the stored generic Pro-Tipp from the database record is shown immediately with no AI call.
 - A "Save to Playbook" button (visible, non-functional — deferred to a future epic).
 
 **Knowledge base section (below the grid)**:
 - A "Who talks about it" heading followed by a horizontal scrollable carousel of up to 5 content cards. Each card shows the content title, author, and source type badge (Podcast, Video, Article, Book).
-- The carousel finds content by searching the knowledge base for the artifact's title using full-text keyword search. Only one result per content item appears — if multiple chunks from the same podcast episode mention the artifact, the episode appears only once.
-- If no matching content is found, a plain empty-state message is shown.
+- Content is found using AI vector similarity — the artifact's title and use case are embedded and used to search the knowledge base for semantically related content. This means conceptually relevant podcasts and articles appear even if they do not mention the artifact name verbatim.
+- Only one result per content item appears — if multiple chunks from the same podcast episode are related, the episode appears only once.
+- If no relevant content is found, a plain empty-state message is shown.
 
 **What data it needs**:
 - **From the URL**: the artifact slug (to identify which artifact to display) and an optional challenge ID (to personalise the Pro-Tipp).
-- **From the AI**: description, company stage suitability, thought leaders, Pro-Tipp, how-to intro, and how-to steps.
-- **From the knowledge base**: up to 5 deduplicated content items that mention the artifact.
+- **From the database**: pre-generated static detail (description, suitability, thought leaders, how-to, generic Pro-Tipp).
+- **From the AI (only when a challenge is present)**: personalised Pro-Tipp specific to the user's challenge.
+- **From the knowledge base**: up to 5 deduplicated content items semantically related to the artifact.
 
 **Business rules**:
 - If the artifact slug does not exist in the catalog, the server returns a 404.
-- The `cid` (challenge ID) query parameter is fully optional — the page renders completely without it; the Pro-Tipp falls back to generic guidance.
-- The AI detail call and the knowledge base call are independent — a failure in one does not block the other. If the AI call fails, an error message appears in the main content area while the knowledge base carousel still loads. If the knowledge base call fails, the carousel shows an empty state.
-- Skeleton loaders are shown for both async sections until their respective calls complete.
+- The `cid` (challenge ID) query parameter is fully optional — the page renders completely without it. Without it, the stored generic Pro-Tipp is shown immediately and no additional AI call is made.
+- The three data calls (static detail, Pro-Tipp, knowledge cards) are independent — a failure in one does not block the others.
+- If the static detail has not been pre-generated yet (no database record), the system generates it on demand and stores it for future visits.
+- Skeleton loaders are shown for each async section until its respective call completes.
 - The "Save to Playbook" button is always visible but always disabled in the current version.
 - The back button always uses browser history navigation — it returns the user to wherever they came from.
 
@@ -442,10 +468,10 @@ The following describes what information the system stores, in plain language. C
 | Entity | What it represents | Key information stored | Who can access it |
 |--------|-------------------|----------------------|-------------------|
 | **User Profile** | One record per signed-in user | Role, company stage, team size, experience level, timestamps | The user themselves only |
-| **Challenge** | One record per challenge submitted by a signed-in user | Raw description, AI-generated summary, domain(s) selected, optional subdomain and impact text, link to the user who submitted it | The user themselves only |
+| **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in) | The user themselves only (or anonymous, stored temporarily in the browser) |
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
-| **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description | Surfaced to users on recommendation cards and artifact detail pages |
+| **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
 
 ### Key rules
 
@@ -455,6 +481,8 @@ The following describes what information the system stores, in plain language. C
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
 - Content items with an extraction confidence score of 0 were not successfully processed by the intelligence service and should be re-run with the backfill script.
 - Artifacts are a separate catalog from content items. They are not derived from content ingestion — they are seeded directly and represent the fixed set of recommendations the AI can choose from.
+- Challenge records now store both the AI-generated summary and the underlying problem statement and desired outcome — these are used in Phase 2 of the pipeline to generate recommendations without re-running Phase 1.
+- Artifact detail content (description, how-to steps, thought leaders, generic Pro-Tipp) is pre-generated and stored on the artifact record. It is generated on first visit for any artifact that has not been through the backfill process.
 
 ---
 
@@ -464,26 +492,29 @@ All endpoints return JSON. All errors include a plain-text description of what w
 
 | Endpoint | Purpose | Auth required | Key inputs | Key outputs |
 |----------|---------|--------------|-----------|------------|
-| `POST /api/challenges` | Submit a challenge; run the full AI matching and artifact recommendation pipeline | No (works anonymously) | Challenge description, domain(s), optional context fields | Challenge summary, 3–5 artifact recommendations (each with title, domains, use case, tailored explanation, and most-relevant flag) |
-| `POST /api/artifacts/[slug]/detail` | Generate AI-powered deep-dive content for a specific artifact | No | Artifact slug (in URL), optional challenge summary and domains (in body) | Description, company stage suitability, thought leaders, personalised Pro-Tipp, how-to intro, numbered how-to steps |
-| `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content that mentions a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
+| `POST /api/challenges` | Phase 1: submit a challenge and generate the AI summary | No (works anonymously) | Challenge description, domain(s), optional context fields | Challenge ID, AI summary, problem statement, desired outcome statement |
+| `POST /api/challenges/[id]/recommendations` | Phase 2: generate artifact recommendations for an existing challenge | No | Challenge ID (in URL) | 3–5 artifact recommendations (each with title, domains, use case, tailored explanation, and most-relevant flag) |
+| `GET /api/artifacts/[slug]/detail` | Return the pre-generated static deep-dive content for a specific artifact | No | Artifact slug (in URL) | Description, company stage suitability, thought leaders, generic Pro-Tipp, how-to intro, numbered how-to steps |
+| `POST /api/artifacts/[slug]/pro-tip` | Generate a personalised Pro-Tipp for an artifact given a specific challenge | No | Artifact slug (in URL), challenge summary and domains (in body) | Personalised 2–3 sentence Pro-Tipp |
+| `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
 | `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
 
-### Notes on the challenges endpoint
+### Notes on the challenge endpoints
 
-- The context fields (role, company stage, etc.) are optional at the API level; the UI always sends them when available.
-- The endpoint runs the full pipeline end-to-end: it generates an AI summary, runs two searches (semantic + keyword), reranks results, fetches the artifact catalog, and uses the AI to select and explain 3–5 artifacts. This is the most compute-intensive call in the product.
-- The AI selects artifacts strictly from the seeded catalog — it cannot return artifact names that are not in the database.
-- Typical response time target: under 5 seconds.
+- The submission flow is split into two calls. The client fires Phase 1, shows the loading screen, then — as soon as Phase 1 returns — renders the results page and immediately fires Phase 2 in the background.
+- Phase 1 (`POST /api/challenges`) stores the challenge summary, problem statement, and desired outcome to the database and returns them in the response. This is the only compute-intensive AI call in Phase 1.
+- Phase 2 (`POST /api/challenges/[id]/recommendations`) reads the stored challenge fields, generates an embedding, runs hybrid matching, and calls the AI to select artifacts. The artifact catalog is filtered to challenge-relevant domains before the AI call, significantly reducing prompt size.
+- The AI selects artifacts strictly from the domain-filtered catalog — it cannot return artifact names that are not in the database.
 
-### Notes on the artifact detail endpoint
+### Notes on the artifact detail endpoints
 
-- Both the detail and knowledge endpoints are called in parallel by the artifact detail page client — neither blocks the other.
-- If the slug does not exist in the catalog, both endpoints return a 404.
-- The knowledge endpoint uses the same tsvector keyword search as the matching engine, deduplicating to one result per content item and returning up to 5.
-- A failure in the detail endpoint returns an error message in the main content area; the knowledge carousel is unaffected, and vice versa.
+- All three artifact-related calls (`/detail`, `/pro-tip`, `/knowledge`) are fired in parallel by the client on page load.
+- `/detail` is a GET request and requires no body — it always returns the stored pre-generated content.
+- `/pro-tip` is only called when a `challengeSummary` is available in the client; it is skipped entirely when the user visits the artifact page without a challenge context.
+- `/knowledge` uses vector similarity search — it embeds the artifact title and use case, then finds the most semantically related content chunks in the knowledge base, deduplicating to one result per content item.
+- A failure in any one of the three calls does not affect the other two.
 
 ---
 
@@ -503,8 +534,12 @@ All settings are controlled via environment variables. They do not require a cod
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous API key (public) | — | String | **Yes** |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key — grants full DB access, used server-side only | — | String | **Yes** |
 | `OPENROUTER_API_KEY` | API key for the AI provider (OpenRouter) used for text generation and embeddings | — | String | **Yes** |
+| `OPENROUTER_CHAT_MODEL` | The specific AI model used for text generation. Switching to a faster model can significantly reduce response times. | `openai/gpt-4o-mini` | Any model available on OpenRouter | No |
 
 ### Tuning guide for PMs
+
+**"The challenge summary loading screen takes too long (over 15 seconds)"**
+- Switch to a faster model by setting `OPENROUTER_CHAT_MODEL` (e.g. `google/gemini-flash-1.5-8b` or `meta-llama/llama-3.3-70b-instruct`). This requires no code change — just an environment variable update.
 
 **"Recommendations feel too generic or off-topic"**
 - Try increasing `STRUCTURED_FIT_WEIGHT` (e.g. to 0.5) so domain alignment counts more in the final score.
@@ -528,10 +563,13 @@ All settings are controlled via environment variables. They do not require a cod
 - Run `npm run eval` before and after your change. Compare mean precision@3 and precision@5 between the two runs to see whether the change helped.
 
 **"The artifact catalog needs to be expanded or updated"**
-- Add new entries to the seed script and run `npm run seed-artifacts`. The script is idempotent — existing artifacts are skipped automatically.
+- Add new entries to the seed script and run `npm run seed-artifacts`, then run `npm run backfill-artifact-details` to pre-generate their detail pages. Both scripts are idempotent — existing records are skipped automatically.
 
-**"The artifact detail knowledge base carousel shows few or no results for some artifacts"**
-- This is expected if the knowledge base does not yet contain content that explicitly mentions the artifact by name. Ingesting more content that references specific frameworks will enrich the carousel over time.
+**"An artifact detail page is slow to load"**
+- This means the artifact has not yet been pre-generated. Run `npm run backfill-artifact-details` to pre-generate all 68 artifacts at once. Use the `--force` flag to regenerate all of them (e.g. after a prompt update).
+
+**"The knowledge base carousel on an artifact detail page shows no results"**
+- Knowledge cards are found via vector similarity — the system looks for semantically related content in the knowledge base. If no related content exists, the empty state is correct. Ingesting more content covering the relevant topic areas will populate the carousel over time.
 
 **Note**: The three scoring weights (`STRUCTURED_FIT_WEIGHT`, `EMBEDDING_SIMILARITY_WEIGHT`, `KEYWORD_RELEVANCE_WEIGHT`) are additive and do not need to sum to 1. Each is applied independently to its component, and the sum becomes the final ranking score.
 
@@ -557,6 +595,7 @@ The following are intentional decisions for the current version. They are not bu
 - **Eval harness has no CI integration** — the evaluation script is run manually by the team. It is not automatically triggered on code changes or content updates.
 - **Eval precision targets are not set** — the harness measures a baseline; no minimum precision threshold is enforced or tracked automatically.
 - **Artifact difficulty, progress, ratings, and comments** — the detail page does not include user progress indicators, difficulty ratings, peer comments, or social signals. These are explicitly out of scope for the current version.
+- **Artifact detail for uncached artifacts loads via LLM on first visit** — if a new artifact is added to the catalog but the backfill script has not been run, the first visit to that artifact's detail page will trigger an on-demand LLM call (the result is then stored for all future visits). Run `npm run backfill-artifact-details` after adding new artifacts to avoid this.
 
 ---
 
@@ -579,6 +618,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-05 | 1.6 | Epic 11 (performance) | Split the challenge pipeline into two phases: Phase 1 returns the AI summary in ~10 seconds and shows the results page immediately; Phase 2 generates artifact recommendations in the background while the user reads their summary (skeleton cards shown during loading). Added an animated loading screen between challenge submission and results. Artifact detail page now loads static content (description, how-to, thought leaders) instantly from a pre-generated database record instead of via an on-demand LLM call. Pro-Tipp is now a separate, parallel API call so it no longer blocks static content from rendering. Knowledge base carousel now uses vector similarity search instead of keyword matching, fixing empty results for most artifacts. Added `npm run backfill-artifact-details` script to pre-generate all 68 artifacts. Artifact list passed to the recommendations AI is now filtered to challenge-relevant domains (~70% token reduction). Updated User Flow, Feature Reference, Data Model, API Reference, Configuration, and Known Limitations sections accordingly. |
 | 2026-03-05 | 1.5 | Epic 11 | Added Artifact Detail Page (section 3.10): full-page deep-dive for any artifact, with two parallel async data sources — an LLM call generating description, company stage suitability, thought leaders, personalised Pro-Tipp, and numbered how-to steps; and a keyword RAG call returning up to 5 deduplicated knowledge base content cards. Skeleton loading states shown for both sources. Tabs (Overview / How to Use), sticky sidebar with Pro-Tipp and a non-functional "Save to Playbook" button, and a horizontal knowledge carousel. Personalisation is challenge-aware when a cid param is present; falls back to generic guidance otherwise. Added two API endpoints: POST /api/artifacts/[slug]/detail and GET /api/artifacts/[slug]/knowledge. Updated User Flow Step 3 and added Step 4. Updated API Reference with new endpoints. Removed "No artifact detail pages" from Known Limitations. Updated Known Limitations and Future Epics to reflect scope changes. |
 | 2026-03-05 | 1.4 | Epic 10 | Recommendations now surface PM artifacts instead of raw content links. Added Artifact Catalog (section 3.9): 68 seeded PM frameworks from Lenny's Frameworks. Updated matching pipeline: the LLM step now selects from the known artifact list and returns artifact cards (title, domain badges, use-case, tailored explanation) instead of content URLs. Updated User Flow Step 3: clicking a recommendation navigates to the artifact detail page internally. Updated Data Model to add Artifacts entity. Added seed-artifacts script to section 3.5. Added Known Limitation for missing artifact detail pages (Epic 11). Updated Future Epics table (Epic 11 is now next). |
 | 2026-03-04 | 1.3 | Epic 9 | Added Challenge Eval Harness (section 3.8): 15-challenge typed dataset, `npm run eval` script that runs hybrid retrieval against each challenge and reports mean precision@3 and precision@5 against annotated ground truth. Updated Known Limitations (eval limitations noted). Updated Future Epics table (Epic 9 removed from planned; archetype classification is now next). Added eval-specific tuning guidance in section 6. |
