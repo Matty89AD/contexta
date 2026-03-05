@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { ChevronRight } from "lucide-react";
 import {
   ROLES,
   COMPANY_STAGES,
@@ -68,14 +69,14 @@ export function ContextStep({
   };
 
   return (
-    <div className="space-y-6">
-      <p className="text-zinc-600 dark:text-zinc-400">
-        Get personalized content recommendations in ~3 minutes. We’ll use this to
-        tailor results.
-      </p>
+    <div className="space-y-8">
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">Tell us about yourself</h1>
+        <p className="text-zinc-500 dark:text-zinc-400">We&apos;ll tailor PM-Artifacts based on your specific operational environment.</p>
+      </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <label className="block text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-2">
           Role
         </label>
         <div className="flex flex-wrap gap-2">
@@ -96,53 +97,11 @@ export function ContextStep({
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Company stage
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {COMPANY_STAGES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setCompanyStageAndLog(s)}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                companyStage === s
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500"
-              }`}
-            >
-              {COMPANY_STAGE_LABELS[s]}
-            </button>
-          ))}
-        </div>
-      </div>
+      <hr className="border-zinc-100 dark:border-zinc-800" />
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Team size
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {TEAM_SIZES.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTeamSize(t)}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                teamSize === t
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500"
-              }`}
-            >
-              {TEAM_SIZE_LABELS[t]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Experience level
+        <label className="block text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-2">
+          Level of experience in your current role
         </label>
         <div className="flex flex-wrap gap-2">
           {EXPERIENCE_LEVELS.map((e) => (
@@ -162,13 +121,56 @@ export function ContextStep({
         </div>
       </div>
 
+      <hr className="border-zinc-100 dark:border-zinc-800" />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-2">
+            Company Stage
+          </label>
+          <select
+            value={companyStage}
+            onChange={(e) => setCompanyStageAndLog(e.target.value)}
+            className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="">Select stage...</option>
+            {COMPANY_STAGES.map((s) => (
+              <option key={s} value={s}>{COMPANY_STAGE_LABELS[s]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-2">
+            Team Size
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {TEAM_SIZES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTeamSize(t)}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
+                  teamSize === t
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-indigo-300 dark:hover:border-indigo-500"
+                }`}
+              >
+                {TEAM_SIZE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <button
         type="button"
         onClick={handleContinue}
         disabled={!canContinue}
-        className="w-full rounded-lg bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition"
+        className="w-full rounded-xl bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition flex items-center justify-center gap-2"
       >
         Continue
+        <ChevronRight size={18} />
       </button>
     </div>
   );

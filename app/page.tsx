@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Footer } from "@/components/layout/Footer";
 import { BrainCircuit, GraduationCap, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -157,6 +158,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }
