@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.7 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 2.0 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -19,6 +19,7 @@
    - [3.8 Challenge Eval Harness](#38-challenge-eval-harness)
    - [3.9 Artifact Catalog](#39-artifact-catalog)
    - [3.10 Artifact Detail Page](#310-artifact-detail-page)
+   - [3.11 Your Journey](#311-your-journey)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -353,7 +354,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 - **Results page**: an "Save your recommendations" card with a "Create account →" button. Clicking it goes directly to the Sign Up tab on the auth page with the challenge ID pre-attached.
 - **Auth page (`/login`)**: a unified sign-in / sign-up page with two tabs. Either tab supports email and password. A "Continue with Google" button is also available (requires Google OAuth configured in the Supabase dashboard to function).
 - **Navigation bar**: shows a "Login" link when the user is not signed in. Shows the user's email prefix and a "Logout" button when signed in.
-- **Journey page (`/journey`)**: a protected page where past challenges and recommendations will eventually be listed. Currently shows a placeholder heading.
+- **Journey page (`/journey`)**: a protected page showing the user's full challenge history, active challenge cards with a "Continue" button, and a filterable history table. Fully implemented as of Epic 13.
 - **Profile page (`/profile`)**: a protected page showing the user's email address and a form to change their password.
 
 **What happens on sign-up**:
@@ -376,7 +377,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 - The PM context fields on a user profile (role, stage, etc.) are optional at sign-up. They are filled in from browser storage if available, and can be updated when the user completes a new challenge while signed in.
 - Google OAuth requires configuration in the Supabase dashboard before the button becomes functional. The button is always visible; an unconfigured OAuth provider returns a descriptive error.
 
-**Status**: Implemented (sign-up, login, Google OAuth button, challenge claiming, profile page, journey stub, Nav login/logout)
+**Status**: Implemented (sign-up, login, Google OAuth button, challenge claiming, profile page, journey page, Nav login/logout/Your Journey links)
 
 ---
 
@@ -480,6 +481,28 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
+### 3.11 Your Journey
+
+**What it does**: Gives signed-in users a personal workspace showing all their past challenges, real-time stats, and quick re-entry into any previous challenge to see fresh recommendations.
+
+**What the user sees**: A three-section page at `/journey`, accessible only when signed in.
+
+- **Journey Insights** (top): Four stat cards — Total Challenges, Active, Completed, and Saved Artifacts. A content-type distribution bar chart and a Top Thought Leaders strip. These three sub-components currently display illustrative placeholder data; real aggregation is the next step.
+- **Active Challenges** (middle): A horizontally scrollable row of cards for any challenge with status "open" or "in progress." Each card shows the challenge summary, domain badges, status badge, and a "Continue" button. Clicking "Continue" takes the user back to the recommendations view for that challenge, with fresh recommendations generated. If there are no active challenges, an empty state with a link to start a new challenge is shown.
+- **Challenge History** (bottom): A full table of all the user's challenges, ordered by most recent first. Columns include the challenge summary, domain, status badge, and date. A status dropdown (All / Open / In Progress / Completed / Archived / Abandoned) filters the table client-side without a page reload. Clicking any row re-enters the resume flow for that challenge.
+
+**Business rules**:
+- The page redirects unauthenticated users to the login page, then back to `/journey` after sign-in.
+- After a user saves a challenge by signing up, they are redirected to `/journey` automatically.
+- The "Continue" button and table row click both trigger the **resume flow**: the system re-uses the stored challenge summary and generates new artifact recommendations without requiring the user to re-enter their challenge description.
+- If the resume fetch fails (e.g. the challenge belongs to a different account), the system falls back gracefully to the standard challenge entry flow.
+- Challenge status is a lifecycle field: every challenge starts as "open." Status update UI is read-only for now (users see their current status but cannot manually change it in this version).
+- The desktop navigation bar now shows a persistent "Your Journey" link for signed-in users, and a "Login" link for guests.
+
+**Status**: Implemented
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -487,7 +510,7 @@ The following describes what information the system stores, in plain language. C
 | Entity | What it represents | Key information stored | Who can access it |
 |--------|-------------------|----------------------|-------------------|
 | **User Profile** | One record per signed-in user | Email (via the auth system), role, company stage, team size, experience level (all context fields are optional at sign-up and filled in automatically from browser storage), timestamps | The user themselves only |
-| **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in) | The user themselves only (or anonymous, stored temporarily in the browser) |
+| **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in), lifecycle status (open / in progress / completed / archived / abandoned — defaults to "open") | The user themselves only (or anonymous, stored temporarily in the browser) |
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
 | **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
@@ -518,6 +541,8 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
 | `PATCH /api/challenges/[id]/claim` | Link an anonymous challenge to the signed-in user's account | Yes | Challenge ID (in URL) | Success confirmation |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
+| `GET /api/journey` | Return the signed-in user's full challenge list and summary stats (total, active, completed) | **Yes** | None | List of challenges ordered by most recent first, plus stats object |
+| `GET /api/challenges/[id]/resume` | Return the stored phase-1 fields for a specific challenge so the client can re-enter the recommendations step without re-running phase 1 | **Yes** | Challenge ID (in URL) | Challenge summary, problem statement, desired outcome, domains, raw description |
 | `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
 
@@ -602,8 +627,7 @@ The following are intentional decisions for the current version. They are not bu
 
 - **No "Save to Playbook" action** — users can view artifact details but cannot save artifacts to a personal collection. The button is visible on the detail page but non-functional. Deferred to a future epic.
 - **No content detail screen from knowledge carousel** — clicking a knowledge base card on the artifact detail page does not navigate anywhere in the current version. Content detail pages are planned for a future epic.
-- **No journey dashboard yet** — the `/journey` page exists and is protected but shows only a placeholder. Listing past challenges and their recommendations there is deferred to a future epic.
-- **No saved recommendations view** — users can save their current challenge by signing up, and the record is persisted in the database, but there is no UI to browse past challenges or re-open past recommendations yet.
+- **Challenge status is read-only** — users can see the status of each challenge (open, in progress, completed, etc.) but cannot manually change it through the UI in the current version. Status update controls are deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
 - **No admin content management UI** — content is added to the knowledge base via command-line ingestion scripts, not a dashboard.
@@ -633,7 +657,6 @@ The following are intentional decisions for the current version. They are not bu
 | Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost artifacts that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
 | Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
-| Challenge history & saved items | Populate the `/journey` page with past challenges and their recommendations. The page and route protection already exist; the listing UI and data queries are deferred. | Planned (next) |
 | Analytics pipeline | Integrate server events with a third-party analytics tool (e.g. Segment, PostHog). Enable funnel analysis, recommendation quality tracking, and content performance reporting. | Planned (post-MVP) |
 | Content management UI | Allow internal team members to add, edit, tag, and retire content items via a web interface rather than the CLI. | Planned (post-MVP) |
 
@@ -643,6 +666,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-06 | 2.0 | Epic 13 | Added Your Journey page: a full auth-guarded workspace with three sections — a Journey Insights panel (placeholder stats, content-type chart, thought leaders), an Active Challenges card row with a resume flow that re-generates recommendations for any past challenge without re-running the AI summary phase, and a filterable Challenge History table with status badges. Added a challenge status lifecycle (open / in progress / completed / archived / abandoned). Desktop nav now shows persistent "Your Journey" and "Login" links. Added GET /api/journey and GET /api/challenges/[id]/resume endpoints. |
 | 2026-03-06 | 1.7 | Epic 12 | Implemented authentication and profile MVP. The login page (`/login`) now has real Sign Up / Log In tabs and a "Continue with Google" button. Signing up after a challenge automatically links the challenge to the new account. Navigation bar shows a Login link when unauthenticated and user email + Logout when signed in. Added protected `/journey` (blank stub, redirect to listing content is next) and `/profile` (email display + change-password form) pages. Added a `PATCH /api/challenges/[id]/claim` endpoint for challenge claiming. Made PM-context profile fields optional at sign-up so bare profiles can be created immediately without requiring the user to re-enter their role and stage. Updated User Flow, Section 3.7, Data Model, API Reference, Configuration, and Known Limitations sections. |
 | 2026-03-05 | 1.6 | Epic 11 (performance) | Split the challenge pipeline into two phases: Phase 1 returns the AI summary in ~10 seconds and shows the results page immediately; Phase 2 generates artifact recommendations in the background while the user reads their summary (skeleton cards shown during loading). Added an animated loading screen between challenge submission and results. Artifact detail page now loads static content (description, how-to, thought leaders) instantly from a pre-generated database record instead of via an on-demand LLM call. Pro-Tipp is now a separate, parallel API call so it no longer blocks static content from rendering. Knowledge base carousel now uses vector similarity search instead of keyword matching, fixing empty results for most artifacts. Added `npm run backfill-artifact-details` script to pre-generate all 68 artifacts. Artifact list passed to the recommendations AI is now filtered to challenge-relevant domains (~70% token reduction). Updated User Flow, Feature Reference, Data Model, API Reference, Configuration, and Known Limitations sections accordingly. |
 | 2026-03-05 | 1.5 | Epic 11 | Added Artifact Detail Page (section 3.10): full-page deep-dive for any artifact, with two parallel async data sources — an LLM call generating description, company stage suitability, thought leaders, personalised Pro-Tipp, and numbered how-to steps; and a keyword RAG call returning up to 5 deduplicated knowledge base content cards. Skeleton loading states shown for both sources. Tabs (Overview / How to Use), sticky sidebar with Pro-Tipp and a non-functional "Save to Playbook" button, and a horizontal knowledge carousel. Personalisation is challenge-aware when a cid param is present; falls back to generic guidance otherwise. Added two API endpoints: POST /api/artifacts/[slug]/detail and GET /api/artifacts/[slug]/knowledge. Updated User Flow Step 3 and added Step 4. Updated API Reference with new endpoints. Removed "No artifact detail pages" from Known Limitations. Updated Known Limitations and Future Epics to reflect scope changes. |
