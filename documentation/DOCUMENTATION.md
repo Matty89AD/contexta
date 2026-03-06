@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 2.0 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 3.0 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -20,6 +20,7 @@
    - [3.9 Artifact Catalog](#39-artifact-catalog)
    - [3.10 Artifact Detail Page](#310-artifact-detail-page)
    - [3.11 Your Journey](#311-your-journey)
+   - [3.12 Save & Revisit Challenge Results](#312-save--revisit-challenge-results)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -56,6 +57,8 @@ The user fills in four fields about themselves: their **role**, their **company 
 
 The selections are saved locally in the browser. If the user refreshes or navigates away and comes back, their answers are preserved.
 
+Signed-in users see a **Skip** button alongside Continue. Clicking Skip bypasses the context step entirely and proceeds directly to Step 2 — useful when rerunning a challenge and context has not changed.
+
 ### Step 2 — Challenge (approximately 1–3 minutes)
 
 The user describes their challenge in a free-text field. They also select one or more **domains** (Strategy, Discovery, Delivery, Growth, Leadership) that best describe the area their challenge falls under. Optionally they can add a subdomain and describe the impact and reach of the problem.
@@ -68,23 +71,20 @@ A **Back** button at the top returns the user to Step 1 with their context prese
 
 After the user submits their challenge, a full-screen loading animation replaces the challenge form immediately. The screen cycles through four status messages — "Analyzing your challenge…", "Searching the knowledge base…", "Matching PM frameworks…", "Preparing your results…" — with animated progress dots that advance as each phase completes. The step indicator at the top of the page advances to show the user they are progressing towards the Recommendations step.
 
-This loading phase covers the AI summary generation — the first and most time-consuming step of the pipeline.
+This loading phase covers both AI phases running back-to-back — Phase 1 (challenge summary) and Phase 2 (artifact recommendations). Once both complete, the user is automatically redirected to the Results page.
 
-### Step 3 — Results: Summary (immediate on phase-1 completion)
+### Step 3 — Results page (`/results`)
 
-As soon as the AI summary is ready, the results page appears with the **challenge summary card** visible in the left column. The user can immediately read the AI's interpretation of their challenge, including the domain badges. The right column shows skeleton placeholders while the artifact recommendations are being generated in the background.
+The user lands on a dedicated results page outside the flow stepper. The page shows:
 
-### Step 3 — Results: Recommendations (approximately 10–12 seconds after summary appears)
+- **Left column**: the **Challenge Summary card** — the AI's interpretation of the challenge, with domain badges — and a save prompt (see below).
+- **Right column**: 3–5 **artifact recommendation cards**. One card is highlighted as **"Most Relevant."** Each card shows the artifact name, domain badges, a use-case description, and a tailored 1–2 sentence explanation of why this artifact fits the challenge. Clicking any card opens the artifact's detail page with the challenge context attached.
 
-Once the recommendation engine finishes, the skeleton cards in the right column are replaced by 3–5 **artifact recommendation cards**. One card is highlighted as **"Most Relevant."** Each card shows:
-- The artifact name (e.g. "Jobs to be Done", "Opportunity Solution Tree")
-- One or more **domain badges** indicating the practice areas this artifact covers
-- A brief description of the artifact's **use case** — what it is typically applied to
-- A 1–2 sentence **explanation** of why this specific artifact fits the challenge the user described
+**Save prompt — signed-in users**: A **"Save Challenge"** button is shown in the left column. Clicking it saves the challenge and its recommendations to the user's account and redirects them to the saved challenge page (`/challenges/[id]`).
 
-Clicking any artifact card navigates to that artifact's **detail page**, where the user can explore it in depth. The challenge ID is passed along automatically so the detail page can show personalised guidance.
+**Save prompt — guests**: A **"Create account to save"** card is shown instead. Clicking **"Create account →"** takes the user to the sign-up page with their challenge pre-attached, so the challenge can be explicitly saved to the new account.
 
-In the left column alongside the challenge summary, a **"Save your recommendations"** card invites the user to create an account. Clicking **"Create account →"** takes the user to the sign-up page with their challenge ID pre-attached, so the challenge is automatically claimed to the account as soon as they sign up.
+The results page is transient — if the user navigates away or closes the browser without saving, the results are not recoverable. Only challenges that have been explicitly saved appear in the Journey.
 
 ### Step 4 — Artifact Detail (optional, per artifact)
 
@@ -111,13 +111,13 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 ### Edge cases
 
-- **Hitting Back from Step 3**: returns the user to the challenge form with their previous input intact.
 - **No matching artifacts**: if the artifact catalog is empty or the AI cannot select from it, a message appears instead of recommendations.
 - **API failure during phase 1**: a clear error message is shown on the challenge step; the user can retry.
-- **API failure during phase 2**: the summary is already visible; the recommendations area shows an empty state instead of skeleton cards.
-- **Not signed in**: the full flow works without an account. The challenge is saved to the database automatically (without a user link) so it can be claimed later. Data held in the browser (context answers) is used to pre-fill the user profile on sign-up.
-- **Signed in**: challenge records are saved to and linked with the user's account in the database.
-- **Sign-up from the results page**: clicking "Create account →" opens the sign-up page with the tab pre-set to Sign Up. After creating an account, the challenge is automatically linked to the new account and the user is redirected to their Journey page.
+- **API failure during phase 2**: the summary is still shown; the recommendations area shows an empty state.
+- **Not signed in**: the full flow works without an account. Results are shown on `/results` with a "Create account to save" prompt. The challenge record exists in the database but will not appear in any Journey unless the user signs up and the challenge is explicitly saved.
+- **Signed in**: results page shows a "Save Challenge" button. Saving persists the challenge and its recommendations; the user is then redirected to the permanent saved challenge page at `/challenges/[id]`.
+- **Sign-up from the results page**: clicking "Create account →" opens the sign-up page pre-set to Sign Up. After account creation, the challenge is linked to the account; the user can then return to save it.
+- **Navigating away from `/results` without saving**: results are lost. The page redirects to `/flow` if revisited directly (no session data present).
 - **Login from the nav**: returning users click "Login" in the navigation bar, fill in their email and password (or use Google), and are redirected to their Journey page.
 - **Protected pages**: visiting `/journey` or `/profile` without being signed in redirects to the login page, then back to the intended destination after authentication.
 - **Artifact detail without challenge context**: if the user navigates to an artifact page without a challenge ID (e.g. directly or by sharing the URL), the Pro-Tipp shows the stored generic guidance immediately and no extra AI call is made.
@@ -141,7 +141,8 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 - Experience level (one of four fixed options)
 
 **Business rules**:
-- All four fields are required before proceeding.
+- All four fields are required before proceeding for guests.
+- Signed-in users can click **Skip** to bypass the context step — their previously saved context (from browser storage) is used automatically.
 - Selections are saved locally in the browser and persist across page refreshes.
 - Changing a selection after proceeding to Step 2 is possible by clicking Back.
 
@@ -483,21 +484,53 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ### 3.11 Your Journey
 
-**What it does**: Gives signed-in users a personal workspace showing all their past challenges, real-time stats, and quick re-entry into any previous challenge to see fresh recommendations.
+**What it does**: Gives signed-in users a personal workspace showing all their **saved** challenges, summary stats, and quick navigation to any past challenge view.
 
 **What the user sees**: A three-section page at `/journey`, accessible only when signed in.
 
-- **Journey Insights** (top): Four stat cards — Total Challenges, Active, Completed, and Saved Artifacts. A content-type distribution bar chart and a Top Thought Leaders strip. These three sub-components currently display illustrative placeholder data; real aggregation is the next step.
-- **Active Challenges** (middle): A horizontally scrollable row of cards for any challenge with status "open" or "in progress." Each card shows the challenge summary, domain badges, status badge, and a "Continue" button. Clicking "Continue" takes the user back to the recommendations view for that challenge, with fresh recommendations generated. If there are no active challenges, an empty state with a link to start a new challenge is shown.
-- **Challenge History** (bottom): A full table of all the user's challenges, ordered by most recent first. Columns include the challenge summary, domain, status badge, and date. A status dropdown (All / Open / In Progress / Completed / Archived / Abandoned) filters the table client-side without a page reload. Clicking any row re-enters the resume flow for that challenge.
+- **Journey Insights** (top): Four stat cards — Total Challenges, Active, Completed, and Saved Artifacts. A content-type distribution bar chart and a Top Thought Leaders strip. These three sub-components currently display illustrative placeholder data; real aggregation is a future step.
+- **Active Challenges** (middle): A horizontally scrollable row of cards for any saved challenge with status "open" or "in progress." Each card shows the challenge title, domain badges, status badge, and a **"View"** button. Clicking "View" opens the saved challenge page at `/challenges/[id]`. If there are no active challenges, an empty state with a link to start a new challenge is shown.
+- **Challenge History** (bottom): A full table of all the user's **saved** challenges, ordered by most recently saved first. Each row shows the challenge title, raw description preview, domain badges, status badge, and date. A status dropdown filters the table client-side. Clicking any row navigates to the saved challenge page at `/challenges/[id]`.
 
 **Business rules**:
 - The page redirects unauthenticated users to the login page, then back to `/journey` after sign-in.
-- After a user saves a challenge by signing up, they are redirected to `/journey` automatically.
-- The "Continue" button and table row click both trigger the **resume flow**: the system re-uses the stored challenge summary and generates new artifact recommendations without requiring the user to re-enter their challenge description.
-- If the resume fetch fails (e.g. the challenge belongs to a different account), the system falls back gracefully to the standard challenge entry flow.
+- Only **explicitly saved** challenges appear here. Challenges that were generated but never saved are not shown.
+- Stats (total, active, completed) are calculated against saved challenges only.
 - Challenge status is a lifecycle field: every challenge starts as "open." Status update UI is read-only for now (users see their current status but cannot manually change it in this version).
-- The desktop navigation bar now shows a persistent "Your Journey" link for signed-in users, and a "Login" link for guests.
+
+**Status**: Implemented
+
+---
+
+### 3.12 Save & Revisit Challenge Results
+
+**What it does**: Lets signed-in users explicitly save a set of recommendations to their account, revisit them any time without re-running the AI, rename the challenge, and rerun the flow with the same challenge text prefilled.
+
+**What the user sees**:
+
+**On the Results page (`/results`)** — after a challenge completes, signed-in users see a **"Save Challenge"** button in the left column. Clicking it:
+1. Persists the challenge and its full list of artifact recommendations to the user's account.
+2. Auto-generates a short display title from the first sentence of the challenge description (no AI call — happens instantly).
+3. Redirects the user to the permanent saved challenge page.
+
+**On the Saved Challenge page (`/challenges/[id]`)** — a full-page view showing:
+- The challenge title (editable inline — click to rename, press Enter or click the tick to confirm).
+- The date the challenge was saved.
+- The challenge summary card with domain badges.
+- The full list of stored artifact recommendation cards, identical to those shown on the Results page. Clicking any card opens the artifact's detail page.
+- A **"Rerun"** button in the top-right corner.
+
+**Rerun flow** — clicking "Rerun" starts a fresh flow with the challenge text pre-filled in Step 2 and the context step skippable. The user can edit the description or leave it as-is, then submit. A **new** challenge record is created — the original saved challenge is not modified.
+
+**Business rules**:
+- Only signed-in users can save challenges. Guests see a "Create account to save" prompt instead.
+- A challenge must be explicitly saved — results are not persisted automatically.
+- Unsaved challenges (generated but navigated away from) do not appear in the Journey.
+- The auto-generated title is derived from the challenge description text; it requires no AI call.
+- The user can rename the title any time from the saved challenge page. The rename is saved immediately on confirmation.
+- Stored recommendations are loaded directly from the database — no AI pipeline runs on revisit.
+- Artifact detail content ("who speaks about it" / "Pro-Tipp") is intentionally regenerated fresh each time the artifact detail page is visited, since the knowledge base is updated regularly and fresh associations provide ongoing value.
+- Rerun always creates a new record; the original saved challenge and its recommendations remain unchanged.
 
 **Status**: Implemented
 
@@ -510,7 +543,7 @@ The following describes what information the system stores, in plain language. C
 | Entity | What it represents | Key information stored | Who can access it |
 |--------|-------------------|----------------------|-------------------|
 | **User Profile** | One record per signed-in user | Email (via the auth system), role, company stage, team size, experience level (all context fields are optional at sign-up and filled in automatically from browser storage), timestamps | The user themselves only |
-| **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in), lifecycle status (open / in progress / completed / archived / abandoned — defaults to "open") | The user themselves only (or anonymous, stored temporarily in the browser) |
+| **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in), lifecycle status (open / in progress / completed / archived / abandoned — defaults to "open"), save state (saved / unsaved), save timestamp, display title (auto-generated on save, user-editable), and the full list of artifact recommendations stored at save time | The user themselves only (or anonymous, stored temporarily in the browser) |
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
 | **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
@@ -519,7 +552,8 @@ The following describes what information the system stores, in plain language. C
 
 - User data (profiles, challenges) is access-controlled — each user can only see their own data.
 - Content and content chunks are managed by the internal team only (no user-facing content management).
-- Challenges are always saved to the database when submitted, including for anonymous users (stored with no user link). They can be claimed by signing up immediately after, linking the challenge to the new account.
+- A challenge record is always created in the database when the pipeline runs (including for anonymous users). However, only **explicitly saved** challenges appear in the Journey. Unsaved challenge records are invisible to the user and are treated as abandoned.
+- Signed-in users save a challenge by clicking the "Save Challenge" button on the Results page. Guests see a "Create account to save" prompt instead.
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
 - Content items with an extraction confidence score of 0 were not successfully processed by the intelligence service and should be re-run with the backfill script.
 - Artifacts are a separate catalog from content items. They are not derived from content ingestion — they are seeded directly and represent the fixed set of recommendations the AI can choose from.
@@ -539,6 +573,8 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `GET /api/artifacts/[slug]/detail` | Return the pre-generated static deep-dive content for a specific artifact | No | Artifact slug (in URL) | Description, company stage suitability, thought leaders, generic Pro-Tipp, how-to intro, numbered how-to steps |
 | `POST /api/artifacts/[slug]/pro-tip` | Generate a personalised Pro-Tipp for an artifact given a specific challenge | No | Artifact slug (in URL), challenge summary and domains (in body) | Personalised 2–3 sentence Pro-Tipp |
 | `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
+| `GET /api/challenges/[id]` | Load a saved challenge with its stored recommendations | **Yes** | Challenge ID (in URL) | Full challenge record including stored artifact recommendations, title, save timestamp |
+| `PATCH /api/challenges/[id]` | Save a challenge (with recommendations) or rename its title | **Yes** | Challenge ID (in URL); body: save flag, recommendations array, and/or new title | Success confirmation |
 | `PATCH /api/challenges/[id]/claim` | Link an anonymous challenge to the signed-in user's account | Yes | Challenge ID (in URL) | Success confirmation |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
 | `GET /api/journey` | Return the signed-in user's full challenge list and summary stats (total, active, completed) | **Yes** | None | List of challenges ordered by most recent first, plus stats object |
@@ -548,10 +584,12 @@ All endpoints return JSON. All errors include a plain-text description of what w
 
 ### Notes on the challenge endpoints
 
-- The submission flow is split into two calls. The client fires Phase 1, shows the loading screen, then — as soon as Phase 1 returns — renders the results page and immediately fires Phase 2 in the background.
-- Phase 1 (`POST /api/challenges`) stores the challenge summary, problem statement, and desired outcome to the database and returns them in the response. This is the only compute-intensive AI call in Phase 1.
+- The submission flow runs Phase 1 then Phase 2 back-to-back on the loading screen, then redirects the user to `/results`.
+- Phase 1 (`POST /api/challenges`) stores the challenge summary, problem statement, and desired outcome to the database. This is the only compute-intensive AI call in Phase 1.
 - Phase 2 (`POST /api/challenges/[id]/recommendations`) reads the stored challenge fields, generates an embedding, runs hybrid matching, and calls the AI to select artifacts. The artifact catalog is filtered to challenge-relevant domains before the AI call, significantly reducing prompt size.
 - The AI selects artifacts strictly from the domain-filtered catalog — it cannot return artifact names that are not in the database.
+- `GET /api/challenges/[id]` returns a challenge only if it is both owned by the requesting user and has been explicitly saved (`is_saved = true`). Unsaved records return 404.
+- `PATCH /api/challenges/[id]` accepts two modes: (a) save mode — marks the challenge as saved and stores the recommendations list; (b) rename mode — updates the display title only. Both modes verify ownership.
 
 ### Notes on the artifact detail endpoints
 
@@ -635,7 +673,7 @@ The following are intentional decisions for the current version. They are not bu
 - **No Q&A or cited-answer format** — the product returns curated artifact recommendations, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
 - **No audience-targeting metadata** — artifacts and content items are not tagged by target role, company stage, or experience level. Domain overlap is the only structured signal in the matching score.
 - **No per-chunk domain tagging** — domain assignments apply to the whole content item, not to individual chunks within it.
-- **Unauthenticated challenges are persisted to the database but unrecoverable** — the challenge record is always saved when the pipeline runs. However, if the user closes the browser without signing up, there is no way to reconnect that record to a future account. The challenge ID is held only in the client session.
+- **Unsaved challenges are unrecoverable** — a challenge record is always created when the pipeline runs, but it only appears in the Journey if explicitly saved. Guests who close the browser or navigate away from the Results page without signing up lose access to those results permanently. Signed-in users who leave the Results page without clicking "Save Challenge" similarly lose the results.
 - **Google OAuth requires Supabase dashboard configuration** — the "Continue with Google" button on the login page is always visible, but Google OAuth will not work until a Google OAuth application is configured and enabled in the Supabase project dashboard. Without this, the button returns an error.
 - **Password reset ("forgot password") not yet implemented** — the login page has no forgot-password flow. Users who forget their password cannot reset it through the product UI in the current version.
 - **Email confirmation is off by default (Supabase development settings)** — in production, Supabase will send a confirmation email before activating the account. Ensure the correct Supabase email templates and SMTP settings are configured before going live.
@@ -666,6 +704,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-06 | 3.0 | Epic 14 | Added explicit save flow: results now appear on a dedicated `/results` page outside the flow stepper; signed-in users save with a "Save Challenge" button, guests see a "Create account to save" prompt. Saved challenges appear on a permanent `/challenges/[id]` page with stored recommendations (no AI re-run), inline title rename, and a Rerun button that prefills the flow. Journey now shows only saved challenges and links each row to the saved challenge page. Context step gains a Skip button for signed-in users. |
 | 2026-03-06 | 2.0 | Epic 13 | Added Your Journey page: a full auth-guarded workspace with three sections — a Journey Insights panel (placeholder stats, content-type chart, thought leaders), an Active Challenges card row with a resume flow that re-generates recommendations for any past challenge without re-running the AI summary phase, and a filterable Challenge History table with status badges. Added a challenge status lifecycle (open / in progress / completed / archived / abandoned). Desktop nav now shows persistent "Your Journey" and "Login" links. Added GET /api/journey and GET /api/challenges/[id]/resume endpoints. |
 | 2026-03-06 | 1.7 | Epic 12 | Implemented authentication and profile MVP. The login page (`/login`) now has real Sign Up / Log In tabs and a "Continue with Google" button. Signing up after a challenge automatically links the challenge to the new account. Navigation bar shows a Login link when unauthenticated and user email + Logout when signed in. Added protected `/journey` (blank stub, redirect to listing content is next) and `/profile` (email display + change-password form) pages. Added a `PATCH /api/challenges/[id]/claim` endpoint for challenge claiming. Made PM-context profile fields optional at sign-up so bare profiles can be created immediately without requiring the user to re-enter their role and stage. Updated User Flow, Section 3.7, Data Model, API Reference, Configuration, and Known Limitations sections. |
 | 2026-03-05 | 1.6 | Epic 11 (performance) | Split the challenge pipeline into two phases: Phase 1 returns the AI summary in ~10 seconds and shows the results page immediately; Phase 2 generates artifact recommendations in the background while the user reads their summary (skeleton cards shown during loading). Added an animated loading screen between challenge submission and results. Artifact detail page now loads static content (description, how-to, thought leaders) instantly from a pre-generated database record instead of via an on-demand LLM call. Pro-Tipp is now a separate, parallel API call so it no longer blocks static content from rendering. Knowledge base carousel now uses vector similarity search instead of keyword matching, fixing empty results for most artifacts. Added `npm run backfill-artifact-details` script to pre-generate all 68 artifacts. Artifact list passed to the recommendations AI is now filtered to challenge-relevant domains (~70% token reduction). Updated User Flow, Feature Reference, Data Model, API Reference, Configuration, and Known Limitations sections accordingly. |
