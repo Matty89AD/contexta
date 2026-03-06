@@ -104,13 +104,65 @@
       color: #c7254e;
     }
 
+    /* ── Section dividers ───────────────────────────────── */
+    .flow-section {
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e8e8e8;
+    }
+
+    .flow-label {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      background: #555;
+      border-radius: 3px;
+      padding: 0.2em 0.55em;
+      margin-bottom: 0.5rem;    
+    }
+    .flow-label.flow-1 { background: #2563eb; }
+    .flow-label.flow-2 { background: #7c3aed; }
+
+    /* ── Overview grid ──────────────────────────────────── */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0 1.5rem;
+    }
+    .flow-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+    }
+    .flow-card .fc-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+    }
+    .flow-card .fc-trigger {
+      font-size: 0.8rem;
+      color: #777;
+      margin-bottom: 0.6rem;
+    }
+    .flow-card ul {
+      margin-left: 1.1rem;
+      font-size: 0.83rem;
+    }
+
+    /* ── Phase blocks ───────────────────────────────────── */
     .phase-block {
-      background: #f8f8f8;
+      background: #ffffff;
       border-left: 3px solid #d0d0d0;
       border-radius: 0 6px 6px 0;
-      padding: 1rem 1.25rem;
+      padding: 1rem 1.25rem;  
       margin: 0.75rem 0 1.25rem;
     }
+    .phase-block.blue  { border-left-color: #93bbfd; }
+    .phase-block.purple { border-left-color: #c4b5fd; }
     .phase-block h3 { margin-top: 0; }
 
     .note {
@@ -148,20 +200,54 @@
 
     <!-- ── OVERVIEW ─────────────────────────────────────────────── -->
     <h2>What Contexta does</h2>
+
+    <div class="flow-grid">
+      <div class="flow-card">
+        <div class="fc-title"><span class="flow-label flow-1">Problem</span>  <br>Product Managers think in frameworks and methodologies</div>
+        <div class="fc-trigger">Triggered when: PM faces a new problem</div>
+        <ul>
+          <li>PM faces a new challenge and has make a decision</li>
+          <li>PM has no one there to ask for help</li>
+          <li>PM knows the problem was solved many times before</li>
+          <li>PM is stuck and creates decision paralysis</li>
+        </ul>
+      </div>
+      <div class="flow-card">
+        <div class="fc-title"><span class="flow-label flow-2">Solution</span> <br>Contexta finds the right Artifacts for any problem</div>
+        <div class="fc-trigger">Triggered when: PM discovers Contexta</div>
+        <ul>
+          <li>PM provides context about the role, company stage, team size</li>
+          <li>PM describes the challenge in a few sentences</li>
+          <li>Contexta finds relevant artifacts based on the context and the challenge</li>
+          <li>Contexta displays artifacts with a short explanation</li>
+          <li>Contexta shows real-world content-pieces about the artifacts</li>
+        </ul>
+      </div>
+    </div>
     
     <div class="note">
       <p>
-        <strong>Product Managers</strong> tend to <strong>think</strong> in <strong>frameworks</strong> and <strong>methodologies</strong> <br>
-        They are <strong>always looking</strong> for the right <strong>Product Management Artifact</strong> to solve a <strong>specific problem</strong>.
-      </p>
-      <p>
-      --> <strong>Contexta</strong> as an <strong>AI copilot</strong> helps Product Managers find the right <strong>Artifacts</strong>for any <strong>problem</strong>.
+      <strong>Contexta</strong> as an <strong>AI copilot</strong> helps Product Managers find the right <strong>Artifacts</strong> for any <strong>problem</strong>.
       </p>
     </div>
     <hr>
+    <!-- ── MVP Showcase ─────────────────────────────────────────────── -->
+    <h2>MVP Showcase</h2>
+    <div class="phase-block blue">
+      <ol>
+        <li><strong>First time user starts on home page</strong>
+        <li><strong>Starts Challenge flow and enters Context</strong>
+        <li><strong>Defines the Challenge</strong>
+        <li><strong>Contexta finds relevant Artifacts</strong>
+        <li><strong>Artifacts are displayed with a short explanation</strong>
+        <li><strong>Real-world content-pieces about the Artifacts are displayed</strong>
+        <li><strong>Sign-up and save to Journey</strong>
+        <li><strong>User can manage the Challenges to their personal library</strong>
+      </ol>
+    </div>
     <!-- ── INITIAL SETUP ─────────────────────────────────────────────── -->
     <h2>Initial Project Setup</h2>
-    <div class="phase-block">
+    <div class="phase-block blue">
       <ol>
         <li><strong>Init Prompt:</strong> brief description of the project and the problem I want to solve</li>
         <li><strong>Tech Stack:</strong> provided the tech stack of the project</li>
@@ -171,27 +257,14 @@
       </ol>
     </div>
 
-    <!-- ── PHASE 1 ─────────────────────────────────────────────── -->
+    <!-- ── AI Workflow ─────────────────────────────────────────────── -->
     <h2>My Workflow</h2>
-    <div class="phase-block">
+    <div class="phase-block blue">
       <ol>
         <li><strong>main agent:</strong> reads the requirements (PRD) and creates an epic in /specs folder</li>
         <li><strong>/dev agent:</strong> reads the epic, implements the epic and runs unit tests and e2e tests</li>
         <li><strong>/documentation agent:</strong> two modes to write the documentation. --all or --changed-files for the changed files</li>
         <li><strong>/code review agent:</strong> gets started manually by the user to review the code base</li>
-      </ol>
-    </div>
-
-    <!-- ── PHASE 2 ─────────────────────────────────────────────── -->
-    <h2>MVP Showcase</h2>
-    <div class="phase-block">
-      <ol>
-        <li><strong>First time user starts on home page</strong>
-        <li><strong>Starts flow and enters Context</strong>
-        <li><strong>Defines the Chalennge</strong>
-        <li><strong>Artifacts are recommended</strong>
-        <li><strong>Artifacts Details are displayed</strong>
-        <li><strong>Sign-up and save to playbook is displayed</strong>
       </ol>
     </div>
 
