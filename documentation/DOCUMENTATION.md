@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 1.6 &nbsp;|&nbsp; **Last updated:** 2026-03-05 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 1.7 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -83,7 +83,7 @@ Once the recommendation engine finishes, the skeleton cards in the right column 
 
 Clicking any artifact card navigates to that artifact's **detail page**, where the user can explore it in depth. The challenge ID is passed along automatically so the detail page can show personalised guidance.
 
-At the bottom of the results page, a prompt invites the user to create an account to save their challenges and return to them later.
+In the left column alongside the challenge summary, a **"Save your recommendations"** card invites the user to create an account. Clicking **"Create account →"** takes the user to the sign-up page with their challenge ID pre-attached, so the challenge is automatically claimed to the account as soon as they sign up.
 
 ### Step 4 — Artifact Detail (optional, per artifact)
 
@@ -114,8 +114,11 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 - **No matching artifacts**: if the artifact catalog is empty or the AI cannot select from it, a message appears instead of recommendations.
 - **API failure during phase 1**: a clear error message is shown on the challenge step; the user can retry.
 - **API failure during phase 2**: the summary is already visible; the recommendations area shows an empty state instead of skeleton cards.
-- **Not signed in**: the full flow works without an account. Data is held in the browser until sign-up.
-- **Signed in**: challenge records are saved to the user's profile in the database.
+- **Not signed in**: the full flow works without an account. The challenge is saved to the database automatically (without a user link) so it can be claimed later. Data held in the browser (context answers) is used to pre-fill the user profile on sign-up.
+- **Signed in**: challenge records are saved to and linked with the user's account in the database.
+- **Sign-up from the results page**: clicking "Create account →" opens the sign-up page with the tab pre-set to Sign Up. After creating an account, the challenge is automatically linked to the new account and the user is redirected to their Journey page.
+- **Login from the nav**: returning users click "Login" in the navigation bar, fill in their email and password (or use Google), and are redirected to their Journey page.
+- **Protected pages**: visiting `/journey` or `/profile` without being signed in redirects to the login page, then back to the intended destination after authentication.
 - **Artifact detail without challenge context**: if the user navigates to an artifact page without a challenge ID (e.g. directly or by sharing the URL), the Pro-Tipp shows the stored generic guidance immediately and no extra AI call is made.
 - **Artifact not found**: if the slug in the URL does not match any artifact in the catalog, the server returns a 404 page.
 - **Artifact detail not yet pre-generated**: if the backfill script has not run for a given artifact, the static content is generated on the fly on the first visit and stored for future visits.
@@ -344,20 +347,36 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ### 3.7 Authentication & Profiles
 
-**What it does**: Lets users create an account to save their challenges and return to them later. Authentication is prompted after the user has already seen their recommendations — not before.
+**What it does**: Lets users create an account after completing a challenge to save their results and return to them later. The sign-up prompt appears on the results page — not before. Returning users can log in from the navigation bar. A profile page lets users manage their email and password.
 
-**What the user sees**: A sign-up prompt at the bottom of the results page. The link goes to a login/signup page supporting email and Google OAuth.
+**What the user sees**:
+- **Results page**: an "Save your recommendations" card with a "Create account →" button. Clicking it goes directly to the Sign Up tab on the auth page with the challenge ID pre-attached.
+- **Auth page (`/login`)**: a unified sign-in / sign-up page with two tabs. Either tab supports email and password. A "Continue with Google" button is also available (requires Google OAuth configured in the Supabase dashboard to function).
+- **Navigation bar**: shows a "Login" link when the user is not signed in. Shows the user's email prefix and a "Logout" button when signed in.
+- **Journey page (`/journey`)**: a protected page where past challenges and recommendations will eventually be listed. Currently shows a placeholder heading.
+- **Profile page (`/profile`)**: a protected page showing the user's email address and a form to change their password.
 
-**What data is saved on sign-up**:
-- User profile (role, company stage, team size, experience level)
-- Challenge records linked to the user account
+**What happens on sign-up**:
+1. The user creates an account with email and password (or via Google OAuth).
+2. A user profile record is created in the database. If the user came from the challenge flow, their role, company stage, team size, and experience level are carried over from their browser storage and saved automatically.
+3. If a challenge ID was present when the user clicked "Create account →", that challenge is linked to the new account immediately — so the user's results are saved without any extra steps.
+4. The user is redirected to the Journey page.
+
+**What happens on login**:
+1. The user enters their email and password (or uses Google OAuth).
+2. They are redirected to the Journey page.
+
+**Protected routes**:
+- `/journey` and `/profile` are accessible only when signed in. Visiting either page without an account redirects to the login page, then back to the intended destination after authentication.
 
 **Business rules**:
-- Users can complete the full flow anonymously. Sign-up is never required to see recommendations.
-- For anonymous users, challenge data is held in the browser only and is not recovered if the session ends.
-- For signed-in users, challenges are saved to the database and can be retrieved later.
+- The complete challenge flow — context, submission, and recommendations — works without an account. Sign-up is never required to see results.
+- Challenges are always saved to the database when submitted, even anonymously. An anonymous challenge has no user link; it can be claimed by signing up immediately after.
+- Each challenge can only be claimed once. If a challenge was already linked to a different user account, a second claim will be rejected.
+- The PM context fields on a user profile (role, stage, etc.) are optional at sign-up. They are filled in from browser storage if available, and can be updated when the user completes a new challenge while signed in.
+- Google OAuth requires configuration in the Supabase dashboard before the button becomes functional. The button is always visible; an unconfigured OAuth provider returns a descriptive error.
 
-**Status**: Partially implemented (auth infrastructure exists; challenge history retrieval UI not yet built)
+**Status**: Implemented (sign-up, login, Google OAuth button, challenge claiming, profile page, journey stub, Nav login/logout)
 
 ---
 
@@ -467,7 +486,7 @@ The following describes what information the system stores, in plain language. C
 
 | Entity | What it represents | Key information stored | Who can access it |
 |--------|-------------------|----------------------|-------------------|
-| **User Profile** | One record per signed-in user | Role, company stage, team size, experience level, timestamps | The user themselves only |
+| **User Profile** | One record per signed-in user | Email (via the auth system), role, company stage, team size, experience level (all context fields are optional at sign-up and filled in automatically from browser storage), timestamps | The user themselves only |
 | **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in) | The user themselves only (or anonymous, stored temporarily in the browser) |
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
@@ -477,7 +496,7 @@ The following describes what information the system stores, in plain language. C
 
 - User data (profiles, challenges) is access-controlled — each user can only see their own data.
 - Content and content chunks are managed by the internal team only (no user-facing content management).
-- Challenges submitted anonymously (before sign-up) are not saved to the database.
+- Challenges are always saved to the database when submitted, including for anonymous users (stored with no user link). They can be claimed by signing up immediately after, linking the challenge to the new account.
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
 - Content items with an extraction confidence score of 0 were not successfully processed by the intelligence service and should be re-run with the backfill script.
 - Artifacts are a separate catalog from content items. They are not derived from content ingestion — they are seeded directly and represent the fixed set of recommendations the AI can choose from.
@@ -497,6 +516,7 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `GET /api/artifacts/[slug]/detail` | Return the pre-generated static deep-dive content for a specific artifact | No | Artifact slug (in URL) | Description, company stage suitability, thought leaders, generic Pro-Tipp, how-to intro, numbered how-to steps |
 | `POST /api/artifacts/[slug]/pro-tip` | Generate a personalised Pro-Tipp for an artifact given a specific challenge | No | Artifact slug (in URL), challenge summary and domains (in body) | Personalised 2–3 sentence Pro-Tipp |
 | `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
+| `PATCH /api/challenges/[id]/claim` | Link an anonymous challenge to the signed-in user's account | Yes | Challenge ID (in URL) | Success confirmation |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
 | `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
@@ -535,6 +555,7 @@ All settings are controlled via environment variables. They do not require a cod
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key — grants full DB access, used server-side only | — | String | **Yes** |
 | `OPENROUTER_API_KEY` | API key for the AI provider (OpenRouter) used for text generation and embeddings | — | String | **Yes** |
 | `OPENROUTER_CHAT_MODEL` | The specific AI model used for text generation. Switching to a faster model can significantly reduce response times. | `openai/gpt-4o-mini` | Any model available on OpenRouter | No |
+| `NEXT_PUBLIC_SITE_URL` | The public base URL of the deployment. Used to build the OAuth callback redirect URL for Google sign-in. Must be set correctly in production for Google OAuth to work. | — | Valid URL (e.g. `https://yourapp.com`) | For Google OAuth |
 
 ### Tuning guide for PMs
 
@@ -581,7 +602,8 @@ The following are intentional decisions for the current version. They are not bu
 
 - **No "Save to Playbook" action** — users can view artifact details but cannot save artifacts to a personal collection. The button is visible on the detail page but non-functional. Deferred to a future epic.
 - **No content detail screen from knowledge carousel** — clicking a knowledge base card on the artifact detail page does not navigate anywhere in the current version. Content detail pages are planned for a future epic.
-- **No saved recommendations view** — users can see their current results, but there is no page to review past challenges or saved items. Sign-up persists challenge records in the database; retrieval UI is deferred.
+- **No journey dashboard yet** — the `/journey` page exists and is protected but shows only a placeholder. Listing past challenges and their recommendations there is deferred to a future epic.
+- **No saved recommendations view** — users can save their current challenge by signing up, and the record is persisted in the database, but there is no UI to browse past challenges or re-open past recommendations yet.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
 - **No admin content management UI** — content is added to the knowledge base via command-line ingestion scripts, not a dashboard.
@@ -589,7 +611,10 @@ The following are intentional decisions for the current version. They are not bu
 - **No Q&A or cited-answer format** — the product returns curated artifact recommendations, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
 - **No audience-targeting metadata** — artifacts and content items are not tagged by target role, company stage, or experience level. Domain overlap is the only structured signal in the matching score.
 - **No per-chunk domain tagging** — domain assignments apply to the whole content item, not to individual chunks within it.
-- **Unauthenticated challenges are not persisted** — if a user closes the browser before signing up, their challenge and recommendations cannot be recovered.
+- **Unauthenticated challenges are persisted to the database but unrecoverable** — the challenge record is always saved when the pipeline runs. However, if the user closes the browser without signing up, there is no way to reconnect that record to a future account. The challenge ID is held only in the client session.
+- **Google OAuth requires Supabase dashboard configuration** — the "Continue with Google" button on the login page is always visible, but Google OAuth will not work until a Google OAuth application is configured and enabled in the Supabase project dashboard. Without this, the button returns an error.
+- **Password reset ("forgot password") not yet implemented** — the login page has no forgot-password flow. Users who forget their password cannot reset it through the product UI in the current version.
+- **Email confirmation is off by default (Supabase development settings)** — in production, Supabase will send a confirmation email before activating the account. Ensure the correct Supabase email templates and SMTP settings are configured before going live.
 - **No multi-hop or agent-based reasoning** — the matching pipeline is a single-pass retrieval and ranking. Graph databases, multi-step reasoning, and agent orchestration are non-goals.
 - **Content Intelligence Service has no timeout guard** — if the AI provider is slow or unresponsive during ingestion, the extraction step can hang indefinitely. Affected items can be retried with the backfill script.
 - **Eval harness has no CI integration** — the evaluation script is run manually by the team. It is not automatically triggered on code changes or content updates.
@@ -608,7 +633,7 @@ The following are intentional decisions for the current version. They are not bu
 | Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost artifacts that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
 | Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
-| Challenge history & saved items | Allow signed-in users to view past challenges and their recommendations; save specific content items for later. | Planned (post-MVP) |
+| Challenge history & saved items | Populate the `/journey` page with past challenges and their recommendations. The page and route protection already exist; the listing UI and data queries are deferred. | Planned (next) |
 | Analytics pipeline | Integrate server events with a third-party analytics tool (e.g. Segment, PostHog). Enable funnel analysis, recommendation quality tracking, and content performance reporting. | Planned (post-MVP) |
 | Content management UI | Allow internal team members to add, edit, tag, and retire content items via a web interface rather than the CLI. | Planned (post-MVP) |
 
@@ -618,6 +643,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-06 | 1.7 | Epic 12 | Implemented authentication and profile MVP. The login page (`/login`) now has real Sign Up / Log In tabs and a "Continue with Google" button. Signing up after a challenge automatically links the challenge to the new account. Navigation bar shows a Login link when unauthenticated and user email + Logout when signed in. Added protected `/journey` (blank stub, redirect to listing content is next) and `/profile` (email display + change-password form) pages. Added a `PATCH /api/challenges/[id]/claim` endpoint for challenge claiming. Made PM-context profile fields optional at sign-up so bare profiles can be created immediately without requiring the user to re-enter their role and stage. Updated User Flow, Section 3.7, Data Model, API Reference, Configuration, and Known Limitations sections. |
 | 2026-03-05 | 1.6 | Epic 11 (performance) | Split the challenge pipeline into two phases: Phase 1 returns the AI summary in ~10 seconds and shows the results page immediately; Phase 2 generates artifact recommendations in the background while the user reads their summary (skeleton cards shown during loading). Added an animated loading screen between challenge submission and results. Artifact detail page now loads static content (description, how-to, thought leaders) instantly from a pre-generated database record instead of via an on-demand LLM call. Pro-Tipp is now a separate, parallel API call so it no longer blocks static content from rendering. Knowledge base carousel now uses vector similarity search instead of keyword matching, fixing empty results for most artifacts. Added `npm run backfill-artifact-details` script to pre-generate all 68 artifacts. Artifact list passed to the recommendations AI is now filtered to challenge-relevant domains (~70% token reduction). Updated User Flow, Feature Reference, Data Model, API Reference, Configuration, and Known Limitations sections accordingly. |
 | 2026-03-05 | 1.5 | Epic 11 | Added Artifact Detail Page (section 3.10): full-page deep-dive for any artifact, with two parallel async data sources — an LLM call generating description, company stage suitability, thought leaders, personalised Pro-Tipp, and numbered how-to steps; and a keyword RAG call returning up to 5 deduplicated knowledge base content cards. Skeleton loading states shown for both sources. Tabs (Overview / How to Use), sticky sidebar with Pro-Tipp and a non-functional "Save to Playbook" button, and a horizontal knowledge carousel. Personalisation is challenge-aware when a cid param is present; falls back to generic guidance otherwise. Added two API endpoints: POST /api/artifacts/[slug]/detail and GET /api/artifacts/[slug]/knowledge. Updated User Flow Step 3 and added Step 4. Updated API Reference with new endpoints. Removed "No artifact detail pages" from Known Limitations. Updated Known Limitations and Future Epics to reflect scope changes. |
 | 2026-03-05 | 1.4 | Epic 10 | Recommendations now surface PM artifacts instead of raw content links. Added Artifact Catalog (section 3.9): 68 seeded PM frameworks from Lenny's Frameworks. Updated matching pipeline: the LLM step now selects from the known artifact list and returns artifact cards (title, domain badges, use-case, tailored explanation) instead of content URLs. Updated User Flow Step 3: clicking a recommendation navigates to the artifact detail page internally. Updated Data Model to add Artifacts entity. Added seed-artifacts script to section 3.5. Added Known Limitation for missing artifact detail pages (Epic 11). Updated Future Epics table (Epic 11 is now next). |
