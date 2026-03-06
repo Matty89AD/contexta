@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 3.0 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 3.1 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -459,7 +459,7 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 **Knowledge base section (below the grid)**:
 - A "Who talks about it" heading followed by a horizontal scrollable carousel of up to 5 content cards. Each card shows the content title, author, and source type badge (Podcast, Video, Article, Book).
-- Content is found using AI vector similarity — the artifact's title and use case are embedded and used to search the knowledge base for semantically related content. This means conceptually relevant podcasts and articles appear even if they do not mention the artifact name verbatim.
+- Content is found using two parallel searches: a vector similarity search (finds conceptually related content even when the artifact name is not mentioned verbatim) and a keyword search (finds content that explicitly names the artifact or uses its exact terminology). Both searches fire simultaneously and their results are merged, with vector matches ranked first.
 - Only one result per content item appears — if multiple chunks from the same podcast episode are related, the episode appears only once.
 - If no relevant content is found, a plain empty-state message is shown.
 
@@ -704,6 +704,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-06 | 3.1 | — | Improved artifact knowledge card retrieval to use both vector similarity and keyword search in parallel. Vector matches are ranked first; keyword-only matches are appended, ensuring content that explicitly names the artifact is never missed. |
 | 2026-03-06 | 3.0 | Epic 14 | Added explicit save flow: results now appear on a dedicated `/results` page outside the flow stepper; signed-in users save with a "Save Challenge" button, guests see a "Create account to save" prompt. Saved challenges appear on a permanent `/challenges/[id]` page with stored recommendations (no AI re-run), inline title rename, and a Rerun button that prefills the flow. Journey now shows only saved challenges and links each row to the saved challenge page. Context step gains a Skip button for signed-in users. |
 | 2026-03-06 | 2.0 | Epic 13 | Added Your Journey page: a full auth-guarded workspace with three sections — a Journey Insights panel (placeholder stats, content-type chart, thought leaders), an Active Challenges card row with a resume flow that re-generates recommendations for any past challenge without re-running the AI summary phase, and a filterable Challenge History table with status badges. Added a challenge status lifecycle (open / in progress / completed / archived / abandoned). Desktop nav now shows persistent "Your Journey" and "Login" links. Added GET /api/journey and GET /api/challenges/[id]/resume endpoints. |
 | 2026-03-06 | 1.7 | Epic 12 | Implemented authentication and profile MVP. The login page (`/login`) now has real Sign Up / Log In tabs and a "Continue with Google" button. Signing up after a challenge automatically links the challenge to the new account. Navigation bar shows a Login link when unauthenticated and user email + Logout when signed in. Added protected `/journey` (blank stub, redirect to listing content is next) and `/profile` (email display + change-password form) pages. Added a `PATCH /api/challenges/[id]/claim` endpoint for challenge claiming. Made PM-context profile fields optional at sign-up so bare profiles can be created immediately without requiring the user to re-enter their role and stage. Updated User Flow, Section 3.7, Data Model, API Reference, Configuration, and Known Limitations sections. |
