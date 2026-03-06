@@ -117,7 +117,7 @@ export function ResultsStep({
             <h4 className="font-bold mb-2">Save your recommendations</h4>
             <p className="text-indigo-100 text-sm mb-4">Create a free account to return to your results and track progress over time.</p>
             <a
-              href="/login"
+              href={`/login?tab=signup&cid=${result.challengeId}`}
               className="block w-full py-2 bg-white text-indigo-600 rounded-lg text-sm font-bold text-center hover:bg-indigo-50 transition"
             >
               Create account →

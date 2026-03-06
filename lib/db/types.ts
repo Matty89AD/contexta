@@ -56,20 +56,21 @@ export type ChunkType = (typeof CHUNK_TYPES)[number];
 
 export interface Profile {
   id: string;
-  role: ProfileRole;
-  company_stage: CompanyStage;
-  team_size: TeamSize;
-  experience_level: ExperienceLevel;
+  /** Null for bare profiles created at signup (before context is collected). */
+  role: ProfileRole | null;
+  company_stage: CompanyStage | null;
+  team_size: TeamSize | null;
+  experience_level: ExperienceLevel | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface ProfileInsert {
   id: string;
-  role: ProfileRole;
-  company_stage: CompanyStage;
-  team_size: TeamSize;
-  experience_level: ExperienceLevel;
+  role?: ProfileRole | null;
+  company_stage?: CompanyStage | null;
+  team_size?: TeamSize | null;
+  experience_level?: ExperienceLevel | null;
 }
 
 export interface Challenge {
