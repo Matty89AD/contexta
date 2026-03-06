@@ -1,6 +1,6 @@
 # Epic 13: Your Journey
 
-> **Status:** draft  |  **As of:** 2026-03-06
+> **Status:** ✅ done  |  **As of:** 2026-03-06
 
 Build the `/journey` page — a personal workspace showing a user's full challenge history, key stats, and quick re-entry into active work. The page stub already exists; this epic replaces it with the full implementation.
 
