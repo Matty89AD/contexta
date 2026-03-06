@@ -3,7 +3,7 @@ name: documentation
 description: Reads the current codebase and all implemented epics, then writes or updates documentation/DOCUMENTATION.md with PM-focused, plain-language documentation covering user flows, features, APIs, configuration, limitations, and a changelog. Run this after /dev delivers a new epic.
 argument-hint: [epic-name or "all"]
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Agent
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 # /documentation — PM-focused product documentation
@@ -15,71 +15,93 @@ is implemented. Never include raw code blocks in the final document.
 
 ## Inputs
 
-- `$ARGUMENTS` — optional. An epic name (e.g. `epic-7`) or feature area to focus
-  the changelog entry on. When omitted, do a full refresh of all sections.
+- `$ARGUMENTS` — optional. An epic name (e.g. `epic-13`) or `all` for a full refresh.
+  May also include `--changed-files=...` and `--summary=...` passed by `/dev`.
 
 ---
 
-## Phase 1 — Read existing documentation
+## Mode selection — choose ONE of the three modes below
 
-1. Read `documentation/DOCUMENTATION.md` if it exists. Note:
-   - The current version number and "Last updated" date.
-   - Every section already present.
-   - The existing Changelog (to append to, not overwrite).
+Parse `$ARGUMENTS`:
 
----
-
-## Phase 2 — Explore the codebase
-
-First, parse `$ARGUMENTS` to extract:
-- **epic** — the first positional token (e.g. `epic-7`) or `all` if absent.
-- **`--changed-files=...`** — optional comma-separated list of file paths passed by `/dev`.
-- **`--summary=...`** — optional one-line description of what changed, passed by `/dev`.
+- If it contains `--changed-files=` → **Fast Path (Epic Edit)**
+- If the first token is `all`, or no argument is given → **Full Rewrite**
+- If the first token looks like an epic name (e.g. `epic-13`) but no `--changed-files` → **Guided Epic Edit**
 
 ---
 
-### Fast path (when `--changed-files` is provided)
+## MODE A — Fast Path (Epic Edit) [preferred, lowest token usage]
 
-Skip the Explore subagent entirely. Instead:
+Use this when `/dev` has passed `--changed-files` and `--summary`.
 
-1. Read each file listed in `--changed-files` directly using the Read tool.
-2. Additionally read any spec file matching the epic name (e.g. `specs/*<epic>*.md`) to confirm scope and out-of-scope items.
-3. `documentation/DOCUMENTATION.md` was already read in Phase 1 — no further broad exploration needed.
-4. Proceed directly to Phase 3 using the `--summary` value as the basis for the changelog entry.
+**Token budget: minimal. Do NOT read the entire DOCUMENTATION.md.**
 
----
+### Steps
 
-### Full path (when `--changed-files` is absent, e.g. `/documentation all`)
+1. **Read only the header and changelog of the existing doc** (first 30 lines + last 30 lines):
+   - Extract current version number and "Last updated" date.
+   - Note the most recent changelog entry so you don't duplicate it.
 
-Use an `Explore` subagent with `thoroughness: "very thorough"` to gather:
+2. **Read the spec file** for the epic (`specs/*<epic>*.md`) — scope, out-of-scope, acceptance criteria only. Skim, don't read every line.
 
-#### Specs & requirements
-- All files in `specs/*.md` — read scope, acceptance criteria, and out-of-scope.
-- `requirements/spec.md` and `requirements/q-and-a.md` — product decisions and enums.
+3. **Read only the changed files** listed in `--changed-files=` — enough to understand what's new. Skip files you don't need (e.g. migration SQL is rarely needed for documentation prose).
 
-#### Implemented features (what is actually in code today)
-- `supabase/migrations/*.sql` — what tables and columns exist; what RPCs exist.
-- `lib/db/types.ts` — the canonical enum values and data shapes.
-- `services/*.ts` — what the system actually does (matching, ingestion, challenge pipeline).
-- `app/api/*/route.ts` — what API endpoints exist and what inputs they accept.
-- `components/flow/*.tsx`, `app/**/*.tsx` — what UI steps exist and what they collect.
-- `core/config.ts` — what is configurable via environment variables.
-- `core/prompts/*.ts` — what the AI generates (summaries, recommendations).
-- `e2e/*.spec.ts` — what user journeys are tested (useful proxy for "what's live").
+4. **Determine what needs to change** in the document:
+   - New feature section(s) to add (after the last 3.x section)
+   - Sections that need updating (e.g. section 3.7 if auth changed, section 4 if data model changed)
+   - Lines in Known Limitations to remove (if the epic resolves a limitation)
+   - Lines in Future Epics to remove or update (if the epic was planned)
+   - The version header (increment version, update date)
+   - The Table of Contents (add new section links if any)
+   - The Changelog row to append
 
-#### What is NOT yet implemented
-- Compare spec epic list against migration/service/component evidence. Note gaps.
+5. **Make all changes using Edit** — one Edit call per change. Do NOT rewrite the full file.
+   - Update the version header line
+   - Add new ToC entry after the last feature entry
+   - Add new feature section after the last existing feature section
+   - Update any changed sections
+   - Remove resolved limitations
+   - Remove completed future epics
+   - Append changelog row
 
----
-
-## Phase 3 — Write the documentation
-
-Write the complete `documentation/DOCUMENTATION.md`. Follow this exact structure.
-Keep language at a business level throughout — no code, no TypeScript, no SQL.
+6. **Commit** (see Phase 6 below).
 
 ---
 
-### Document structure
+## MODE B — Guided Epic Edit [moderate token usage]
+
+Use this when an epic name is given but no `--changed-files`. You must infer what changed.
+
+### Steps
+
+1. Read the spec file (`specs/*<epic>*.md`) fully.
+2. Read only the header + ToC + Changelog of `documentation/DOCUMENTATION.md` (first 30 lines + last 50 lines) to get the version and existing structure.
+3. Read only the files most likely changed by this epic:
+   - The new/changed service file(s)
+   - The new/changed API route(s)
+   - The new/changed component(s)
+   - `lib/db/types.ts` if the spec mentions DB changes
+4. Determine the minimal set of edits (same as Fast Path step 4).
+5. Use Edit to apply changes (same as Fast Path step 5).
+6. Commit.
+
+---
+
+## MODE C — Full Rewrite [high token usage — only for `all`]
+
+Use this only when `$ARGUMENTS` is `all` or blank, or when the document does not yet exist.
+
+### Steps
+
+1. Read `documentation/DOCUMENTATION.md` fully (in sections if needed).
+2. Read `specs/*.md` — all spec files for scope.
+3. Read `lib/db/types.ts`, `core/config.ts`, key services and route files.
+4. Write the complete document from scratch following the document structure below.
+5. Commit.
+
+---
+
+## Document structure (for Mode C or new sections in Modes A/B)
 
 ```
 # Contexta — Product Documentation
@@ -93,14 +115,8 @@ Keep language at a business level throughout — no code, no TypeScript, no SQL.
 1. [Product Overview](#1-product-overview)
 2. [User Flow](#2-user-flow)
 3. [Feature Reference](#3-feature-reference)
-   - 3.1 Context Collection
-   - 3.2 Challenge Submission
-   - 3.3 Matching Engine
-   - 3.4 Recommendations
-   - 3.5 Multi-Domain Support
-   - 3.6 Hybrid RAG Retrieval
-   - 3.7 Content Ingestion
-   - 3.8 Authentication & Profiles
+   - [3.1 Feature Name](#31-feature-name)
+   ...
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -109,96 +125,58 @@ Keep language at a business level throughout — no code, no TypeScript, no SQL.
 9. [Changelog](#9-changelog)
 ```
 
----
-
-### Section writing rules
-
-**Section 1 — Product Overview**
-- One-paragraph product elevator pitch.
-- The core problem it solves.
-- The target user persona.
-- The three-step value loop (context → challenge → recommendations).
-
-**Section 2 — User Flow**
-- Write as a numbered narrative ("First the user does X. Then…").
-- Cover the full journey from landing to seeing recommendations, including the auth prompt.
-- Note where data is persisted (client-side vs. server) and when.
-- Include edge cases: what happens if the user hits Back, refreshes, or is not logged in.
-
-**Section 3 — Feature Reference**
-Write one sub-section per implemented feature. For each feature:
-- **What it does**: 1-2 plain-language sentences.
-- **What the user sees**: describe the UI element or interaction.
-- **What data it captures**: list in plain English (no field names).
-- **Business rules**: list any rules that affect what the user can or cannot do.
-- **Status**: mark as `Implemented`, `Partially implemented`, or `Planned`.
-
-**Section 4 — Data Model for PMs**
-- Do NOT show column names. Describe what information the system stores.
-- Use a table: Entity | What it represents | Key fields (in plain English) | Who can access it.
-- Cover: User Profiles, Challenges, Content Items, Content Chunks.
-- Note what's configurable vs. hardcoded.
-
-**Section 5 — API Reference**
-- One row per endpoint in a table: Endpoint | Purpose | Who calls it | Key inputs | Key outputs.
-- Use human-readable descriptions, not technical schemas.
-- Flag which endpoints require authentication.
-
-**Section 6 — Configuration & Tuning**
-- Table: Setting name | What it controls (plain English) | Default | Range / Options.
-- Cover every env var in `core/config.ts` plus any relevant ones in scripts.
-- Add a "Tuning guide" subsection: plain-language advice on when a PM might want to change each setting (e.g. "Increase TOP_K if recommendations feel too narrow").
-
-**Section 7 — Known Limitations & Out of Scope**
-- Bullet list of what the system explicitly does NOT do today.
-- Reference the relevant spec's "Out of scope" items.
-- Flag user-visible limitations (e.g. "No saved history for unauthenticated users").
-
-**Section 8 — Future Epics (Planned)**
-- Table: Epic | What it adds | Status.
-- Derive from spec files that have no corresponding migration/service evidence.
-
-**Section 9 — Changelog**
-- Reverse-chronological table: Date | Version | Epic | Summary of changes.
-- Always append a new row; never delete old rows.
-- Use the format below:
+### Feature section format (Modes A/B — write only the new section)
 
 ```
-| Date | Version | Epic | What changed |
-|------|---------|------|--------------|
-| YYYY-MM-DD | X.Y | epic-N | One-sentence plain-language summary |
+### 3.N Feature Name
+
+**What it does**: 1-2 plain-language sentences.
+
+**What the user sees**: describe the UI element or interaction.
+
+**Business rules**:
+- Rule 1
+- Rule 2
+
+**Status**: Implemented
+```
+
+### Changelog row format (always append, never remove old rows)
+
+```
+| YYYY-MM-DD | X.Y | Epic N | One-sentence plain-language summary of what changed. |
 ```
 
 ---
 
-## Phase 4 — Versioning rules
+## Versioning rules
 
-- Version is `MAJOR.MINOR` where:
-  - `MAJOR` increments when a new user-facing flow or major capability is added.
-  - `MINOR` increments when a feature within an existing flow is enhanced.
-- Start at `1.0` if the file does not exist yet.
-- Read the existing version from the document header and increment correctly.
+- `MAJOR.MINOR`:
+  - **MAJOR**: new user-facing page, flow, or major capability
+  - **MINOR**: enhancement to an existing flow or feature
+- Read current version from the document header; increment correctly.
 
 ---
 
-## Phase 5 — Write the file
+## Section writing rules (for new content)
 
-Write the complete updated `documentation/DOCUMENTATION.md`.
+**New Feature sections** — answer four questions concisely:
+1. What does this feature do (in plain English, no jargon)?
+2. What does the user see / interact with?
+3. What business rules apply?
+4. What is the current status?
 
-Rules:
-- The file is the **single source of truth** — always write the full file (not a diff).
-- Every section must be present, even if a section body is "Not yet implemented."
-- The Changelog section always retains all previous entries.
-- Maximum one code fence in the entire document (and only if quoting a CLI command
-  that a non-engineer PM might need to run, e.g. the seed command).
-- Table of Contents links must use lowercase-hyphenated anchors matching the headings.
-- Use clear headings, bullet points, and tables. Avoid walls of prose.
+**Data Model additions** — add a row to the existing table; describe the new entity or new field in plain English without column names.
+
+**API additions** — add rows to the existing API table: Endpoint | Purpose | Auth required | Key inputs | Key outputs.
+
+**Known Limitations removals** — use Edit to delete the bullet(s) that this epic resolves.
+
+**Future Epics removals** — use Edit to delete or update the row(s) that this epic delivers.
 
 ---
 
 ## Phase 6 — Commit
-
-After writing the file:
 
 ```bash
 git add documentation/DOCUMENTATION.md
@@ -211,13 +189,14 @@ EOF
 
 ---
 
-## Quality checklist
+## Quality checklist (check before committing)
 
-- [ ] No code, TypeScript, SQL, or JSON in the document body.
-- [ ] Every implemented feature has a sub-section; every planned feature is listed.
-- [ ] Changelog has a new entry dated today.
-- [ ] Table of Contents anchors all resolve (headings match links exactly).
-- [ ] Configuration table covers every env var from `core/config.ts`.
-- [ ] "Known Limitations" covers every "Out of scope" item from the latest spec.
-- [ ] Version number incremented correctly from the previous version.
-- [ ] Language is accessible to a non-technical PM — no jargon without explanation.
+- [ ] Version number incremented correctly.
+- [ ] "Last updated" date is today.
+- [ ] New feature section added with Status: Implemented.
+- [ ] ToC updated with new section link.
+- [ ] Changelog has one new row (most recent, at top of table).
+- [ ] Resolved limitations removed from section 7.
+- [ ] Completed epics removed or updated in section 8.
+- [ ] No raw code, TypeScript, SQL, or JSON in the document body.
+- [ ] Language is accessible to a non-technical PM.
