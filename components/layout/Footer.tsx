@@ -24,7 +24,14 @@ export function Footer() {
             <p className="text-sm font-semibold text-foreground mb-3">About</p>
             <ul className="space-y-2">
               <li>
-                <span className="text-sm text-muted-foreground">AI-powered PM knowledge matching</span>
+                <a href="/presentation.html" className="text-sm text-muted-foreground hover:text-foreground transition">
+                  MVP Presentation
+                </a>
+              </li>
+              <li>
+                <a href="/matching-logic.html" className="text-sm text-muted-foreground hover:text-foreground transition">
+                  Matching Logic
+                </a>
               </li>
             </ul>
           </div>

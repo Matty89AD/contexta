@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVP Presentation — Contexta</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fafafa;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      padding: 3rem 3.5rem;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      font-size: 13px;
+      color: #666;
+      text-decoration: none;
+    }
+    .back:hover { color: #111; }
+    .back::before { content: "← "; }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 2.2rem 0 0.75rem;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: #333;
+    }
+
+    p { margin-bottom: 0.9rem; color: #333; }
+
+    ul, ol {
+      margin: 0.5rem 0 1rem 1.4rem;
+      color: #333;
+    }
+    li { margin-bottom: 0.35rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.88rem;
+    }
+    th {
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      font-weight: 600;
+      color: #111;
+    }
+    td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #e0e0e0;
+      color: #333;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.83em;
+      background: #f0f0f0;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+      color: #c7254e;
+    }
+
+    .phase-block {
+      background: #f8f8f8;
+      border-left: 3px solid #d0d0d0;
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0 1.25rem;
+    }
+    .phase-block h3 { margin-top: 0; }
+
+    .note {
+      background: #fffbeb;
+      border: 1px solid #f0e080;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      color: #555;
+      margin: 1rem 0;
+    }
+
+    footer-note {
+      display: block;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    @media (max-width: 600px) {
+      .page { padding: 1.5rem 1.25rem; }
+      h1 { font-size: 1.35rem; }
+      table { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="/">Back to Contexta</a>
+
+    <h1>MVP Presentation</h1>
+    <hr>
+
+    <!-- ── OVERVIEW ─────────────────────────────────────────────── -->
+    <h2>What Contexta does</h2>
+    
+    <div class="note">
+      <p>
+        <strong>Product Managers</strong> tend to <strong>think</strong> in <strong>frameworks</strong> and <strong>methodologies</strong> <br>
+        They are <strong>always looking</strong> for the right <strong>Product Management Artifact</strong> to solve a <strong>specific problem</strong>.
+      </p>
+      <p>
+      --> <strong>Contexta</strong> as an <strong>AI copilot</strong> helps Product Managers find the right <strong>Artifacts</strong>for any <strong>problem</strong>.
+      </p>
+    </div>
+    <hr>
+    <!-- ── INITIAL SETUP ─────────────────────────────────────────────── -->
+    <h2>Initial Project Setup</h2>
+    <div class="phase-block">
+      <ol>
+        <li><strong>Init Prompt:</strong> brief description of the project and the problem I want to solve</li>
+        <li><strong>Tech Stack:</strong> provided the tech stack of the project</li>
+        <li><strong>Claude.md:</strong> let it initialize the project with Claude.md file</li>
+        <li><strong>Requirements folder:</strong> setup the requirements folder with the first set of requirements for the project (PRDs)</li>
+        <li><strong>/skills:</strong> defined the skills for the project (/dev, /documentation, /code review)</li>
+      </ol>
+    </div>
+
+    <!-- ── PHASE 1 ─────────────────────────────────────────────── -->
+    <h2>My Workflow</h2>
+    <div class="phase-block">
+      <ol>
+        <li><strong>main agent:</strong> reads the requirements (PRD) and creates an epic in /specs folder</li>
+        <li><strong>/dev agent:</strong> reads the epic, implements the epic and runs unit tests and e2e tests</li>
+        <li><strong>/documentation agent:</strong> two modes to write the documentation. --all or --changed-files for the changed files</li>
+        <li><strong>/code review agent:</strong> gets started manually by the user to review the code base</li>
+      </ol>
+    </div>
+
+    <!-- ── PHASE 2 ─────────────────────────────────────────────── -->
+    <h2>MVP Showcase</h2>
+    <div class="phase-block">
+      <ol>
+        <li><strong>First time user starts on home page</strong>
+        <li><strong>Starts flow and enters Context</strong>
+        <li><strong>Defines the Chalennge</strong>
+        <li><strong>Artifacts are recommended</strong>
+        <li><strong>Artifacts Details are displayed</strong>
+        <li><strong>Sign-up and save to playbook is displayed</strong>
+      </ol>
+    </div>
+
+    <footer-note>
+      Contexta &mdash; MVP Presentation v1.0
+    </footer-note>
+  </div>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matching Logic — Contexta</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fafafa;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      padding: 3rem 3.5rem;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      font-size: 13px;
+      color: #666;
+      text-decoration: none;
+    }
+    .back:hover { color: #111; }
+    .back::before { content: "← "; }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 2.2rem 0 0.75rem;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: #333;
+    }
+
+    p { margin-bottom: 0.9rem; color: #333; }
+
+    ul, ol {
+      margin: 0.5rem 0 1rem 1.4rem;
+      color: #333;
+    }
+    li { margin-bottom: 0.35rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.88rem;
+    }
+    th {
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      font-weight: 600;
+      color: #111;
+    }
+    td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #e0e0e0;
+      color: #333;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.83em;
+      background: #f0f0f0;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+      color: #c7254e;
+    }
+
+    .phase-block {
+      background: #f8f8f8;
+      border-left: 3px solid #d0d0d0;
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0 1.25rem;
+    }
+    .phase-block h3 { margin-top: 0; }
+
+    .note {
+      background: #fffbeb;
+      border: 1px solid #f0e080;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      color: #555;
+      margin: 1rem 0;
+    }
+
+    footer-note {
+      display: block;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    @media (max-width: 600px) {
+      .page { padding: 1.5rem 1.25rem; }
+      h1 { font-size: 1.35rem; }
+      table { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="/">Back to Contexta</a>
+
+    <h1>Matching Logic</h1>
+    <p class="subtitle">
+      How Contexta finds the right PM frameworks for your challenge — a technical overview of the retrieval and scoring pipeline.
+    </p>
+
+    <!-- ── OVERVIEW ─────────────────────────────────────────────── -->
+    <h2>Overview</h2>
+    <p>
+      When you submit a challenge, Contexta runs a two-phase pipeline. Phase 1 generates a structured understanding
+      of your challenge using an AI model. Phase 2 uses that understanding to search the knowledge base and select
+      the most relevant PM artifacts from a curated catalog.
+    </p>
+
+    <!-- ── PHASE 1 ─────────────────────────────────────────────── -->
+    <h2>Phase 1 — Challenge Understanding</h2>
+    <div class="phase-block">
+      <ol>
+        <li><strong>AI summary</strong> — Your description and context (role, company stage, team size, experience level) are sent to an AI model, which generates a concise summary, a focused problem statement, and a desired outcome statement.</li>
+        <li><strong>Persist</strong> — All three fields are saved to the database against the challenge record, ready for Phase 2.</li>
+        <li><strong>Return</strong> — The summary and challenge ID are returned to the client immediately. The results page renders with the summary visible while Phase 2 runs in the background.</li>
+      </ol>
+    </div>
+
+    <!-- ── PHASE 2 ─────────────────────────────────────────────── -->
+    <h2>Phase 2 — Artifact Recommendations</h2>
+    <div class="phase-block">
+      <ol>
+        <li><strong>Embedding + artifact fetch (parallel)</strong> — The combined text of the summary, problem statement, and desired outcome is converted into a numerical vector (an embedding). Simultaneously, the artifact catalog is fetched from the database.</li>
+        <li><strong>Dual retrieval</strong> — Two independent searches run in parallel against the knowledge base (see below).</li>
+        <li><strong>Merge and deduplicate</strong> — Results from both searches are combined into a single candidate list. A chunk appearing in both searches is flagged as a stronger match.</li>
+        <li><strong>Scoring and ranking</strong> — Every candidate is scored across three dimensions and ranked (see Scoring Formula below).</li>
+        <li><strong>Domain-filtered artifact selection</strong> — The artifact catalog is filtered to artifacts whose domains overlap with the challenge domains. This typically reduces the catalog from 68 artifacts to 10–20 candidates, making the AI call faster and more focused. If no overlap exists, the full catalog is used.</li>
+        <li><strong>Artifact selection pass</strong> — The top-ranked content chunks (as context) and the filtered artifact list are sent to an AI model. The AI selects 3–5 artifacts by name, writes a 1–2 sentence explanation for each, and identifies the single most relevant artifact. It can only recommend artifacts from the provided list — it cannot invent new ones.</li>
+      </ol>
+    </div>
+
+    <!-- ── TWO RETRIEVAL METHODS ───────────────────────────────── -->
+    <h2>The Two Retrieval Methods</h2>
+
+    <h3>Semantic Search (vector search)</h3>
+    <p>
+      The challenge embedding is compared against the embedding stored for every content chunk using
+      <strong>cosine similarity</strong>. This finds content that is <em>conceptually</em> close to the
+      challenge — even if different words are used. For example, a challenge about "not knowing which feature
+      to build next" will surface content about prioritisation frameworks even if the word "prioritisation"
+      was never written.
+    </p>
+
+    <h3>Keyword Search (full-text search)</h3>
+    <p>
+      The raw challenge text is passed to PostgreSQL's built-in full-text search engine
+      (<code>tsvector</code>/<code>tsquery</code>) using the <code>english</code> language configuration.
+      This finds content chunks where the <em>same words</em> appear — useful for precise terminology,
+      framework names, methodologies, and product jargon.
+    </p>
+    <p>How the keyword search processes the query text:</p>
+    <ul>
+      <li><strong>Stop words are stripped</strong> — common English words that carry little meaning are discarded before matching (e.g. <em>the, a, is, are, of, in, for, with, and, or, but…</em> and approximately 170 others defined in PostgreSQL's English stop-word list).</li>
+      <li><strong>Words are stemmed</strong> — remaining words are reduced to their root form using the Snowball English stemmer, so different inflections match each other. Examples: "prioritizing" → <code>prioritiz</code>, "challenges" → <code>challeng</code>, "strategies" → <code>strategi</code>. The same stemming is applied to content chunks at ingestion time.</li>
+      <li><strong>Logical AND matching</strong> — a content chunk must contain <em>all</em> of the stemmed, non-stop-word tokens to be considered a match.</li>
+      <li><strong>Ranking</strong> — matching chunks are ranked by <code>ts_rank_cd</code> with normalization 8, which divides the raw rank by the number of unique words in the chunk (preventing long chunks from unfairly dominating).</li>
+      <li><strong>Enhanced by key concepts</strong> — the full-text index on each chunk also includes extracted key concepts (specific framework names and terminology identified during ingestion), so a chunk about "opportunity solution tree" will match keyword searches for those exact terms.</li>
+    </ul>
+    <div class="note">
+      Keyword search failure is non-fatal. If the search returns no results or encounters an error, the pipeline silently falls back to vector-only results.
+    </div>
+
+    <!-- ── SCORING FORMULA ─────────────────────────────────────── -->
+    <h2>Scoring Formula</h2>
+    <p>Each candidate chunk in the merged list receives a final score calculated across three dimensions:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>How it is calculated</th>
+          <th>Default weight</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Domain score</strong></td>
+          <td>1.0 if the content's domain(s) overlap with the challenge domain(s); 0.5 otherwise</td>
+          <td>0.3</td>
+        </tr>
+        <tr>
+          <td><strong>Semantic score</strong></td>
+          <td>Cosine similarity between the challenge embedding and the chunk embedding (0–1)</td>
+          <td>0.7</td>
+        </tr>
+        <tr>
+          <td><strong>Keyword score</strong></td>
+          <td><code>ts_rank_cd</code> relevance from the full-text search, normalised (0–1)</td>
+          <td>0.3</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      All three weights are <strong>additive and independent</strong> — they do not need to sum to 1. Each weight is applied to its component and the results are summed into a final ranking score.
+    </p>
+    <p>
+      Domain scoring is a <strong>soft boost</strong>: content from other domains can still appear if its semantic or keyword score is high enough. It is never a hard filter.
+    </p>
+
+    <!-- ── MULTI-DOMAIN ────────────────────────────────────────── -->
+    <h2>Multi-Domain Support</h2>
+    <p>
+      Users can select more than one domain when submitting a challenge (Strategy, Discovery, Delivery, Growth, Leadership).
+      Selecting multiple domains signals that the challenge spans multiple areas.
+    </p>
+    <ul>
+      <li>At least one domain is required; up to five can be selected simultaneously.</li>
+      <li>Domain overlap is treated as a scoring boost, not an exclusion rule — content from domains not selected can still appear if it is semantically relevant.</li>
+      <li>The artifact list passed to the AI selection step is filtered to artifacts whose domains match the selected challenge domains, reducing the candidate set and improving both speed and relevance.</li>
+    </ul>
+
+    <!-- ── ARTIFACT CATALOG ────────────────────────────────────── -->
+    <h2>Artifact Catalog</h2>
+    <p>
+      Every recommendation is drawn exclusively from a curated catalog of 68 PM frameworks and methodologies
+      (sourced from Lenny's Frameworks). The AI selects from this known list — it cannot invent or suggest
+      an artifact that is not in the catalog. This guarantees that all recommendations are well-defined,
+      named practices.
+    </p>
+    <p>The catalog spans five practice domains: Strategy, Discovery, Delivery, Growth, and Leadership.</p>
+
+    <!-- ── TOP-K ───────────────────────────────────────────────── -->
+    <h2>Retrieval Depth (<code>TOP_K</code>)</h2>
+    <p>
+      The <code>TOP_K</code> setting controls how many top content chunks are retrieved from the knowledge base
+      and passed to the artifact-selection AI call as context. Higher values give the AI more information to
+      inform its selection (potentially improving quality at the cost of a slightly larger prompt).
+      The default range is 1–20.
+    </p>
+
+    <footer-note>
+      Contexta &mdash; Matching Logic &mdash; Documentation v1.7
+    </footer-note>
+  </div>
+</body>
+</html>
