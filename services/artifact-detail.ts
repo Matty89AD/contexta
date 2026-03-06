@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AIProvider } from "@/core/ai/types";
 import type { Artifact } from "@/lib/db/types";
-import { findSimilarChunks } from "@/repositories/embeddings";
+import { findSimilarChunks, findChunksByKeyword } from "@/repositories/embeddings";
 import { updateArtifactDetail } from "@/repositories/artifacts";
 import {
   buildArtifactDetailPrompt,
@@ -106,12 +106,18 @@ export async function getArtifactKnowledge(
   artifact: Artifact,
   ai: AIProvider
 ): Promise<KnowledgeCard[]> {
-  const embedding = await ai.generateEmbedding(`${artifact.title}. ${artifact.use_case}`);
-  const chunks = await findSimilarChunks(supabase, embedding, 20);
+  const queryText = `${artifact.title}. ${artifact.use_case}`;
 
-  // Deduplicate: keep first (highest similarity) chunk per content_id
+  // Keyword search needs no embedding — starts immediately in parallel with embedding+vector
+  const [vectorChunks, keywordChunks] = await Promise.all([
+    ai.generateEmbedding(queryText).then((embedding) => findSimilarChunks(supabase, embedding, 20)),
+    findChunksByKeyword(supabase, queryText, 20),
+  ]);
+
+  // Merge: vector results first (ordered by similarity), keyword-only results append after
+  // Deduplication by content_id keeps the first (highest-ranked) chunk per source
   const seen = new Map<string, KnowledgeCard>();
-  for (const { content } of chunks) {
+  for (const { content } of [...vectorChunks, ...keywordChunks]) {
     if (!seen.has(content.id)) {
       seen.set(content.id, {
         id: content.id,

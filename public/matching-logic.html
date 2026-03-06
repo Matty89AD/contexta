@@ -17,7 +17,7 @@
     }
 
     .page {
-      max-width: 780px;
+      max-width: 820px;
       margin: 0 auto;
       background: #fff;
       border: 1px solid #e5e5e5;
@@ -53,7 +53,7 @@
     h2 {
       font-size: 1.1rem;
       font-weight: 700;
-      margin: 2.2rem 0 0.75rem;
+      margin: 2.4rem 0 0.75rem;
       letter-spacing: -0.01em;
     }
 
@@ -72,6 +72,68 @@
     }
     li { margin-bottom: 0.35rem; }
 
+    /* ── Section dividers ───────────────────────────────── */
+    .flow-section {
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e8e8e8;
+    }
+
+    .flow-label {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      background: #555;
+      border-radius: 3px;
+      padding: 0.2em 0.55em;
+      margin-bottom: 0.5rem;
+    }
+    .flow-label.flow-1 { background: #2563eb; }
+    .flow-label.flow-2 { background: #7c3aed; }
+
+    /* ── Overview grid ──────────────────────────────────── */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0 1.5rem;
+    }
+    .flow-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+    }
+    .flow-card .fc-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+    }
+    .flow-card .fc-trigger {
+      font-size: 0.8rem;
+      color: #777;
+      margin-bottom: 0.6rem;
+    }
+    .flow-card ul {
+      margin-left: 1.1rem;
+      font-size: 0.83rem;
+    }
+
+    /* ── Phase blocks ───────────────────────────────────── */
+    .phase-block {
+      background: #f8f8f8;
+      border-left: 3px solid #d0d0d0;
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0 1.25rem;
+    }
+    .phase-block.blue  { border-left-color: #93bbfd; }
+    .phase-block.purple { border-left-color: #c4b5fd; }
+    .phase-block h3 { margin-top: 0; }
+
+    /* ── Tables ─────────────────────────────────────────── */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -104,18 +166,19 @@
       color: #c7254e;
     }
 
-    .phase-block {
-      background: #f8f8f8;
-      border-left: 3px solid #d0d0d0;
-      border-radius: 0 6px 6px 0;
-      padding: 1rem 1.25rem;
-      margin: 0.75rem 0 1.25rem;
-    }
-    .phase-block h3 { margin-top: 0; }
-
     .note {
       background: #fffbeb;
       border: 1px solid #f0e080;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      color: #555;
+      margin: 1rem 0;
+    }
+
+    .note-purple {
+      background: #faf5ff;
+      border: 1px solid #ddd6fe;
       border-radius: 6px;
       padding: 0.75rem 1rem;
       font-size: 0.88rem;
@@ -136,6 +199,7 @@
       .page { padding: 1.5rem 1.25rem; }
       h1 { font-size: 1.35rem; }
       table { font-size: 0.8rem; }
+      .flow-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -145,142 +209,373 @@
 
     <h1>Matching Logic</h1>
     <p class="subtitle">
-      How Contexta finds the right PM frameworks for your challenge — a technical overview of the retrieval and scoring pipeline.
+      A technical overview of both AI pipelines Contexta uses — finding the right frameworks for your challenge, and surfacing relevant knowledge for each artifact.
     </p>
 
-    <!-- ── OVERVIEW ─────────────────────────────────────────────── -->
+    <!-- ══════════════════════════════════════════════════════
+         HIGH-LEVEL OVERVIEW
+    ═══════════════════════════════════════════════════════════ -->
     <h2>Overview</h2>
     <p>
-      When you submit a challenge, Contexta runs a two-phase pipeline. Phase 1 generates a structured understanding
-      of your challenge using an AI model. Phase 2 uses that understanding to search the knowledge base and select
-      the most relevant PM artifacts from a curated catalog.
+      Contexta runs two distinct AI flows. They are independent — each has its own trigger, query
+      strategy, and output. Neither reuses the other's intermediate results.
     </p>
 
-    <!-- ── PHASE 1 ─────────────────────────────────────────────── -->
-    <h2>Phase 1 — Challenge Understanding</h2>
-    <div class="phase-block">
-      <ol>
-        <li><strong>AI summary</strong> — Your description and context (role, company stage, team size, experience level) are sent to an AI model, which generates a concise summary, a focused problem statement, and a desired outcome statement.</li>
-        <li><strong>Persist</strong> — All three fields are saved to the database against the challenge record, ready for Phase 2.</li>
-        <li><strong>Return</strong> — The summary and challenge ID are returned to the client immediately. The results page renders with the summary visible while Phase 2 runs in the background.</li>
-      </ol>
+    <div class="flow-grid">
+      <div class="flow-card">
+        <div class="fc-title"><span class="flow-label flow-1">Flow 1</span> &nbsp;Challenge Matching</div>
+        <div class="fc-trigger">Triggered when: a user submits a challenge</div>
+        <ul>
+          <li>AI understands the challenge</li>
+          <li>Hybrid retrieval (vector + keyword)</li>
+          <li>Scores and ranks knowledge chunks</li>
+          <li>AI selects 3–5 PM artifacts with explanations</li>
+        </ul>
+      </div>
+      <div class="flow-card">
+        <div class="fc-title"><span class="flow-label flow-2">Flow 2</span> &nbsp;Artifact Detail</div>
+        <div class="fc-trigger">Triggered when: a user opens an artifact page</div>
+        <ul>
+          <li>Serves cached static artifact detail (or generates it once)</li>
+          <li>Hybrid retrieval (vector + keyword) to find related content cards</li>
+          <li>Optional: personalised pro tip for the user's challenge</li>
+        </ul>
+      </div>
     </div>
-
-    <!-- ── PHASE 2 ─────────────────────────────────────────────── -->
-    <h2>Phase 2 — Artifact Recommendations</h2>
-    <div class="phase-block">
-      <ol>
-        <li><strong>Embedding + artifact fetch (parallel)</strong> — The combined text of the summary, problem statement, and desired outcome is converted into a numerical vector (an embedding). Simultaneously, the artifact catalog is fetched from the database.</li>
-        <li><strong>Dual retrieval</strong> — Two independent searches run in parallel against the knowledge base (see below).</li>
-        <li><strong>Merge and deduplicate</strong> — Results from both searches are combined into a single candidate list. A chunk appearing in both searches is flagged as a stronger match.</li>
-        <li><strong>Scoring and ranking</strong> — Every candidate is scored across three dimensions and ranked (see Scoring Formula below).</li>
-        <li><strong>Domain-filtered artifact selection</strong> — The artifact catalog is filtered to artifacts whose domains overlap with the challenge domains. This typically reduces the catalog from 68 artifacts to 10–20 candidates, making the AI call faster and more focused. If no overlap exists, the full catalog is used.</li>
-        <li><strong>Artifact selection pass</strong> — The top-ranked content chunks (as context) and the filtered artifact list are sent to an AI model. The AI selects 3–5 artifacts by name, writes a 1–2 sentence explanation for each, and identifies the single most relevant artifact. It can only recommend artifacts from the provided list — it cannot invent new ones.</li>
-      </ol>
-    </div>
-
-    <!-- ── TWO RETRIEVAL METHODS ───────────────────────────────── -->
-    <h2>The Two Retrieval Methods</h2>
-
-    <h3>Semantic Search (vector search)</h3>
-    <p>
-      The challenge embedding is compared against the embedding stored for every content chunk using
-      <strong>cosine similarity</strong>. This finds content that is <em>conceptually</em> close to the
-      challenge — even if different words are used. For example, a challenge about "not knowing which feature
-      to build next" will surface content about prioritisation frameworks even if the word "prioritisation"
-      was never written.
-    </p>
-
-    <h3>Keyword Search (full-text search)</h3>
-    <p>
-      The raw challenge text is passed to PostgreSQL's built-in full-text search engine
-      (<code>tsvector</code>/<code>tsquery</code>) using the <code>english</code> language configuration.
-      This finds content chunks where the <em>same words</em> appear — useful for precise terminology,
-      framework names, methodologies, and product jargon.
-    </p>
-    <p>How the keyword search processes the query text:</p>
-    <ul>
-      <li><strong>Stop words are stripped</strong> — common English words that carry little meaning are discarded before matching (e.g. <em>the, a, is, are, of, in, for, with, and, or, but…</em> and approximately 170 others defined in PostgreSQL's English stop-word list).</li>
-      <li><strong>Words are stemmed</strong> — remaining words are reduced to their root form using the Snowball English stemmer, so different inflections match each other. Examples: "prioritizing" → <code>prioritiz</code>, "challenges" → <code>challeng</code>, "strategies" → <code>strategi</code>. The same stemming is applied to content chunks at ingestion time.</li>
-      <li><strong>Logical AND matching</strong> — a content chunk must contain <em>all</em> of the stemmed, non-stop-word tokens to be considered a match.</li>
-      <li><strong>Ranking</strong> — matching chunks are ranked by <code>ts_rank_cd</code> with normalization 8, which divides the raw rank by the number of unique words in the chunk (preventing long chunks from unfairly dominating).</li>
-      <li><strong>Enhanced by key concepts</strong> — the full-text index on each chunk also includes extracted key concepts (specific framework names and terminology identified during ingestion), so a chunk about "opportunity solution tree" will match keyword searches for those exact terms.</li>
-    </ul>
-    <div class="note">
-      Keyword search failure is non-fatal. If the search returns no results or encounters an error, the pipeline silently falls back to vector-only results.
-    </div>
-
-    <!-- ── SCORING FORMULA ─────────────────────────────────────── -->
-    <h2>Scoring Formula</h2>
-    <p>Each candidate chunk in the merged list receives a final score calculated across three dimensions:</p>
 
     <table>
       <thead>
         <tr>
-          <th>Component</th>
-          <th>How it is calculated</th>
-          <th>Default weight</th>
+          <th>Property</th>
+          <th>Flow 1 — Challenge Matching</th>
+          <th>Flow 2 — Artifact Detail</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Domain score</strong></td>
-          <td>1.0 if the content's domain(s) overlap with the challenge domain(s); 0.5 otherwise</td>
-          <td>0.3</td>
+          <td>Query text</td>
+          <td>User's challenge description + context</td>
+          <td>Artifact title + use-case description</td>
         </tr>
         <tr>
-          <td><strong>Semantic score</strong></td>
-          <td>Cosine similarity between the challenge embedding and the chunk embedding (0–1)</td>
-          <td>0.7</td>
+          <td>Retrieval method</td>
+          <td>Vector + keyword (hybrid)</td>
+          <td>Vector + keyword (hybrid)</td>
         </tr>
         <tr>
-          <td><strong>Keyword score</strong></td>
-          <td><code>ts_rank_cd</code> relevance from the full-text search, normalised (0–1)</td>
-          <td>0.3</td>
+          <td>Domain filtering</td>
+          <td>Yes — soft scoring boost + artifact catalog filter</td>
+          <td>No — searches the full knowledge base</td>
+        </tr>
+        <tr>
+          <td>AI calls</td>
+          <td>2 sequential AI calls (understanding → selection)</td>
+          <td>Up to 3 AI calls (detail generation, knowledge cards use no AI, pro tip)</td>
+        </tr>
+        <tr>
+          <td>Caching</td>
+          <td>None — generated fresh per challenge</td>
+          <td>Static detail is cached in DB; knowledge cards re-queried each load</td>
+        </tr>
+        <tr>
+          <td>Output</td>
+          <td>3–5 artifact recommendations with explanations</td>
+          <td>Structured artifact detail + up to 5 related knowledge cards + pro tip</td>
         </tr>
       </tbody>
     </table>
 
-    <p>
-      All three weights are <strong>additive and independent</strong> — they do not need to sum to 1. Each weight is applied to its component and the results are summed into a final ranking score.
-    </p>
-    <p>
-      Domain scoring is a <strong>soft boost</strong>: content from other domains can still appear if its semantic or keyword score is high enough. It is never a hard filter.
-    </p>
 
-    <!-- ── MULTI-DOMAIN ────────────────────────────────────────── -->
-    <h2>Multi-Domain Support</h2>
-    <p>
-      Users can select more than one domain when submitting a challenge (Strategy, Discovery, Delivery, Growth, Leadership).
-      Selecting multiple domains signals that the challenge spans multiple areas.
-    </p>
-    <ul>
-      <li>At least one domain is required; up to five can be selected simultaneously.</li>
-      <li>Domain overlap is treated as a scoring boost, not an exclusion rule — content from domains not selected can still appear if it is semantically relevant.</li>
-      <li>The artifact list passed to the AI selection step is filtered to artifacts whose domains match the selected challenge domains, reducing the candidate set and improving both speed and relevance.</li>
-    </ul>
+    <!-- ══════════════════════════════════════════════════════
+         FLOW 1
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="flow-section">
+      <span class="flow-label flow-1">Flow 1</span>
+      <h2 style="margin-top:0.4rem;">Challenge Matching</h2>
+      <p>
+        When you submit a challenge, Contexta runs a two-phase pipeline. Phase 1 generates a
+        structured understanding of your challenge. Phase 2 uses that understanding to retrieve and
+        rank knowledge base content, then selects the most relevant PM artifacts.
+      </p>
 
-    <!-- ── ARTIFACT CATALOG ────────────────────────────────────── -->
-    <h2>Artifact Catalog</h2>
-    <p>
-      Every recommendation is drawn exclusively from a curated catalog of 68 PM frameworks and methodologies
-      (sourced from Lenny's Frameworks). The AI selects from this known list — it cannot invent or suggest
-      an artifact that is not in the catalog. This guarantees that all recommendations are well-defined,
-      named practices.
-    </p>
-    <p>The catalog spans five practice domains: Strategy, Discovery, Delivery, Growth, and Leadership.</p>
+      <!-- Phase 1 -->
+      <h2>Phase 1 — Challenge Understanding</h2>
+      <div class="phase-block blue">
+        <ol>
+          <li><strong>AI summary</strong> — Your challenge description and context (role, company stage, team size, experience level) are sent to an AI model, which generates three structured fields: a concise summary, a focused problem statement, and a desired outcome statement.</li>
+          <li><strong>Persist</strong> — All three fields are saved to the database against the challenge record, ready for Phase 2.</li>
+          <li><strong>Return</strong> — The summary and challenge ID are returned to the client immediately. The results page renders with the summary visible while Phase 2 runs in the background.</li>
+        </ol>
+      </div>
 
-    <!-- ── TOP-K ───────────────────────────────────────────────── -->
-    <h2>Retrieval Depth (<code>TOP_K</code>)</h2>
-    <p>
-      The <code>TOP_K</code> setting controls how many top content chunks are retrieved from the knowledge base
-      and passed to the artifact-selection AI call as context. Higher values give the AI more information to
-      inform its selection (potentially improving quality at the cost of a slightly larger prompt).
-      The default range is 1–20.
-    </p>
+      <!-- Phase 2 -->
+      <h2>Phase 2 — Artifact Recommendations</h2>
+      <div class="phase-block blue">
+        <ol>
+          <li><strong>Embedding + artifact fetch (parallel)</strong> — The combined text of the summary, problem statement, and desired outcome is converted into a numerical vector (an embedding). Simultaneously, the artifact catalog is fetched from the database.</li>
+          <li><strong>Dual retrieval (parallel)</strong> — Two independent searches run against the knowledge base (see Retrieval Methods below).</li>
+          <li><strong>Merge and deduplicate</strong> — Results from both searches are combined into a single candidate list. A chunk appearing in both searches is flagged as a stronger match.</li>
+          <li><strong>Scoring and ranking</strong> — Every candidate is scored across three dimensions and ranked (see Scoring Formula below). The top 8 chunks are kept.</li>
+          <li><strong>Domain-filtered artifact selection</strong> — The artifact catalog is filtered to artifacts whose domains overlap with the challenge domains (typically reducing 68 artifacts to 10–20 candidates). If no overlap exists, the full catalog is used.</li>
+          <li><strong>AI artifact selection</strong> — The top-ranked chunks (as context) and the filtered artifact list are sent to an AI model. The AI selects 3–5 artifacts by name, writes a 1–2 sentence explanation for each, and identifies the single most relevant artifact. It can only recommend artifacts from the provided list — it cannot invent new ones.</li>
+        </ol>
+      </div>
+
+      <!-- Retrieval methods -->
+      <h2>The Two Retrieval Methods</h2>
+
+      <h3>Semantic Search (vector search)</h3>
+      <p>
+        The challenge embedding is compared against the embedding stored for every content chunk using
+        <strong>cosine similarity</strong>. This finds content that is <em>conceptually</em> close to the
+        challenge — even if different words are used. For example, a challenge about "not knowing which feature
+        to build next" will surface content about prioritisation frameworks even if the word "prioritisation"
+        was never written.
+      </p>
+
+      <h3>Keyword Search (full-text search)</h3>
+      <p>
+        The raw challenge text is passed to PostgreSQL's built-in full-text search engine
+        (<code>tsvector</code>/<code>tsquery</code>) using the <code>english</code> language configuration.
+        This finds content chunks where the <em>same words</em> appear — useful for precise terminology,
+        framework names, methodologies, and product jargon.
+      </p>
+      <p>How the keyword search processes the query text:</p>
+      <ul>
+        <li><strong>Stop words are stripped</strong> — common English words that carry little meaning are discarded before matching (e.g. <em>the, a, is, are, of, in, for, with, and, or, but…</em> and approximately 170 others defined in PostgreSQL's English stop-word list).</li>
+        <li><strong>Words are stemmed</strong> — remaining words are reduced to their root form using the Snowball English stemmer, so different inflections match each other. Examples: "prioritizing" → <code>prioritiz</code>, "challenges" → <code>challeng</code>, "strategies" → <code>strategi</code>. The same stemming is applied to content chunks at ingestion time.</li>
+        <li><strong>Logical AND matching</strong> — a content chunk must contain <em>all</em> of the stemmed, non-stop-word tokens to be considered a match.</li>
+        <li><strong>Ranking</strong> — matching chunks are ranked by <code>ts_rank_cd</code> with normalization 8, which divides the raw rank by the number of unique words in the chunk (preventing long chunks from unfairly dominating).</li>
+        <li><strong>Enhanced by key concepts</strong> — the full-text index on each chunk also includes extracted key concepts (specific framework names and terminology identified during ingestion), so a chunk about "opportunity solution tree" will match keyword searches for those exact terms.</li>
+      </ul>
+      <div class="note">
+        Keyword search failure is non-fatal. If the search returns no results or encounters an error, the pipeline silently falls back to vector-only results.
+      </div>
+
+      <!-- Scoring -->
+      <h2>Scoring Formula</h2>
+      <p>Each candidate chunk in the merged list receives a final score calculated across three dimensions:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>How it is calculated</th>
+            <th>Default weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Domain score</strong></td>
+            <td>1.0 if the content's domain(s) overlap with the challenge domain(s); 0.5 otherwise</td>
+            <td>0.3 (<code>STRUCTURED_FIT_WEIGHT</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Semantic score</strong></td>
+            <td>Cosine similarity between the challenge embedding and the chunk embedding (0–1)</td>
+            <td>0.7 (<code>EMBEDDING_SIMILARITY_WEIGHT</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Keyword score</strong></td>
+            <td><code>ts_rank_cd</code> relevance from the full-text search, normalised (0–1)</td>
+            <td>0.3 (<code>KEYWORD_RELEVANCE_WEIGHT</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        All three weights are <strong>additive and independent</strong> — they do not need to sum to 1. Each weight is applied to its component and the results are summed into a final ranking score.
+      </p>
+      <p>
+        Domain scoring is a <strong>soft boost</strong>: content from other domains can still appear if its semantic or keyword score is high enough. It is never a hard filter.
+      </p>
+
+      <!-- Multi-domain -->
+      <h2>Multi-Domain Support</h2>
+      <p>
+        Users can select more than one domain when submitting a challenge (Strategy, Discovery, Delivery, Growth, Leadership).
+        Selecting multiple domains signals that the challenge spans multiple areas.
+      </p>
+      <ul>
+        <li>At least one domain is required; up to five can be selected simultaneously.</li>
+        <li>Domain overlap is treated as a scoring boost, not an exclusion rule — content from domains not selected can still appear if it is semantically relevant.</li>
+        <li>The artifact list passed to the AI selection step is filtered to artifacts whose domains match the selected challenge domains, reducing the candidate set and improving both speed and relevance.</li>
+      </ul>
+
+      <!-- Artifact catalog -->
+      <h2>Artifact Catalog</h2>
+      <p>
+        Every recommendation is drawn exclusively from a curated catalog of 68 PM frameworks and methodologies
+        (sourced from Lenny's Frameworks). The AI selects from this known list — it cannot invent or suggest
+        an artifact that is not in the catalog. This guarantees that all recommendations are well-defined,
+        named practices.
+      </p>
+      <p>The catalog spans five practice domains: Strategy, Discovery, Delivery, Growth, and Leadership.</p>
+
+      <!-- TOP_K -->
+      <h2>Retrieval Depth (<code>TOP_K</code>)</h2>
+      <p>
+        The <code>TOP_K</code> setting controls how many top content chunks are retrieved from the knowledge base
+        and passed to the artifact-selection AI call as context. Higher values give the AI more information to
+        inform its selection (potentially improving quality at the cost of a slightly larger prompt).
+        The default range is 1–20.
+      </p>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════
+         FLOW 2
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="flow-section">
+      <span class="flow-label flow-2">Flow 2</span>
+      <h2 style="margin-top:0.4rem;">Artifact Detail</h2>
+      <p>
+        When a user opens an artifact page, Contexta runs up to three operations — two of which can be
+        served from cache and one of which is personalised per user. These run independently of Flow 1
+        and use different retrieval strategies.
+      </p>
+
+      <h2>Three Operations at a Glance</h2>
+      <div class="phase-block purple">
+        <ol>
+          <li><strong>Static artifact detail</strong> — Structured content about the artifact (description, when to use it, steps, pro tip). Generated once by AI and cached permanently in the database. Subsequent loads are instant DB reads with no AI call.</li>
+          <li><strong>Knowledge cards</strong> — Up to 5 related knowledge base items (podcasts, articles, books) surfaced via vector similarity search against the artifact's own description. No AI call — purely a database query.</li>
+          <li><strong>Personalised pro tip</strong> — If the user arrived from a specific challenge, a small AI call replaces the generic pro tip with one tailored to their challenge context. Runs in parallel with the static detail render.</li>
+        </ol>
+      </div>
+
+      <!-- Op 1 -->
+      <h2>Operation 1 — Static Artifact Detail</h2>
+      <p>
+        The artifact detail is a structured object containing a description, typical use cases, key steps,
+        common pitfalls, and a generic pro tip. It is generated once and cached — the vast majority of
+        page loads never trigger an AI call for this.
+      </p>
+
+      <h3>Cache hit (most loads)</h3>
+      <p>
+        If the artifact row in the database already has a stored <code>detail</code> object, it is parsed
+        and returned immediately. No AI call is made.
+      </p>
+
+      <h3>Cache miss (first load only)</h3>
+      <div class="phase-block purple">
+        <ol>
+          <li>The artifact's metadata (name, domain, use case, source attribution) is assembled into a structured prompt.</li>
+          <li>An AI model generates the detail object as structured JSON output.</li>
+          <li>The result is validated against a Zod schema and returned to the user immediately.</li>
+          <li>The validated detail is persisted asynchronously back to the database — so the next load is a cache hit. This write does not block the user-facing response.</li>
+        </ol>
+      </div>
+
+      <!-- Op 2 -->
+      <h2>Operation 2 — Knowledge Cards (Hybrid Search)</h2>
+      <p>
+        Knowledge cards surface real knowledge base content (podcast episodes, articles, books) that is
+        related to the artifact — giving users a path to go deeper. Retrieval uses both vector and keyword
+        search in parallel, then merges the results.
+      </p>
+      <div class="phase-block purple">
+        <ol>
+          <li><strong>Query construction</strong> — The artifact's title and use-case description are concatenated into a single query string. No user challenge text is involved.</li>
+          <li><strong>Parallel retrieval</strong> — Two searches fire simultaneously:
+            <ul>
+              <li><strong>Vector search</strong> — The query string is embedded (<code>text-embedding-3-small</code>, 1536 dims) and the top 20 most similar content chunks are retrieved using cosine similarity (pgvector).</li>
+              <li><strong>Keyword search</strong> — The same query string is passed directly to PostgreSQL full-text search (<code>tsvector</code>/<code>tsquery</code>), returning up to 20 chunks ranked by <code>ts_rank_cd</code>. No embedding needed — this fires immediately without waiting for the OpenAI round-trip.</li>
+            </ul>
+          </li>
+          <li><strong>Merge</strong> — Vector results are placed first (ordered by cosine similarity), keyword-only results are appended after.</li>
+          <li><strong>Deduplication</strong> — Results are deduplicated by source content item: only the first (highest-ranked) chunk from each source is kept. This prevents one podcast episode with many chunks from dominating all 5 slots.</li>
+          <li><strong>Return top 5</strong> — After deduplication, the top 5 unique source items are returned as knowledge cards.</li>
+        </ol>
+      </div>
+
+      <div class="note-purple">
+        There is no domain filtering — the entire knowledge base is searched regardless of the artifact's domain. Keyword search failure is non-fatal: if it returns no results, vector results alone are used. <code>KEYWORD_RELEVANCE_WEIGHT</code> does not apply here — there is no weighted scoring step, results are ordered by merge position (vector first, keyword additions after).
+      </div>
+
+      <h3>Why hybrid here?</h3>
+      <p>
+        The artifact title is a named framework (e.g. "RICE Scoring", "Opportunity Solution Tree"). Keyword
+        search is highly precise for exact framework names — it can surface chunks that mention the artifact
+        by name even when the cosine similarity is moderate. Vector search handles conceptual relevance.
+        Together they cover both exact-name matches and semantically adjacent content.
+      </p>
+
+      <!-- Op 3 -->
+      <h2>Operation 3 — Personalised Pro Tip</h2>
+      <p>
+        If the user arrives at an artifact page from a challenge result (a <code>challengeSummary</code>
+        is present in the request), a small AI call generates a pro tip tailored to their specific situation.
+      </p>
+      <div class="phase-block purple">
+        <ol>
+          <li>The artifact metadata and the user's challenge summary (and selected domains) are assembled into a focused prompt.</li>
+          <li>An AI model generates a 1–2 sentence pro tip that connects the artifact to the user's specific challenge.</li>
+          <li>If this call succeeds, the personalised pro tip replaces the generic one from the static detail. If it fails, the static pro tip is shown as a fallback — failure is silent.</li>
+        </ol>
+      </div>
+      <div class="note-purple">
+        This is the only operation in Flow 2 that is re-run on every page load (when challenge context is present). The static detail and knowledge cards are either cached or stable — only the pro tip is personalised per visit.
+      </div>
+
+      <!-- Comparison table -->
+      <h2>Knowledge Retrieval: Flow 1 vs Flow 2 Compared</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Flow 1 — Challenge Matching</th>
+            <th>Flow 2 — Knowledge Cards</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Query source</td>
+            <td>AI-generated summary + problem + outcome from user challenge</td>
+            <td>Artifact title + use-case (authored metadata)</td>
+          </tr>
+          <tr>
+            <td>Retrieval</td>
+            <td>Vector search + keyword search (hybrid)</td>
+            <td>Vector search + keyword search (hybrid)</td>
+          </tr>
+          <tr>
+            <td>Candidates retrieved</td>
+            <td>Up to 20 per method (40 total before merge)</td>
+            <td>Top 20 chunks</td>
+          </tr>
+          <tr>
+            <td>Deduplication</td>
+            <td>By chunk ID (keep one entry per chunk)</td>
+            <td>By source content item (keep best chunk per source)</td>
+          </tr>
+          <tr>
+            <td>Scoring</td>
+            <td>Domain + semantic + keyword weighted sum</td>
+            <td>Cosine similarity only (implicit ranking)</td>
+          </tr>
+          <tr>
+            <td>Final output count</td>
+            <td>Top 8 chunks → fed to AI artifact selection</td>
+            <td>Top 5 deduplicated source items → shown as cards</td>
+          </tr>
+          <tr>
+            <td>Domain filter</td>
+            <td>Soft boost in scoring; artifact catalog hard-filtered</td>
+            <td>None — full knowledge base searched</td>
+          </tr>
+          <tr>
+            <td>Followed by AI call?</td>
+            <td>Yes — AI selects artifacts from ranked context</td>
+            <td>No — results are shown directly</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <footer-note>
-      Contexta &mdash; Matching Logic &mdash; Documentation v1.7
+      Contexta &mdash; Matching Logic &mdash; Documentation v2.0
     </footer-note>
   </div>
 </body>
