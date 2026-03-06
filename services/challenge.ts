@@ -149,8 +149,11 @@ export async function runChallengePhase2(
   ai: AIProvider,
   challengeId: string
 ): Promise<ChallengePhase2Result> {
+  const t0 = Date.now();
+
   const challenge = await challengesRepo.getChallengeById(supabase, challengeId);
   if (!challenge) throw new NotFoundError(`Challenge not found: ${challengeId}`);
+  logger.info("phase2:db_fetch", { challengeId, ms: Date.now() - t0 });
 
   const textToEmbed = [
     challenge.summary,
@@ -163,6 +166,7 @@ export async function runChallengePhase2(
   // Embedding + artifact list in parallel
   let embedding: number[];
   let allArtifacts: Awaited<ReturnType<typeof artifactsRepo.listArtifacts>>;
+  const t1 = Date.now();
   try {
     [embedding, allArtifacts] = await Promise.all([
       ai.generateEmbedding(textToEmbed),
@@ -173,14 +177,17 @@ export async function runChallengePhase2(
     logger.error("Embedding or artifact fetch failed", { challengeId, detail });
     throw new AIProviderError(aiErrorToUserMessage(e), e);
   }
+  logger.info("phase2:embedding_and_artifacts", { challengeId, ms: Date.now() - t1 });
 
   // Hybrid matching
+  const t2 = Date.now();
   const ranked = await runMatching(
     supabase,
     embedding,
     challenge.domains as ChallengeDomain[],
     textToEmbed
   );
+  logger.info("phase2:matching", { challengeId, chunks: ranked.length, ms: Date.now() - t2 });
 
   // Filter artifacts by domain overlap (~70% token reduction)
   const domainFiltered = allArtifacts.filter((a) =>
@@ -199,8 +206,10 @@ export async function runChallengePhase2(
       chunkPayloads,
       artifacts
     );
+    const t3 = Date.now();
     try {
       const recText = await ai.generateText(recPrompt, { jsonMode: true });
+      logger.info("phase2:llm_recommendations", { challengeId, artifacts: artifacts.length, ms: Date.now() - t3 });
       const recOutput = recommendationsOutputSchema.parse(JSON.parse(recText));
       const artifactBySlug = new Map(artifacts.map((a) => [a.slug, a]));
       recommendations = recOutput.recommendations
@@ -233,6 +242,7 @@ export async function runChallengePhase2(
     }
   }
 
+  logger.info("phase2:total", { challengeId, ms: Date.now() - t0 });
   return { recommendations };
 }
 

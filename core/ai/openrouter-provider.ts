@@ -9,7 +9,7 @@ const DEFAULT_CHAT_MODEL = "openai/gpt-4o-mini";
 /** Default embedding model (1536 dims, matches text-embedding-3-small); override with OPENROUTER_EMBEDDING_MODEL. */
 const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 
-export function createOpenRouterProvider(apiKey?: string, chatModelOverride?: string): AIProvider {
+export function createOpenRouterProvider(apiKey?: string): AIProvider {
   const key = apiKey ?? process.env.OPENROUTER_API_KEY;
   if (!key) {
     throw new Error("OPENROUTER_API_KEY is required for OpenRouter provider");
@@ -19,7 +19,7 @@ export function createOpenRouterProvider(apiKey?: string, chatModelOverride?: st
     baseURL: OPENROUTER_BASE_URL,
   });
   const chatModelRaw = (process.env.OPENROUTER_CHAT_MODEL ?? "").trim();
-  const chatModel = chatModelOverride || chatModelRaw || DEFAULT_CHAT_MODEL;
+  const chatModel = chatModelRaw || DEFAULT_CHAT_MODEL;
   const embeddingModelRaw = (process.env.OPENROUTER_EMBEDDING_MODEL ?? "").trim();
   const embeddingModel = embeddingModelRaw || DEFAULT_EMBEDDING_MODEL;
 
