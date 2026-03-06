@@ -1,5 +1,7 @@
 # Epic 14 — Save & Revisit Challenge Results
 
+> **Status:** ✅ done  |  **As of:** 2026-03-06
+
 ## Goal
 
 Results are currently ephemeral: generated inside the `/flow` stepper, never explicitly saved, and lost on navigation. Challenges are auto-written to the DB the moment phase 1 starts — meaning junk/abandoned records pollute the journey. This epic makes saving intentional, moves results out of the flow into a dedicated page, and enables revisiting saved challenges without re-running the AI pipeline.
