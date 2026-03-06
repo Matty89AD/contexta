@@ -71,6 +71,7 @@ export interface Profile {
   company_stage: CompanyStage | null;
   team_size: TeamSize | null;
   experience_level: ExperienceLevel | null;
+  use_premium_model: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -81,6 +82,7 @@ export interface ProfileInsert {
   company_stage?: CompanyStage | null;
   team_size?: TeamSize | null;
   experience_level?: ExperienceLevel | null;
+  use_premium_model?: boolean;
 }
 
 export interface Challenge {

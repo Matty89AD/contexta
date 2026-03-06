@@ -12,6 +12,7 @@
     "backfill-intelligence": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-intelligence.ts",
     "backfill-domains": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-domains.ts",
     "eval": "node -r tsconfig-paths/register -r tsx/cjs scripts/eval-matching.ts",
+    "eval-chunk-impact": "node -r tsconfig-paths/register -r tsx/cjs scripts/eval-chunk-impact.ts",
     "seed-artifacts": "tsx scripts/seed-artifacts.ts",
     "backfill-artifact-details": "node -r tsconfig-paths/register -r tsx/cjs scripts/backfill-artifact-details.ts",
     "test": "vitest run",

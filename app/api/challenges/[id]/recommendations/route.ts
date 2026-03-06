@@ -5,13 +5,16 @@ import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
 import { NotFoundError, AIProviderError, AppError } from "@/core/errors";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const body = await request.json().catch(() => ({})) as { usePremiumModel?: boolean };
+    const premiumModel = process.env.OPENROUTER_CHAT_MODEL_PREMIUM;
+    const chatModel = body.usePremiumModel && premiumModel ? premiumModel : undefined;
     const supabase = getServiceRoleClient();
-    const ai = createOpenRouterProvider();
+    const ai = createOpenRouterProvider(undefined, chatModel);
     const result = await runChallengePhase2(supabase, ai, id);
     return NextResponse.json(result);
   } catch (e) {

@@ -94,8 +94,15 @@ function ResultsContent() {
       return;
     }
 
-    // Phase 2: fetch recommendations in the background
-    fetch(`/api/challenges/${cid}/recommendations`, { method: "POST" })
+    // Phase 2: fetch recommendations in the background.
+    // usePremiumModel is read from localStorage (written by the profile page toggle)
+    // so there is no extra async lookup before the LLM call.
+    const usePremiumModel = localStorage.getItem("contexta:premium_model") === "true";
+    fetch(`/api/challenges/${cid}/recommendations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usePremiumModel }),
+    })
       .then((res) => res.json())
       .then((data) => { setRecommendations((data as { recommendations?: ArtifactRecommendation[] }).recommendations ?? []); })
       .catch(() => { setRecommendations([]); });
