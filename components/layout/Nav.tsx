@@ -104,14 +104,6 @@ export function Nav() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {!user && (
-            <Link
-              href="/login"
-              className="hidden md:inline-flex items-center px-3 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition"
-            >
-              Login
-            </Link>
-          )}
           {pathname !== "/flow" && (
             <Link
               href="/flow"

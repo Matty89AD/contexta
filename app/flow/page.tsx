@@ -207,25 +207,12 @@ function FlowContent() {
         return;
       }
 
-      // Phase 2 — recommendations
-      let recs = [];
-      try {
-        const res = await fetch(`/api/challenges/${p1.challengeId}/recommendations`, {
-          method: "POST",
-        });
-        const data = await res.json();
-        recs = data.recommendations ?? [];
-      } catch {
-        recs = [];
-      }
-
-      // Store in sessionStorage and redirect to /results
+      // Store phase 1 in sessionStorage; phase 2 runs on the results page
       try {
         sessionStorage.setItem(
           `results:${p1.challengeId}`,
           JSON.stringify({
             phase1: p1,
-            recommendations: recs,
             context: contextData,
             domains: body.domains,
           })

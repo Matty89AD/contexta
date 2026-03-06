@@ -12,7 +12,6 @@ import { ROLE_LABELS, DOMAIN_LABELS } from "@/lib/constants";
 
 interface SessionResults {
   phase1: ChallengePhase1Result;
-  recommendations: ArtifactRecommendation[];
   context: ContextData | null;
   domains: string[];
 }
@@ -72,6 +71,7 @@ function ResultsContent() {
   const cid = searchParams?.get("cid") ?? null;
 
   const [results, setResults] = useState<SessionResults | null>(null);
+  const [recommendations, setRecommendations] = useState<ArtifactRecommendation[] | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -88,12 +88,17 @@ function ResultsContent() {
     }
     try {
       const parsed = JSON.parse(raw) as SessionResults;
-      sessionStorage.removeItem(`results:${cid}`);
       setResults(parsed);
     } catch {
       router.replace("/flow");
       return;
     }
+
+    // Phase 2: fetch recommendations in the background
+    fetch(`/api/challenges/${cid}/recommendations`, { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => { setRecommendations((data as { recommendations?: ArtifactRecommendation[] }).recommendations ?? []); })
+      .catch(() => { setRecommendations([]); });
 
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -106,7 +111,7 @@ function ResultsContent() {
   };
 
   const handleSave = async () => {
-    if (!results || !cid) return;
+    if (!results || !cid || !recommendations) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -115,7 +120,7 @@ function ResultsContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           is_saved: true,
-          recommendations: results.recommendations,
+          recommendations,
         }),
       });
       if (!res.ok) {
@@ -134,7 +139,7 @@ function ResultsContent() {
 
   if (!results) return null;
 
-  const { phase1, recommendations, context, domains } = results;
+  const { phase1, context, domains } = results;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)]">
@@ -196,7 +201,7 @@ function ResultsContent() {
                   <button
                     type="button"
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || !recommendations}
                     className="w-full py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
                   >
                     {saving ? (
@@ -229,9 +234,34 @@ function ResultsContent() {
               )}
             </div>
 
-            {/* Right column — artifact cards */}
+            {/* Right column — artifact cards or skeleton */}
             <div className="lg:col-span-2 space-y-4">
-              {recommendations.length === 0 ? (
+              {recommendations === null ? (
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800"
+                    >
+                      <div className="animate-pulse space-y-3">
+                        <div className="flex gap-2">
+                          <div className="h-4 w-16 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                          <div className="h-4 w-20 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                        </div>
+                        <div className="h-6 w-2/3 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                        <div className="h-3 w-1/2 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                        <div className="space-y-1.5">
+                          <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded" />
+                          <div className="h-3 w-5/6 bg-zinc-100 dark:bg-zinc-800 rounded" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 pt-2">
+                    Matching frameworks to your challenge…
+                  </p>
+                </>
+              ) : recommendations.length === 0 ? (
                 <p className="text-zinc-500 dark:text-zinc-400">
                   No matching artifacts yet. Seed the artifacts table to get recommendations.
                 </p>

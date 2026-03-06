@@ -1,0 +1,68 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Contexta" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e5]:
+        - link "Login" [ref=e6] [cursor=pointer]:
+          - /url: /login
+        - button "Open menu" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+          - img [ref=e11]
+  - main [ref=e15]:
+    - generic [ref=e17]:
+      - generic [ref=e19]:
+        - generic [ref=e21]:
+          - generic [ref=e23]: "1"
+          - generic [ref=e24]: Context
+        - generic [ref=e25]:
+          - generic [ref=e27]: "2"
+          - generic [ref=e28]: Challenge
+        - generic [ref=e29]:
+          - generic [ref=e31]: "3"
+          - generic [ref=e32]: Recommendations
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - heading "Tell us about yourself" [level=1] [ref=e36]
+          - paragraph [ref=e37]: We'll tailor PM Artifacts based on your specific operational environment.
+        - generic [ref=e38]:
+          - generic [ref=e39]: Role
+          - generic [ref=e40]:
+            - button "Founder" [ref=e41] [cursor=pointer]
+            - button "CPO / Director of Product" [ref=e42] [cursor=pointer]
+            - button "Head of Product" [ref=e43] [cursor=pointer]
+            - button "Sr. / Product Manager" [ref=e44] [cursor=pointer]
+            - button "Associate / Aspiring PM" [ref=e45] [cursor=pointer]
+        - separator [ref=e46]
+        - generic [ref=e47]:
+          - generic [ref=e48]: Level of experience in your current role
+          - generic [ref=e49]:
+            - button "Junior" [active] [ref=e50] [cursor=pointer]
+            - button "Mid" [ref=e51] [cursor=pointer]
+            - button "Senior" [ref=e52] [cursor=pointer]
+            - button "Lead" [ref=e53] [cursor=pointer]
+        - separator [ref=e54]
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]: Company Stage
+            - combobox [ref=e58]:
+              - option "Select stage..."
+              - option "Pre-Seed / Seed" [selected]
+              - option "Series A-B"
+              - option "Growth (Series C+)"
+              - option "Enterprise"
+              - option "Corporate"
+          - generic [ref=e59]:
+            - generic [ref=e60]: Team Size
+            - generic [ref=e61]:
+              - button "1-5" [ref=e62] [cursor=pointer]
+              - button "6-15" [ref=e63] [cursor=pointer]
+              - button "16-50" [ref=e64] [cursor=pointer]
+              - button "51+" [ref=e65] [cursor=pointer]
+        - button "Continue" [disabled] [ref=e67]:
+          - text: Continue
+          - img [ref=e68]
+```
