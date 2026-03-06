@@ -17,7 +17,7 @@ export async function getJourneyData(
   supabase: SupabaseClient,
   userId: string
 ): Promise<JourneyData> {
-  const challenges = await challengesRepo.getChallengesByUserId(supabase, userId);
+  const challenges = await challengesRepo.getSavedChallengesByUserId(supabase, userId);
 
   const stats: JourneyStats = {
     total: challenges.length,

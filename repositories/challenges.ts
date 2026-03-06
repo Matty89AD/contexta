@@ -62,3 +62,47 @@ export async function getChallengesByUserId(
   if (error) throw error;
   return (data ?? []) as Challenge[];
 }
+
+/** Returns only explicitly saved challenges for the journey view. */
+export async function getSavedChallengesByUserId(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Challenge[]> {
+  const { data, error } = await supabase
+    .from("challenges")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_saved", true)
+    .order("saved_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Challenge[];
+}
+
+export async function saveChallenge(
+  supabase: SupabaseClient,
+  id: string,
+  fields: { title: string; recommendations: import("@/lib/db/types").ArtifactRecommendation[] }
+): Promise<void> {
+  const { error } = await supabase
+    .from("challenges")
+    .update({
+      is_saved: true,
+      saved_at: new Date().toISOString(),
+      title: fields.title,
+      recommendations: fields.recommendations,
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateChallengeTitle(
+  supabase: SupabaseClient,
+  id: string,
+  title: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("challenges")
+    .update({ title })
+    .eq("id", id);
+  if (error) throw error;
+}

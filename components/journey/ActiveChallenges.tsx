@@ -72,15 +72,15 @@ export function ActiveChallenges({ challenges }: { challenges: Challenge[] }) {
 
             <div className="flex-1">
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-2">
-                {c.summary ?? c.raw_description.slice(0, 100)}
+                {c.title ?? c.summary ?? c.raw_description.slice(0, 100)}
               </p>
             </div>
 
             <Link
-              href={`/flow?resume=${c.id}`}
+              href={`/challenges/${c.id}`}
               className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 transition"
             >
-              Continue
+              View
             </Link>
           </div>
         ))}

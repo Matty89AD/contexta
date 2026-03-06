@@ -31,9 +31,12 @@ function logEvent(event: string, properties?: Record<string, unknown>) {
 export function ContextStep({
   initialData,
   onComplete,
+  onSkip,
 }: {
   initialData?: ContextData | null;
   onComplete: (data: ContextData) => void;
+  /** If provided, shows a Skip button (used when context is already known from profile). */
+  onSkip?: () => void;
 }) {
   const [role, setRole] = useState<string>(initialData?.role ?? "");
   const [companyStage, setCompanyStage] = useState<string>(
@@ -163,15 +166,26 @@ export function ContextStep({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleContinue}
-        disabled={!canContinue}
-        className="w-full rounded-xl bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition flex items-center justify-center gap-2"
-      >
-        Continue
-        <ChevronRight size={18} />
-      </button>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={!canContinue}
+          className="flex-1 rounded-xl bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+        >
+          Continue
+          <ChevronRight size={18} />
+        </button>
+        {onSkip && (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="px-6 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 py-3 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-sm"
+          >
+            Skip
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useCallback, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { ContextStep } from "@/components/flow/ContextStep";
 import { ChallengeStep } from "@/components/flow/ChallengeStep";
 import { LoadingStep } from "@/components/flow/LoadingStep";
-import { ResultsStep } from "@/components/flow/ResultsStep";
 import type { ContextData } from "@/components/flow/ContextStep";
 import type { ChallengePhase1Result } from "@/services/challenge";
-import type { ArtifactRecommendation } from "@/lib/db/types";
 import { FLOW_CONTEXT_STORAGE_KEY } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
 
-type Step = "context" | "challenge" | "loading" | "results";
+type Step = "context" | "challenge" | "loading";
 
 function logEvent(event: string, properties?: Record<string, unknown>) {
   fetch("/api/events", {
@@ -26,11 +25,9 @@ function StepIndicator({ step }: { step: Step }) {
   const steps = [
     { key: "context" as const, label: "Context" },
     { key: "challenge" as const, label: "Challenge" },
-    { key: "results" as const, label: "Recommendations" },
+    { key: "loading" as const, label: "Recommendations" },
   ];
-  // During loading we're transitioning to results — show results as current
-  const indicatorStep = step === "loading" ? "results" : step;
-  const currentIndex = steps.findIndex((s) => s.key === indicatorStep);
+  const currentIndex = steps.findIndex((s) => s.key === step);
 
   return (
     <div className="max-w-xl mx-auto mb-12">
@@ -71,75 +68,68 @@ function StepIndicator({ step }: { step: Step }) {
 
 function FlowContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const rerunId = searchParams?.get("rerun") ?? null;
   const prefillDescription = searchParams?.get("description") ?? "";
   const prefillDomains =
     searchParams
       ?.get("domains")
       ?.split(",")
       .filter(Boolean) ?? [];
-  const resumeId = searchParams?.get("resume") ?? null;
 
   const [step, setStep] = useState<Step>("context");
   const [contextData, setContextData] = useState<ContextData | null>(null);
   const [initialContextFromStorage, setInitialContextFromStorage] =
     useState<ContextData | null>(null);
-  const [phase1, setPhase1] = useState<ChallengePhase1Result | null>(null);
-  const [recommendations, setRecommendations] = useState<ArtifactRecommendation[] | null>(null);
+  const [rerunDescription, setRerunDescription] = useState<string>("");
+  const [rerunDomains, setRerunDomains] = useState<string[]>([]);
   const [submittedDomains, setSubmittedDomains] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Resume flow: fetch stored challenge fields and jump to results.
+  // Check auth status for Skip button
   useEffect(() => {
-    if (!resumeId) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsLoggedIn(!!user);
+    });
+  }, []);
 
-    setStep("loading");
+  // Rerun: fetch saved challenge description, skip to challenge step
+  useEffect(() => {
+    if (!rerunId) return;
 
-    // Try to restore context from localStorage.
-    let ctx: ContextData | null = null;
-    try {
-      const raw = localStorage.getItem(FLOW_CONTEXT_STORAGE_KEY);
-      if (raw) ctx = JSON.parse(raw) as ContextData;
-    } catch {
-      // ignore
-    }
-
-    fetch(`/api/challenges/${resumeId}/resume`)
+    fetch(`/api/challenges/${rerunId}/resume`)
       .then(async (res) => {
-        if (!res.ok) {
-          setStep("context");
-          return;
-        }
+        if (!res.ok) return;
         const data = await res.json() as {
-          id: string;
-          summary: string | null;
-          problem_statement: string | null;
-          desired_outcome_statement: string | null;
-          domains: string[];
           raw_description: string;
+          domains: string[];
         };
-        const p1: ChallengePhase1Result = {
-          challengeId: data.id,
-          summary: data.summary ?? data.raw_description.slice(0, 200),
-          problemStatement: data.problem_statement ?? "",
-          desiredOutcomeStatement: data.desired_outcome_statement ?? "",
-        };
-        if (ctx) setContextData(ctx);
-        setSubmittedDomains(data.domains ?? []);
-        setPhase1(p1);
-        setRecommendations(null);
-        setStep("results");
+        setRerunDescription(data.raw_description);
+        setRerunDomains(data.domains ?? []);
 
-        // Phase 2 — re-run recommendations.
-        fetch(`/api/challenges/${data.id}/recommendations`, { method: "POST" })
-          .then((r) => r.json())
-          .then((d) => setRecommendations(d.recommendations ?? []))
-          .catch(() => setRecommendations([]));
+        // Restore context from localStorage if available
+        try {
+          const raw = localStorage.getItem(FLOW_CONTEXT_STORAGE_KEY);
+          if (raw) {
+            const ctx = JSON.parse(raw) as ContextData;
+            setContextData(ctx);
+            setInitialContextFromStorage(ctx);
+          }
+        } catch {
+          // ignore
+        }
+        setStep("challenge");
       })
-      .catch(() => setStep("context"));
+      .catch(() => {
+        // Fall through to normal context step
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Restore context from localStorage for normal flow with prefill
   useEffect(() => {
-    if (resumeId) return; // skip localStorage prefill when resuming
+    if (rerunId) return;
     try {
       const raw = localStorage.getItem(FLOW_CONTEXT_STORAGE_KEY);
       if (raw) {
@@ -181,8 +171,12 @@ function FlowContent() {
       team_size: data.team_size,
       experience_level: data.experience_level,
     });
-    logEvent("challenge_input_transition");
     setContextData(data);
+    setStep("challenge");
+  }, []);
+
+  const onSkipContext = useCallback(() => {
+    // Use whatever is already in contextData (from localStorage) or null
     setStep("challenge");
   }, []);
 
@@ -190,8 +184,6 @@ function FlowContent() {
     async (body: { raw_description: string; domains: string[] }) => {
       setError(null);
       setSubmittedDomains(body.domains);
-      setPhase1(null);
-      setRecommendations(null);
       setStep("loading");
 
       // Phase 1 — summary
@@ -215,24 +207,41 @@ function FlowContent() {
         return;
       }
 
-      // Show results page immediately with summary; recommendations load next
-      setPhase1(p1);
-      setRecommendations(null); // skeleton state
-      setStep("results");
-
-      // Phase 2 — recommendations (fire and update)
+      // Phase 2 — recommendations
+      let recs = [];
       try {
         const res = await fetch(`/api/challenges/${p1.challengeId}/recommendations`, {
           method: "POST",
         });
         const data = await res.json();
-        setRecommendations(data.recommendations ?? []);
+        recs = data.recommendations ?? [];
       } catch {
-        setRecommendations([]); // empty on error — don't crash the page
+        recs = [];
       }
+
+      // Store in sessionStorage and redirect to /results
+      try {
+        sessionStorage.setItem(
+          `results:${p1.challengeId}`,
+          JSON.stringify({
+            phase1: p1,
+            recommendations: recs,
+            context: contextData,
+            domains: body.domains,
+          })
+        );
+      } catch {
+        // ignore storage errors
+      }
+
+      logEvent("challenge_submitted", { challengeId: p1.challengeId });
+      router.push(`/results?cid=${p1.challengeId}`);
     },
-    [contextData]
+    [contextData, router]
   );
+
+  const descriptionForChallenge = rerunDescription || prefillDescription || undefined;
+  const domainsForChallenge = rerunDomains.length > 0 ? rerunDomains : prefillDomains.length > 0 ? prefillDomains : undefined;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)]">
@@ -245,6 +254,7 @@ function FlowContent() {
               key={initialContextFromStorage ? "restored" : "new"}
               initialData={initialContextFromStorage}
               onComplete={onContextComplete}
+              onSkip={isLoggedIn ? onSkipContext : undefined}
             />
           )}
 
@@ -255,22 +265,12 @@ function FlowContent() {
               loading={false}
               error={error}
               onBack={() => setStep("context")}
-              initialDescription={prefillDescription || undefined}
-              initialDomains={prefillDomains.length > 0 ? prefillDomains : undefined}
+              initialDescription={descriptionForChallenge}
+              initialDomains={domainsForChallenge}
             />
           )}
 
           {step === "loading" && <LoadingStep />}
-
-          {step === "results" && phase1 && (
-            <ResultsStep
-              result={phase1}
-              recommendations={recommendations}
-              contextData={contextData}
-              domains={submittedDomains}
-              onBack={() => setStep("challenge")}
-            />
-          )}
         </div>
       </div>
     </div>

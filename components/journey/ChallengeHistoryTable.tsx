@@ -54,7 +54,10 @@ export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] 
         </h2>
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-8 text-center">
           <p className="text-zinc-500 dark:text-zinc-400">
-            You haven&apos;t submitted any challenges yet.
+            You haven&apos;t saved any challenges yet.{" "}
+            <Link href="/flow" className="text-indigo-600 hover:underline font-medium">
+              Start a Challenge
+            </Link>
           </p>
         </div>
       </section>
@@ -91,19 +94,17 @@ export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] 
             {visible.map((c) => (
               <Link
                 key={c.id}
-                href={`/flow?resume=${c.id}`}
+                href={`/challenges/${c.id}`}
                 className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition group"
               >
-                {/* Title + summary */}
+                {/* Title + description */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                    {c.summary ?? c.raw_description.slice(0, 80)}
+                    {c.title ?? c.summary ?? c.raw_description.slice(0, 80)}
                   </p>
-                  {c.summary && (
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                      {c.raw_description.slice(0, 80)}
-                    </p>
-                  )}
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                    {c.raw_description.slice(0, 80)}
+                  </p>
                 </div>
 
                 {/* Domains */}

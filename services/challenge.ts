@@ -235,3 +235,26 @@ export async function runChallengePhase2(
 
   return { recommendations };
 }
+
+/** Derives a short display title from the challenge description. No LLM call. */
+export function autoTitle(description: string): string {
+  const firstSentence = description.split(/[.!?]/)[0].trim();
+  const candidate = firstSentence.length > 0 ? firstSentence : description;
+  if (candidate.length <= 72) return candidate;
+  const truncated = candidate.slice(0, 72);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return lastSpace > 30 ? truncated.slice(0, lastSpace) : truncated;
+}
+
+/** Phase 3: explicitly save a challenge with its recommendations. */
+export async function saveChallengeResult(
+  supabase: SupabaseClient,
+  challengeId: string,
+  userId: string,
+  payload: { title: string; recommendations: ArtifactRecommendation[] }
+): Promise<void> {
+  const challenge = await challengesRepo.getChallengeById(supabase, challengeId);
+  if (!challenge) throw new NotFoundError(`Challenge not found: ${challengeId}`);
+  if (challenge.user_id !== userId) throw new NotFoundError(`Challenge not found: ${challengeId}`);
+  await challengesRepo.saveChallenge(supabase, challengeId, payload);
+}

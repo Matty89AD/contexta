@@ -98,6 +98,11 @@ export interface Challenge {
   desired_outcome_statement: string | null;
   /** Epic 13 — challenge lifecycle status (default: open). */
   status: ChallengeStatus;
+  /** Epic 14 — explicit save state. */
+  is_saved: boolean;
+  saved_at: string | null;
+  title: string | null;
+  recommendations: ArtifactRecommendation[] | null;
   created_at: string;
 }
 
