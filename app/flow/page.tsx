@@ -77,6 +77,7 @@ function FlowContent() {
       ?.get("domains")
       ?.split(",")
       .filter(Boolean) ?? [];
+  const resumeId = searchParams?.get("resume") ?? null;
 
   const [step, setStep] = useState<Step>("context");
   const [contextData, setContextData] = useState<ContextData | null>(null);
@@ -87,7 +88,58 @@ function FlowContent() {
   const [submittedDomains, setSubmittedDomains] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // Resume flow: fetch stored challenge fields and jump to results.
   useEffect(() => {
+    if (!resumeId) return;
+
+    setStep("loading");
+
+    // Try to restore context from localStorage.
+    let ctx: ContextData | null = null;
+    try {
+      const raw = localStorage.getItem(FLOW_CONTEXT_STORAGE_KEY);
+      if (raw) ctx = JSON.parse(raw) as ContextData;
+    } catch {
+      // ignore
+    }
+
+    fetch(`/api/challenges/${resumeId}/resume`)
+      .then(async (res) => {
+        if (!res.ok) {
+          setStep("context");
+          return;
+        }
+        const data = await res.json() as {
+          id: string;
+          summary: string | null;
+          problem_statement: string | null;
+          desired_outcome_statement: string | null;
+          domains: string[];
+          raw_description: string;
+        };
+        const p1: ChallengePhase1Result = {
+          challengeId: data.id,
+          summary: data.summary ?? data.raw_description.slice(0, 200),
+          problemStatement: data.problem_statement ?? "",
+          desiredOutcomeStatement: data.desired_outcome_statement ?? "",
+        };
+        if (ctx) setContextData(ctx);
+        setSubmittedDomains(data.domains ?? []);
+        setPhase1(p1);
+        setRecommendations(null);
+        setStep("results");
+
+        // Phase 2 — re-run recommendations.
+        fetch(`/api/challenges/${data.id}/recommendations`, { method: "POST" })
+          .then((r) => r.json())
+          .then((d) => setRecommendations(d.recommendations ?? []))
+          .catch(() => setRecommendations([]));
+      })
+      .catch(() => setStep("context"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (resumeId) return; // skip localStorage prefill when resuming
     try {
       const raw = localStorage.getItem(FLOW_CONTEXT_STORAGE_KEY);
       if (raw) {

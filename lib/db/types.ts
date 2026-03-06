@@ -40,6 +40,16 @@ export const CONTENT_SOURCE_TYPES = [
 ] as const;
 export type ContentSourceType = (typeof CONTENT_SOURCE_TYPES)[number];
 
+/** Epic 13 — Challenge status enum. */
+export const CHALLENGE_STATUSES = [
+  "open",
+  "in_progress",
+  "completed",
+  "archived",
+  "abandoned",
+] as const;
+export type ChallengeStatus = (typeof CHALLENGE_STATUSES)[number];
+
 /** Chunk type enum (Epic 8 — Content Intelligence Service). */
 export const CHUNK_TYPES = [
   "framework",
@@ -86,6 +96,8 @@ export interface Challenge {
   /** Epic 11 — stored after phase-1 LLM call for use in phase-2 recommendations. */
   problem_statement: string | null;
   desired_outcome_statement: string | null;
+  /** Epic 13 — challenge lifecycle status (default: open). */
+  status: ChallengeStatus;
   created_at: string;
 }
 

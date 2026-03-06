@@ -1,0 +1,145 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import type { Challenge, ChallengeStatus } from "@/lib/db/types";
+import { DOMAIN_LABELS } from "@/lib/constants";
+
+type FilterOption = ChallengeStatus | "all";
+
+const STATUS_LABELS: Record<FilterOption, string> = {
+  all: "All",
+  open: "Open",
+  in_progress: "In Progress",
+  completed: "Completed",
+  archived: "Archived",
+  abandoned: "Abandoned",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  open: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  in_progress: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+  completed: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+  archived: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
+  abandoned: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+};
+
+function ChevronRight() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 transition shrink-0"
+    >
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  );
+}
+
+export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] }) {
+  const [filter, setFilter] = useState<FilterOption>("all");
+
+  if (challenges.length === 0) {
+    return (
+      <section>
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+          Challenge History
+        </h2>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-8 text-center">
+          <p className="text-zinc-500 dark:text-zinc-400">
+            You haven&apos;t submitted any challenges yet.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const visible =
+    filter === "all" ? challenges : challenges.filter((c) => c.status === filter);
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Challenge History</h2>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as FilterOption)}
+          className="text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+        >
+          {(Object.keys(STATUS_LABELS) as FilterOption[]).map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+        {visible.length === 0 ? (
+          <p className="text-center text-zinc-500 dark:text-zinc-400 py-8">
+            No challenges match this filter.
+          </p>
+        ) : (
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {visible.map((c) => (
+              <Link
+                key={c.id}
+                href={`/flow?resume=${c.id}`}
+                className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition group"
+              >
+                {/* Title + summary */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                    {c.summary ?? c.raw_description.slice(0, 80)}
+                  </p>
+                  {c.summary && (
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                      {c.raw_description.slice(0, 80)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Domains */}
+                <div className="hidden sm:flex gap-1.5 flex-wrap shrink-0">
+                  {c.domains.slice(0, 2).map((d) => (
+                    <span
+                      key={d}
+                      className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                    >
+                      {DOMAIN_LABELS[d] ?? d}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Status badge */}
+                <span
+                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${STATUS_COLORS[c.status] ?? STATUS_COLORS.open}`}
+                >
+                  {STATUS_LABELS[c.status] ?? c.status}
+                </span>
+
+                {/* Date */}
+                <span className="hidden sm:block text-xs text-zinc-400 shrink-0">
+                  {new Date(c.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+
+                <ChevronRight />
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
