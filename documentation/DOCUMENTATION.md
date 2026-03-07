@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 3.1 &nbsp;|&nbsp; **Last updated:** 2026-03-06 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 3.2 &nbsp;|&nbsp; **Last updated:** 2026-03-07 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -21,6 +21,7 @@
    - [3.10 Artifact Detail Page](#310-artifact-detail-page)
    - [3.11 Your Journey](#311-your-journey)
    - [3.12 Save & Revisit Challenge Results](#312-save--revisit-challenge-results)
+   - [3.13 Artifact Vault](#313-artifact-vault)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -536,6 +537,37 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
+### 3.13 Artifact Vault
+
+**What it does**: Lets signed-in users save specific artifacts to a personal collection — the Artifact Vault — directly from an artifact's detail page, then browse and revisit all saved artifacts from a dedicated tab on the Journey page.
+
+**What the user sees**:
+
+**On the Artifact Detail page** — a button labelled "Add to Artifact Vault" appears in the sidebar. For signed-in users the button is fully interactive:
+- Clicking it saves the artifact and the label immediately changes to "Saved to Vault".
+- Clicking "Saved to Vault" unsaves the artifact and the label reverts to "Add to Artifact Vault".
+- A brief loading indicator is shown during each save/unsave action.
+- For users who are not signed in, the button is visible but disabled — no error is shown.
+
+**On the Journey page (`/journey`)** — a second tab, "My Artifacts Vault", appears in the page's sub-navigation alongside the existing "Challenges & Progress" tab:
+- The tab label shows a live count badge of how many artifacts have been saved.
+- The Vault tab shows a card grid of all saved artifacts, each displaying the artifact title, domain badge(s), a short use-case description, and the date it was saved.
+- Clicking any card navigates to the artifact's detail page (`/artifacts/[slug]`).
+- If no artifacts have been saved yet, an empty state prompts the user to open any artifact and tap "Add to Artifact Vault", with a link to start a new challenge flow.
+
+**Journey Insights panel** — the "Saved Artifacts" stat card on the Journey page now shows the real count pulled from the database (previously it showed a placeholder).
+
+**Business rules**:
+- Only signed-in users can save or unsave artifacts. Unauthenticated users see the button in a disabled state with no error message.
+- Each artifact can only be saved once per user — saving the same artifact again is a no-op (no duplicates).
+- Unsaving immediately removes the artifact from the Vault tab; the count badge updates accordingly.
+- Vault cards link directly to the artifact detail page; no additional actions (download, rating, progress) are available on the card.
+- Saved artifacts are not linked to any specific challenge — they are a cross-challenge personal collection.
+
+**Status**: Implemented
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -547,6 +579,7 @@ The following describes what information the system stores, in plain language. C
 | **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
 | **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
+| **Saved Artifact** | A record of one artifact saved to a user's personal Artifact Vault | Link to the user, link to the artifact (by slug), and the date it was saved | The user themselves only |
 
 ### Key rules
 
@@ -557,6 +590,7 @@ The following describes what information the system stores, in plain language. C
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
 - Content items with an extraction confidence score of 0 were not successfully processed by the intelligence service and should be re-run with the backfill script.
 - Artifacts are a separate catalog from content items. They are not derived from content ingestion — they are seeded directly and represent the fixed set of recommendations the AI can choose from.
+- Saved Artifact records link a user to an artifact slug. Saving the same artifact a second time is silently ignored (no duplicate is created). Deleting a Saved Artifact record unsaves it; the underlying artifact is not affected.
 - Challenge records now store both the AI-generated summary and the underlying problem statement and desired outcome — these are used in Phase 2 of the pipeline to generate recommendations without re-running Phase 1.
 - Artifact detail content (description, how-to steps, thought leaders, generic Pro-Tipp) is pre-generated and stored on the artifact record. It is generated on first visit for any artifact that has not been through the backfill process.
 
@@ -577,7 +611,10 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `PATCH /api/challenges/[id]` | Save a challenge (with recommendations) or rename its title | **Yes** | Challenge ID (in URL); body: save flag, recommendations array, and/or new title | Success confirmation |
 | `PATCH /api/challenges/[id]/claim` | Link an anonymous challenge to the signed-in user's account | Yes | Challenge ID (in URL) | Success confirmation |
 | `POST /api/profile` | Create or update the signed-in user's profile | Yes | Role, company stage, team size, experience level | Saved profile record |
-| `GET /api/journey` | Return the signed-in user's full challenge list and summary stats (total, active, completed) | **Yes** | None | List of challenges ordered by most recent first, plus stats object |
+| `GET /api/journey` | Return the signed-in user's full challenge list, summary stats (total, active, completed, saved artifacts), and saved artifact list | **Yes** | None | List of challenges ordered by most recent first, stats object, and list of saved artifacts |
+| `POST /api/artifacts/[slug]/save` | Save an artifact to the signed-in user's Artifact Vault | **Yes** | Artifact slug (in URL) | Confirmation that the artifact is saved |
+| `DELETE /api/artifacts/[slug]/save` | Remove an artifact from the signed-in user's Artifact Vault | **Yes** | Artifact slug (in URL) | Confirmation that the artifact is unsaved |
+| `GET /api/artifacts/[slug]/save` | Check whether the signed-in user has saved a specific artifact | **Yes** | Artifact slug (in URL) | Boolean indicating whether the artifact is currently saved |
 | `GET /api/challenges/[id]/resume` | Return the stored phase-1 fields for a specific challenge so the client can re-enter the recommendations step without re-running phase 1 | **Yes** | Challenge ID (in URL) | Challenge summary, problem statement, desired outcome, domains, raw description |
 | `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
@@ -663,7 +700,6 @@ All settings are controlled via environment variables. They do not require a cod
 
 The following are intentional decisions for the current version. They are not bugs.
 
-- **No "Save to Playbook" action** — users can view artifact details but cannot save artifacts to a personal collection. The button is visible on the detail page but non-functional. Deferred to a future epic.
 - **No content detail screen from knowledge carousel** — clicking a knowledge base card on the artifact detail page does not navigate anywhere in the current version. Content detail pages are planned for a future epic.
 - **Challenge status is read-only** — users can see the status of each challenge (open, in progress, completed, etc.) but cannot manually change it through the UI in the current version. Status update controls are deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
@@ -690,7 +726,6 @@ The following are intentional decisions for the current version. They are not bu
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
-| Save to Playbook | Allow users to save specific artifact recommendations to a personal collection for later reference. The button already exists on the artifact detail page; backend logic and UI are deferred. | Planned (post-MVP) |
 | Content detail screen | A dedicated page for each content item (podcast episode, article, etc.) navigated to from the artifact detail knowledge base carousel. | Planned (post-MVP) |
 | Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost artifacts that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
 | Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
@@ -704,6 +739,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-07 | 3.2 | Epic 15 | Added Artifact Vault: users can save artifacts from the detail page ("Add to Artifact Vault" / "Saved to Vault" toggle) and browse their full personal collection in a new "My Artifacts Vault" tab on the Journey page. The "Saved Artifacts" stat card on Journey now shows the real count. Added three new API endpoints for save/unsave/check. Removed "No Save to Playbook" from Known Limitations and from Future Epics. Updated Data Model and API Reference accordingly. |
 | 2026-03-06 | 3.1 | — | Improved artifact knowledge card retrieval to use both vector similarity and keyword search in parallel. Vector matches are ranked first; keyword-only matches are appended, ensuring content that explicitly names the artifact is never missed. |
 | 2026-03-06 | 3.0 | Epic 14 | Added explicit save flow: results now appear on a dedicated `/results` page outside the flow stepper; signed-in users save with a "Save Challenge" button, guests see a "Create account to save" prompt. Saved challenges appear on a permanent `/challenges/[id]` page with stored recommendations (no AI re-run), inline title rename, and a Rerun button that prefills the flow. Journey now shows only saved challenges and links each row to the saved challenge page. Context step gains a Skip button for signed-in users. |
 | 2026-03-06 | 2.0 | Epic 13 | Added Your Journey page: a full auth-guarded workspace with three sections — a Journey Insights panel (placeholder stats, content-type chart, thought leaders), an Active Challenges card row with a resume flow that re-generates recommendations for any past challenge without re-running the AI summary phase, and a filterable Challenge History table with status badges. Added a challenge status lifecycle (open / in progress / completed / archived / abandoned). Desktop nav now shows persistent "Your Journey" and "Login" links. Added GET /api/journey and GET /api/challenges/[id]/resume endpoints. |
