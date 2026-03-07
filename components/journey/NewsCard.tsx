@@ -16,8 +16,8 @@ const TYPE_LABELS: Record<NewsItemType, string> = {
 
 const TYPE_STYLES: Record<NewsItemType, string> = {
   podcast: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300",
-  artifact: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
-  article: "bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300",
+  artifact: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300",
+  article: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300",
 };
 
 // Mock data — to be replaced by Admin UI managed content
