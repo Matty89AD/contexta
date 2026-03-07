@@ -86,12 +86,16 @@ function FlowContent() {
   const [submittedDomains, setSubmittedDomains] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Prevents flashing the full form before auth status is known.
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Check auth status for Skip button
+  // Use getSession() (reads from cookies, no network call) so auth status is
+  // known before the first meaningful render.
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session?.user);
+      setAuthChecked(true);
     });
   }, []);
 
@@ -240,7 +244,7 @@ function FlowContent() {
         <StepIndicator step={step} />
 
         <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm rounded-3xl p-4 md:p-8 min-h-[600px]">
-          {step === "context" && (
+          {step === "context" && authChecked && (
             <ContextStep
               key={`${initialContextFromStorage ? "restored" : "new"}-${isLoggedIn ? "auth" : "guest"}`}
               initialData={initialContextFromStorage}
