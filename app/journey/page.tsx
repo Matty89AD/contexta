@@ -111,7 +111,7 @@ function JourneyContent() {
 
       {/* Sub-navigation tabs */}
       <div
-        className="flex border-b border-zinc-100 dark:border-zinc-800 mb-6"
+        className="flex border-b-2 border-zinc-200 dark:border-zinc-700 mb-6"
         role="tablist"
         aria-label="Journey sections"
         data-testid="journey-tabs"
@@ -123,7 +123,7 @@ function JourneyContent() {
           aria-controls="journey-challenges-panel"
           id="journey-tab-challenges"
           onClick={() => setTab("challenges")}
-          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-3 text-sm font-medium border-b-2 -mb-0.5 transition-colors ${
             activeTab === "challenges"
               ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -139,7 +139,7 @@ function JourneyContent() {
           aria-controls="journey-vault-panel"
           id="journey-tab-vault"
           onClick={() => setTab("vault")}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-0.5 transition-colors whitespace-nowrap ${
             activeTab === "vault"
               ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"

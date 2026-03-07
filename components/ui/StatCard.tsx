@@ -5,7 +5,7 @@ const variantStyles: Record<
   { border: string; value: string; iconBg: string }
 > = {
   default: {
-    border: "border-primary/30",
+    border: "border-0",
     value: "text-primary",
     iconBg: "bg-primary/10 text-primary",
   },
