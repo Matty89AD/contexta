@@ -24,7 +24,7 @@ export function Footer() {
             <p className="text-sm font-semibold text-foreground mb-3">About</p>
             <ul className="space-y-2">
               <li>
-                <a href="/presentation.html" className="text-sm text-muted-foreground hover:text-foreground transition">
+                <a href="/presentation2.html" className="text-sm text-muted-foreground hover:text-foreground transition">
                   MVP Presentation
                 </a>
               </li>

@@ -206,14 +206,14 @@
         <div class="fc-title"><span class="flow-label flow-1">Problem</span>  <br>Product Managers think in frameworks and methodologies</div>
         <div class="fc-trigger">Triggered when: PM faces a new problem</div>
         <ul>
-          <li>PM faces a new challenge and has make a decision</li>
-          <li>PM has no one there to ask for help</li>
+          <li>PM faces a new challenge and has to make a decision</li>
+          <li>PM has no one to ask for help</li>
           <li>PM knows the problem was solved many times before</li>
           <li>PM is stuck and creates decision paralysis</li>
         </ul>
       </div>
       <div class="flow-card">
-        <div class="fc-title"><span class="flow-label flow-2">Solution</span> <br>Contexta finds the right Artifacts for any problem</div>
+        <div class="fc-title"><span class="flow-label flow-2">Solution</span> <br>Contexta finds the right artifacts for any problem</div>
         <div class="fc-trigger">Triggered when: PM discovers Contexta</div>
         <ul>
           <li>PM provides context about the role, company stage, team size</li>
@@ -225,24 +225,19 @@
       </div>
     </div>
     
-    <div class="note">
-      <p>
-      <strong>Contexta</strong> as an <strong>AI copilot</strong> helps Product Managers find the right <strong>Artifacts</strong> for any <strong>problem</strong>.
-      </p>
-    </div>
     <hr>
     <!-- ── MVP Showcase ─────────────────────────────────────────────── -->
     <h2>MVP Showcase</h2>
     <div class="phase-block blue">
       <ol>
-        <li><strong>First time user starts on home page</strong>
-        <li><strong>Starts Challenge flow and enters Context</strong>
-        <li><strong>Defines the Challenge</strong>
-        <li><strong>Contexta finds relevant Artifacts</strong>
-        <li><strong>Artifacts are displayed with a short explanation</strong>
-        <li><strong>Real-world content-pieces about the Artifacts are displayed</strong>
-        <li><strong>Sign-up and save to Journey</strong>
-        <li><strong>User can manage the Challenges to their personal library</strong>
+        <li>First time user starts on home page</li>
+        <li>Starts Challenge flow and enters Context</li>
+        <li>Defines the Challenge</li>
+        <li>Contexta finds relevant Artifacts</li>
+        <li>Artifacts are displayed with a short explanation</li>
+        <li>Real-world content-pieces about the Artifacts are displayed</li>
+        <li>Sign-up and save to Journey</li>
+        <li>User can manage the Challenges to their personal library</li>
       </ol>
     </div>
     <!-- ── INITIAL SETUP ─────────────────────────────────────────────── -->
@@ -251,9 +246,9 @@
       <ol>
         <li><strong>Init Prompt:</strong> brief description of the project and the problem I want to solve</li>
         <li><strong>Tech Stack:</strong> provided the tech stack of the project</li>
-        <li><strong>Claude.md:</strong> let it initialize the project with Claude.md file</li>
         <li><strong>Requirements folder:</strong> setup the requirements folder with the first set of requirements for the project (PRDs)</li>
-        <li><strong>/skills:</strong> defined the skills for the project (/dev, /documentation, /code review)</li>
+        <li><strong>Claude.md:</strong> let it initialize the project with Claude.md file</li>
+        <li><strong>/skills:</strong> defined the skills for the project (<code>/dev</code>, <code>/documentation</code>, <code>/code review</code>)</li>
       </ol>
     </div>
 
@@ -263,7 +258,7 @@
       <ol>
         <li><strong>main agent:</strong> reads the requirements (PRD) and creates an epic in /specs folder</li>
         <li><strong>/dev agent:</strong> reads the epic, implements the epic and runs unit tests and e2e tests</li>
-        <li><strong>/documentation agent:</strong> two modes to write the documentation. --all or --changed-files for the changed files</li>
+        <li><strong>/documentation agent:</strong> two modes to write the documentation. <code>--all</code> or <code>--changed-files</code> for the changed files only</li>
         <li><strong>/code review agent:</strong> gets started manually by the user to review the code base</li>
       </ol>
     </div>

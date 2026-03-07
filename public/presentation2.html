@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contexta MVP — Pitch Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #030712;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.15) 0, transparent 50%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .section-label {
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .workflow-path {
+            position: relative;
+        }
+
+        .workflow-path::before {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #38bdf8, #818cf8, transparent);
+            z-index: 0;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #38bdf8;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-12">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-16">
+            <div
+                class="inline-block px-4 py-1 border border-sky-500/30 rounded-full bg-sky-500/10 text-sky-400 text-sm mb-4">
+                MVP Launch • April 2026
+            </div>
+            <h1 class="text-5xl md:text-7xl mb-4 tracking-tight gradient-text">Contexta</h1>
+            <p class="text-xl text-slate-400 max-w-2xl mx-auto">Stop decision paralysis. Turn problem context into
+                actionable product management artifacts instantly.</p>
+        </header>
+
+        <!-- Problem vs Solution Split -->
+        <div class="grid md:grid-cols-2 gap-8 mb-16">
+            <!-- Problem -->
+            <div class="glass-card p-8 border-t-4 border-t-rose-500/50">
+                <span class="section-label bg-rose-500/20 text-rose-400">The Problem</span>
+                <h2 class="text-2xl font-bold mb-6 text-white">The "Blank Page" Paralysis</h2>
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <span class="step-number text-rose-400">01</span>
+                        <p class="text-slate-300">PMs face high-stakes challenges alone with no expert to guide them.
+                        </p>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="step-number text-rose-400">02</span>
+                        <p class="text-slate-300">Proven frameworks exist, but finding the <em>right</em> one takes
+                            hours.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="step-number text-rose-400">03</span>
+                        <p class="text-slate-300">Stagnation leads to delayed roadmaps and mostly poor decision making.
+                        </p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Solution -->
+            <div class="glass-card p-8 border-t-4 border-t-emerald-500/50">
+                <span class="section-label bg-emerald-500/20 text-emerald-400">The Solution</span>
+                <h2 class="text-2xl font-bold mb-6 text-white">Your AI Chief of Staff</h2>
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <span class="step-number text-emerald-400">01</span>
+                        <p class="text-slate-300"><strong>Smart Match:</strong> Input role, team size, and company stage
+                            for tailored results.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="step-number text-emerald-400">02</span>
+                        <p class="text-slate-300"><strong>Artifact Generation:</strong> Get Frameworks, Methodologies,
+                            and Playbooks optimized for your context.</p>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="step-number text-emerald-400">03</span>
+                        <p class="text-slate-300"><strong>Knowledge Hub:</strong> Curated real-world content attached to
+                            every artifact.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- MVP Showcase (Simplified for Scanning) -->
+        <div class="mb-16">
+            <h2 class="text-3xl font-bold mb-8 text-center text-white">The Journey Showcase</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="glass-card p-6">
+                    <div class="text-3xl mb-2">🏠</div>
+                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Start</div>
+                    <div class="text-sm font-semibold">Home Page</div>
+                </div>
+                <div class="glass-card p-6">
+                    <div class="text-3xl mb-2">🧠</div>
+                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Input</div>
+                    <div class="text-sm font-semibold">Context & Challenge</div>
+                </div>
+                <div class="glass-card p-6">
+                    <div class="text-3xl mb-2">⚡</div>
+                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Generate</div>
+                    <div class="text-sm font-semibold">Artifact Match</div>
+                </div>
+                <div class="glass-card p-6">
+                    <div class="text-3xl mb-2">💾</div>
+                    <div class="text-xs font-bold text-slate-500 uppercase mb-1">Persist</div>
+                    <div class="text-sm font-semibold">Challenge and Artifact Vault</div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <h2 class="text-3xl font-bold mb-8 text-center text-white">My AI Workflow in Cursor with Claude Code</h2>
+
+        <!-- AI Architecture / Workflow -->
+        <div class="grid md:grid-cols-2 gap-12 items-start mb-20">
+            <div class="glass-card p-8 bg-slate-900/40">
+                <h3 class="text-xl font-bold mb-6 text-white">Initial Setup</h3>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-slate-500">Init Prompt</span>
+                        <span class="text-slate-300">Provide a description of the project and the problem to
+                            solve</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-slate-500">PRD Folder</span>
+                        <span class="text-slate-300">Create the Requirements Folder + first set of PRDs</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-slate-500">Tech Stack</span>
+                        <span class="text-slate-300">Provide the tech stack of the project</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-slate-500">Init Claude</span>
+                        <span class="text-slate-300">Claude creates the Claude.md file</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-slate-500">Skillset</span>
+                        <span class="text-slate-300">Create the project skills: <code>/dev</code> <code>/docu</code>
+                            <code>/code review</code></span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h2 class="text-3xl font-bold mb-6 text-white">Automated Engine</h2>
+                <p class="text-slate-400 mb-8">My internal setup leverages autonomous agents to ensure high-quality
+                    artifact generation and continuous documentation.</p>
+                <div class="workflow-path space-y-8">
+                    <div class="relative z-10 flex items-center">
+                        <span class="step-number bg-sky-500 text-white ring-4 ring-sky-500/20">1</span>
+                        <div>
+                            <h4 class="font-bold text-white">Main Agent</h4>
+                            <p class="text-sm text-slate-400">Parses PRDs & defines Specs (Product Epics)</p>
+                        </div>
+                    </div>
+                    <div class="relative z-10 flex items-center">
+                        <span class="step-number bg-indigo-500 text-white ring-4 ring-indigo-500/20">2</span>
+                        <div>
+                            <h4 class="font-bold text-white">/Dev Agent</h4>
+                            <p class="text-sm text-slate-400">Implements logic & runs E2E tests</p>
+                        </div>
+                    </div>
+                    <div class="relative z-10 flex items-center">
+                        <span class="step-number bg-purple-500 text-white ring-4 ring-purple-500/20">3</span>
+                        <div>
+                            <h4 class="font-bold text-white">Documentation</h4>
+                            <p class="text-sm text-slate-400">Auto-updates technical files (3 modes: all, changed-files,
+                                epic-name)</p>
+                        </div>
+                    </div>
+                    <div class="relative z-10 flex items-center">
+                        <span class="step-number bg-purple-500 text-white ring-4 ring-purple-500/20">4</span>
+                        <div>
+                            <h4 class="font-bold text-white">Code Review</h4>
+                            <p class="text-sm text-slate-400">Reviews the code and provides feedback</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Footer -->
+            <footer class="text-center text-slate-600 border-t border-white/5 pt-8 pb-12">
+                <p class="text-sm tracking-widest uppercase">Contexta MVP Presentation v1.0 • Built for PMs</p>
+            </footer>
+        </div>
+
+</body>
+
+</html>
