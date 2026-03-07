@@ -13,7 +13,7 @@ import type { JourneyStats } from "@/services/journey";
 function LoadingSkeleton() {
   return (
     <main className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Your Journey</h1>
+      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Journey Dashboard</h1>
       <div className="animate-pulse space-y-4 mt-8">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -82,9 +82,9 @@ function JourneyContent() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Your Journey</h1>
+      <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Journey Dashboard</h1>
       <p className="text-zinc-500 dark:text-zinc-400 mb-10">
-        Your challenge history, insights, and recommended frameworks.
+        My Challenge history with insights and artifacts vault
       </p>
 
       {stats && <JourneyInsights stats={stats} />}
@@ -101,7 +101,7 @@ function JourneyContent() {
           }`}
           data-testid="tab-challenges"
         >
-          Challenges &amp; Progress
+       Challenges
         </button>
         <button
           type="button"
@@ -113,7 +113,7 @@ function JourneyContent() {
           }`}
           data-testid="tab-vault"
         >
-          My Artifacts Vault
+        Artifacts Vault
           {savedArtifacts.length > 0 && (
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
               {savedArtifacts.length}

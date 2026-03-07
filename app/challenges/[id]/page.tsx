@@ -213,7 +213,7 @@ function ChallengePageContent() {
           This challenge may have been deleted or doesn&apos;t belong to your account.
         </p>
         <a href="/journey" className="text-indigo-600 hover:underline font-medium">
-          Back to Your Journey
+          Back to My Journey
         </a>
       </div>
     );
@@ -227,7 +227,7 @@ function ChallengePageContent() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <a href="/journey" className="text-sm text-zinc-400 hover:text-indigo-600 transition mb-6 inline-block">
-        ← Your Journey
+        ← My Journey
       </a>
 
       {/* Title + rerun */}

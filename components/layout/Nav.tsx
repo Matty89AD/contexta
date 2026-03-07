@@ -156,7 +156,7 @@ export function Nav() {
                       onClick={() => setOpen(false)}
                       className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent transition"
                     >
-                      Your Journey
+                      My Journey
                     </Link>
                     <div className="border-t border-border mt-1 mb-1" />
                     <button
