@@ -22,7 +22,7 @@ export async function getJourneyData(
 ): Promise<JourneyData> {
   const [challenges, savedArtifacts] = await Promise.all([
     challengesRepo.getSavedChallengesByUserId(supabase, userId),
-    savedArtifactsRepo.getSavedArtifacts(supabase, userId),
+    savedArtifactsRepo.getSavedArtifacts(supabase, userId).catch(() => [] as SavedArtifact[]),
   ]);
 
   const stats: JourneyStats = {

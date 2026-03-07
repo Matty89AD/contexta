@@ -47,29 +47,43 @@ export async function getSavedArtifacts(
   supabase: SupabaseClient,
   userId: string
 ): Promise<SavedArtifact[]> {
-  const { data, error } = await supabase
+  // Step 1: fetch saved rows for this user
+  const { data: savedRows, error: savedError } = await supabase
     .from("user_saved_artifacts")
-    .select("artifact_slug, saved_at, artifacts(title, domains, use_case)")
+    .select("artifact_slug, saved_at")
     .eq("user_id", userId)
     .order("saved_at", { ascending: false });
 
-  if (error) throw new Error(`Failed to get saved artifacts: ${error.message}`);
+  if (savedError) throw new Error(`Failed to get saved artifacts: ${savedError.message}`);
+  if (!savedRows || savedRows.length === 0) return [];
 
-  type RawRow = {
-    artifact_slug: string;
-    saved_at: string;
-    // Supabase returns joined one-to-one relations as an object or null
-    // but its inferred type can be an array; cast via unknown.
-    artifacts: { title: string; domains: string[]; use_case: string } | null;
-  };
+  const slugs = savedRows.map((r) => r.artifact_slug as string);
 
-  return ((data ?? []) as unknown as RawRow[])
-    .filter((row) => row.artifacts !== null)
-    .map((row) => ({
-      slug: row.artifact_slug,
-      title: row.artifacts!.title,
-      domains: row.artifacts!.domains,
-      use_case: row.artifacts!.use_case,
-      saved_at: row.saved_at,
-    }));
+  // Step 2: fetch artifact details by slug (no implicit FK join needed)
+  const { data: artifacts, error: artError } = await supabase
+    .from("artifacts")
+    .select("slug, title, domains, use_case")
+    .in("slug", slugs);
+
+  if (artError) throw new Error(`Failed to get artifact details: ${artError.message}`);
+
+  const artifactMap = new Map(
+    (artifacts ?? []).map((a) => [
+      a.slug as string,
+      a as { slug: string; title: string; domains: string[]; use_case: string },
+    ])
+  );
+
+  return savedRows
+    .filter((row) => artifactMap.has(row.artifact_slug as string))
+    .map((row) => {
+      const art = artifactMap.get(row.artifact_slug as string)!;
+      return {
+        slug: art.slug,
+        title: art.title,
+        domains: art.domains,
+        use_case: art.use_case,
+        saved_at: row.saved_at as string,
+      };
+    });
 }
