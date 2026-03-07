@@ -53,12 +53,15 @@ export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] 
           Challenge History
         </h2>
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-8 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400">
-            You haven&apos;t saved any challenges yet.{" "}
-            <Link href="/flow" className="text-indigo-600 hover:underline font-medium">
-              Start a Challenge
-            </Link>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-4">
+            You haven&apos;t saved any challenges yet.
           </p>
+          <Link
+            href="/flow"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 transition"
+          >
+            Start a Challenge
+          </Link>
         </div>
       </section>
     );
@@ -66,78 +69,104 @@ export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] 
 
   const visible =
     filter === "all" ? challenges : challenges.filter((c) => c.status === filter);
+  const filterOptions: FilterOption[] = ["all", "open", "in_progress", "completed", "archived", "abandoned"];
 
   return (
     <section>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Challenge History</h2>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as FilterOption)}
-          className="text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-        >
-          {(Object.keys(STATUS_LABELS) as FilterOption[]).map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABELS[s]}
-            </option>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
+          {filterOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setFilter(option)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                filter === option
+                  ? "bg-indigo-600 text-white dark:bg-indigo-500"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }`}
+            >
+              {STATUS_LABELS[option]}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
         {visible.length === 0 ? (
-          <p className="text-center text-zinc-500 dark:text-zinc-400 py-8">
-            No challenges match this filter.
-          </p>
+          <div className="text-center py-8">
+            <p className="text-zinc-500 dark:text-zinc-400 mb-2">
+              No challenges match this filter.
+            </p>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+            >
+              Show all
+            </button>
+          </div>
         ) : (
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {visible.map((c) => (
-              <Link
-                key={c.id}
-                href={`/challenges/${c.id}`}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition group"
-              >
-                {/* Title + description */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                    {c.title ?? c.summary ?? c.raw_description.slice(0, 80)}
-                  </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                    {c.raw_description.slice(0, 80)}
-                  </p>
-                </div>
-
-                {/* Domains */}
-                <div className="hidden sm:flex gap-1.5 flex-wrap shrink-0">
-                  {c.domains.slice(0, 2).map((d) => (
-                    <span
-                      key={d}
-                      className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
-                    >
-                      {DOMAIN_LABELS[d] ?? d}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Status badge */}
-                <span
-                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${STATUS_COLORS[c.status] ?? STATUS_COLORS.open}`}
+            {visible.map((c) => {
+              const dateStr = new Date(c.created_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              });
+              const domainStr = c.domains
+                .slice(0, 2)
+                .map((d) => DOMAIN_LABELS[d] ?? d)
+                .join(" · ");
+              const metaLine = domainStr ? `${domainStr} · ${dateStr}` : dateStr;
+              return (
+                <Link
+                  key={c.id}
+                  href={`/challenges/${c.id}`}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                 >
-                  {STATUS_LABELS[c.status] ?? c.status}
-                </span>
+                  {/* Title + description */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                      {c.title ?? c.summary ?? c.raw_description.slice(0, 80)}
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5 sm:hidden">
+                      {metaLine}
+                    </p>
+                    <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                      {c.summary ?? c.raw_description.slice(0, 60)}
+                    </p>
+                  </div>
 
-                {/* Date */}
-                <span className="hidden sm:block text-xs text-zinc-400 shrink-0">
-                  {new Date(c.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
+                  {/* Domains */}
+                  <div className="hidden sm:flex gap-1.5 flex-wrap shrink-0">
+                    {c.domains.slice(0, 2).map((d) => (
+                      <span
+                        key={d}
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                      >
+                        {DOMAIN_LABELS[d] ?? d}
+                      </span>
+                    ))}
+                  </div>
 
-                <ChevronRight />
-              </Link>
-            ))}
+                  {/* Status badge */}
+                  <span
+                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${STATUS_COLORS[c.status] ?? STATUS_COLORS.open}`}
+                  >
+                    {STATUS_LABELS[c.status] ?? c.status}
+                  </span>
+
+                  {/* Date */}
+                  <span className="hidden sm:block text-xs text-zinc-400 shrink-0">
+                    {dateStr}
+                  </span>
+
+                  <ChevronRight />
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

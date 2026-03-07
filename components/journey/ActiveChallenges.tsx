@@ -28,16 +28,19 @@ export function ActiveChallenges({ challenges }: { challenges: Challenge[] }) {
   if (active.length === 0) {
     return (
       <section className="mb-10">
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
           Active Challenges
-        </h3>
+        </h2>
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-8 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400">
-            No active challenges yet —{" "}
-            <Link href="/flow" className="text-indigo-600 hover:underline font-medium">
-              Start a Challenge
-            </Link>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-4">
+            No active challenges yet.
           </p>
+          <Link
+            href="/flow"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 transition"
+          >
+            Start a Challenge
+          </Link>
         </div>
       </section>
     );
@@ -48,11 +51,11 @@ export function ActiveChallenges({ challenges }: { challenges: Challenge[] }) {
       <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
         Active Challenges
       </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {active.map((c) => (
           <div
             key={c.id}
-            className="flex-none w-72 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-5 flex flex-col gap-3"
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-5 flex flex-col gap-3"
           >
             <div className="flex items-center gap-2 flex-wrap">
               {c.domains.map((d) => (
@@ -80,7 +83,7 @@ export function ActiveChallenges({ challenges }: { challenges: Challenge[] }) {
               href={`/challenges/${c.id}`}
               className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 transition"
             >
-              View
+              {c.status === "in_progress" ? "Continue" : "View"}
             </Link>
           </div>
         ))}
