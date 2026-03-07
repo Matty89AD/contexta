@@ -242,7 +242,7 @@ function FlowContent() {
         <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm rounded-3xl p-4 md:p-8 min-h-[600px]">
           {step === "context" && (
             <ContextStep
-              key={initialContextFromStorage ? "restored" : "new"}
+              key={`${initialContextFromStorage ? "restored" : "new"}-${isLoggedIn ? "auth" : "guest"}`}
               initialData={initialContextFromStorage}
               onComplete={onContextComplete}
               onSkip={isLoggedIn ? onSkipContext : undefined}

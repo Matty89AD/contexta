@@ -37,8 +37,10 @@ test.describe("Auth — login page", () => {
 });
 
 test.describe("Auth — Nav", () => {
-  test("shows Login link in nav when not authenticated", async ({ page }) => {
+  test("shows Login link in nav menu when not authenticated", async ({ page }) => {
     await page.goto("/");
+    // Login link lives inside the dropdown menu — open it first
+    await page.getByRole("button", { name: "Open menu" }).click();
     await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
   });
 });
