@@ -1,0 +1,134 @@
+Your as a prifessional UX/UI designer, please validate the page "Journey" with all components. Please make some suggestions how to improve the design and the information provided on that pages.
+
+---
+
+<attached_files>
+
+<code_selection path="file:///Users/mattyaldoyaili/.cursor/plans/journey_page_ux_ui_validation_0e33a73e.plan.md" lines="1-132">
+---
+name: Journey Page UX/UI Validation
+overview: Professional UX/UI validation of the Journey page and its components (JourneyInsights, ActiveChallenges, ChallengeHistoryTable, ArtifactVault), with actionable suggestions for design consistency, hierarchy, empty states, and information clarity.
+todos: []
+isProject: false
+---
+
+# Journey Page UX/UI Validation and Improvement Suggestions
+
+## Current structure (reference)
+
+```mermaid
+flowchart TB
+  Page[Journey Page]
+  Page --> Insights[JourneyInsights stats]
+  Page --> Tabs[Tab bar: Challenges | Artifacts Vault]
+  Tabs --> Active[ActiveChallenges]
+  Tabs --> History[ChallengeHistoryTable]
+  Tabs --> Vault[ArtifactVault]
+```
+
+**Files:** [app/journey/page.tsx](app/journey/page.tsx), [components/journey/JourneyInsights.tsx](components/journey/JourneyInsights.tsx), [components/journey/ActiveChallenges.tsx](components/journey/ActiveChallenges.tsx), [components/journey/ChallengeHistoryTable.tsx](components/journey/ChallengeHistoryTable.tsx), [components/journey/ArtifactVault.tsx](components/journey/ArtifactVault.tsx).
+
+---
+
+## 1. Page-level (hero, hierarchy, layout)
+
+| Issue                             | Suggestion                                                                                                                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Generic title**                 | "Journey Dashboard" is admin-speak. Consider "Your Journey" (matches nav label and requirements mock) to feel personal and product-focused.                                                                         |
+| **Subtitle is vague**             | Current: "Challenge history with insights and artifacts vault." Tighten to a value line, e.g. "Your challenges, progress, and saved artifacts in one place."                                                        |
+| **No primary CTA above the fold** | Add a clear "Start a Challenge" button next to or below the title (as in [requirements/YourJourneyWithArtifacts.html](requirements/YourJourneyWithArtifacts.html)) so the next action is obvious without scrolling. |
+| **Heading level inconsistency**   | `ActiveChallenges` uses `<h2>`, `ChallengeHistoryTable` uses `<h2>`; both sit under the same tab. Use a single visual style (e.g. section titles) and ensure one logical `<h1>` on the page.                        |
+| **Tab label typo**                | "Challenges" has a leading space in the button text (line 103 in `page.tsx`); "Artifacts Vault" has leading space (line 114). Fix for polish.                                                                       |
+
+---
+
+## 2. JourneyInsights (stats row)
+
+| Issue                             | Suggestion                                                                                                                                                                                                                                                                              |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **All cards look identical**      | Every stat card uses the same indigo border. Use semantic color accents (e.g. blue/active, green/completed, neutral/total, purple/artifacts) so users can scan by meaning.                                                                                                              |
+| **No icons**                      | Numbers alone are low-scannable. Add small icons per metric (e.g. list/target for Total, clock for Active, check for Completed, folder/bookmark for Saved Artifacts) as in the requirements mock.                                                                                       |
+| **Stats not using design system** | [components/ui/StatCard.tsx](components/ui/StatCard.tsx) exists with `value`, `label`, `description` and uses `text-primary` and `rounded-2xl` but JourneyInsights uses custom divs and hardcoded indigo. Reuse `StatCard` and optionally extend it for optional icon + semantic color. |
+| **Zero state**                    | When all stats are 0, the row still shows "0, 0, 0, 0" which can feel empty. Consider a short encouraging line under the stats ("Start your first challenge to see insights here") or defer this until you have onboarding copy.                                                        |
+
+---
+
+## 3. ActiveChallenges
+
+| Issue                                 | Suggestion                                                                                                                                                                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Horizontal scroll discoverability** | Horizontal scroll on desktop is often not obvious. Add a subtle fade on the right edge or 1–2 visible "next" cards to signal more content, or use a responsive grid (e.g. 2 columns on sm, 3 on lg) so all active challenges are in view. |
+| **Card density**                      | Cards are compact; the main copy is a 2-line clamp. Ensure the title/summary is the clearest possible (e.g. prefer `title` or `summary` over raw description slice) and that domain/status don’t dominate.                                |
+| **Single CTA**                        | "View" is clear. Consider "Open challenge" or "Continue" for in_progress to set expectation.                                                                                                                                              |
+| **Empty state**                       | Copy is good. Make the "Start a Challenge" link more prominent (e.g. button style) so it reads as the primary action.                                                                                                                     |
+| **No progress or artifact link**      | Requirements mock shows progress % and linked artifact per active challenge. If the API/challenge detail supports it, surface "Progress" or "Linked artifact" on the card to add usefulness.                                              |
+
+---
+
+## 4. ChallengeHistoryTable
+
+| Issue                         | Suggestion                                                                                                                                                                                                                                                                             |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Filter is a native select** | Works but feels heavy. Consider pill/chip filters (All, Open, In progress, Completed, …) for quicker scanning and a more modern look, while keeping "All" as default.                                                                                                                  |
+| **Row information**           | Second line is `raw_description.slice(0, 80)` which can be redundant with the title. If you have a dedicated summary or domain-focused snippet, prefer that; otherwise keep truncation consistent (e.g. 60–80 chars) and ensure line-clamp/truncate is applied so layout doesn’t jump. |
+| **Mobile**                    | Date and domains are `hidden sm:block`. On small screens the row may feel sparse. Consider a single line of metadata (e.g. "Strategy · Oct 12, 2023") or a compact status+date combo so mobile rows stay informative.                                                                  |
+| **Empty filter state**        | "No challenges match this filter" is clear. Optionally add a one-click clear or "Show all" to reset the filter.                                                                                                                                                                        |
+| **Affordance**                | Rows are links; the chevron helps. Ensure hover state (e.g. `hover:bg-zinc-50`) is visible and that focus styles are clear for keyboard users.                                                                                                                                         |
+
+---
+
+## 5. ArtifactVault
+
+| Issue                     | Suggestion                                                                                                                                                                                                              |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Empty state**           | Copy explains how to add artifacts; "Find artifacts" could be more action-oriented (e.g. "Start a challenge to find artifacts" or "Go to Flow") and styled as a primary button for consistency with other empty states. |
+| **Card content**          | Title and use_case are good. "Saved {date}" is small; consider relative time ("Saved 2 days ago") for recency at a glance, with full date on hover or in detail.                                                        |
+| **Visual consistency**    | Domain pills use indigo here vs zinc in challenge cards. Decide on a rule (e.g. artifact-specific = indigo, challenge = zinc) and document it, or unify to one system.                                                  |
+| **Grid on large screens** | Currently 1 col / 2 col. On max-w-4xl, 2 columns is fine; if the page ever widens, consider 3 columns for the vault grid.                                                                                               |
+
+---
+
+## 6. Tabs and navigation
+
+| Issue               | Suggestion                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Tab semantics**   | Use a role and aria-selected so the tab bar is announced correctly (e.g. `role="tablist"`, `role="tab"`, `aria-selected`).                 |
+| **Badge on Vault**  | Count badge is good. Ensure it doesn’t clip on small screens and that the tab label doesn’t wrap awkwardly with the number.                |
+| **URL / deep link** | Tabs don’t sync to URL (e.g. `?tab=vault`). If users might share or bookmark the Vault view, consider syncing active tab to search params. |
+
+---
+
+## 7. Accessibility and polish
+
+- **Focus order**: After tabs, focus should move to the active panel (e.g. first link or filter). No need to trap focus inside the panel.
+- **Loading**: Skeleton matches the layout; ensure it has sufficient contrast and that live content doesn’t shift layout drastically when it loads.
+- **Spacing**: `mb-10` and `mb-6` are consistent; keep section spacing uniform (e.g. one standard for "section below section").
+- **Dark mode**: Components use zinc/indigo dark variants; double-check stat cards and borders in dark theme for contrast.
+
+---
+
+## 8. Information architecture (what’s missing)
+
+- **Progress**: If challenges have progress (e.g. from challenge detail or phase), surfacing it on Journey (e.g. in ActiveChallenges or history) would align with the "Challenges & Progress" idea from the requirements.
+- **Link challenge ↔ artifact**: Where an artifact was saved from a challenge, a subtle link (e.g. "From challenge X") on the vault card or vice versa could help continuity.
+- **Ordering**: Challenge history is likely by `created_at`; confirm sort order (newest first is expected) and document. Consider "Last updated" if that’s more relevant for active work.
+
+---
+
+## Suggested priority
+
+1. **Quick wins**: Fix title/subtitle and tab label spacing; reuse or align StatCard in JourneyInsights; add "Start a Challenge" CTA near the hero.
+2. **Visual hierarchy**: Semantic colors and icons for the four stats; consider pill filters for history.
+3. **Content**: Improve empty-state CTAs (button style); consider relative dates in vault and clearer row subtitle in history.
+4. **Enhancement**: Tab → URL sync; progress/artifact link on cards if data exists; accessibility attributes on tabs.
+
+No backend or API changes are required for the quick wins or visual hierarchy; the rest depend on existing data (e.g. progress, challenge–artifact link) and product decisions.
+</code_selection>
+
+</attached_files>
+
+Journey Page UX/UI Validation and Improvement Suggestions
+
+Implement the plan as specified, it is attached for your reference. Do NOT edit the plan file itself.
+
+To-do's from the plan have already been created. Do not create them again. Mark them as in_progress as you work, starting with the first one. Don't stop until you have completed all the to-dos.
