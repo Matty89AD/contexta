@@ -157,6 +157,8 @@ export function ArtifactDetailClient({
   );
   const [cards, setCards] = useState<KnowledgeCard[] | null>(null);
   const [cardsLoading, setCardsLoading] = useState(true);
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   useEffect(() => {
     // 1. Static detail — fast DB read
@@ -187,7 +189,35 @@ export function ArtifactDetailClient({
       .then((data: { cards?: KnowledgeCard[] }) => setCards(data.cards ?? []))
       .catch(() => setCards([]))
       .finally(() => setCardsLoading(false));
+
+    // 4. Check saved state (unauthenticated → leave null = disabled)
+    fetch(`/api/artifacts/${artifact.slug}/save`)
+      .then((r) => {
+        if (r.status === 401) return null;
+        return r.json() as Promise<{ saved: boolean }>;
+      })
+      .then((data) => {
+        if (data !== null) setSaved(data.saved);
+      })
+      .catch(() => {
+        // Non-fatal; leave button disabled
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleToggleSave() {
+    if (saved === null || saveLoading) return;
+    setSaveLoading(true);
+    try {
+      const method = saved ? "DELETE" : "POST";
+      const res = await fetch(`/api/artifacts/${artifact.slug}/save`, { method });
+      if (res.ok) {
+        const data = (await res.json()) as { saved: boolean };
+        setSaved(data.saved);
+      }
+    } finally {
+      setSaveLoading(false);
+    }
+  }
 
   // Merge: use personalised pro_tip once loaded, fall back to static detail's generic one
   const displayedProTip =
@@ -283,11 +313,19 @@ export function ArtifactDetailClient({
             </div>
             <button
               type="button"
-              disabled
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-sm font-medium opacity-60 cursor-not-allowed"
+              onClick={handleToggleSave}
+              disabled={saved === null || saveLoading}
+              data-testid="save-artifact-button"
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-colors ${
+                saved === null || saveLoading
+                  ? "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 opacity-60 cursor-not-allowed"
+                  : saved
+                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                  : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+              }`}
             >
-              <Bookmark size={16} />
-              Save to Playbook
+              <Bookmark size={16} className={saved ? "fill-current" : ""} />
+              {saveLoading ? "Saving…" : saved ? "Saved to Vault" : "Add to Artifact Vault"}
             </button>
           </div>
         </div>

@@ -201,3 +201,12 @@ export interface ArtifactRecommendation {
   explanation: string;
   isMostRelevant: boolean;
 }
+
+/** Epic 15 — Artifact Vault */
+export interface SavedArtifact {
+  slug: string;
+  title: string;
+  domains: string[];
+  use_case: string;
+  saved_at: string;
+}

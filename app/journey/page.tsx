@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { JourneyInsights } from "@/components/journey/JourneyInsights";
 import { ActiveChallenges } from "@/components/journey/ActiveChallenges";
 import { ChallengeHistoryTable } from "@/components/journey/ChallengeHistoryTable";
-import type { Challenge } from "@/lib/db/types";
+import { ArtifactVault } from "@/components/journey/ArtifactVault";
+import type { Challenge, SavedArtifact } from "@/lib/db/types";
 import type { JourneyStats } from "@/services/journey";
 
 function LoadingSkeleton() {
@@ -26,6 +27,8 @@ function LoadingSkeleton() {
   );
 }
 
+type JourneyTab = "challenges" | "vault";
+
 function JourneyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,7 +36,9 @@ function JourneyContent() {
 
   const [challenges, setChallenges] = useState<Challenge[] | null>(null);
   const [stats, setStats] = useState<JourneyStats | null>(null);
+  const [savedArtifacts, setSavedArtifacts] = useState<SavedArtifact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<JourneyTab>("challenges");
 
   useEffect(() => {
     const supabase = createClient();
@@ -58,14 +63,15 @@ function JourneyContent() {
         if (res.ok) {
           const data = await res.json();
           setChallenges(data.challenges ?? []);
-          setStats(data.stats ?? { total: 0, active: 0, completed: 0 });
+          setStats(data.stats ?? { total: 0, active: 0, completed: 0, savedArtifacts: 0 });
+          setSavedArtifacts(data.savedArtifacts ?? []);
         } else {
           setChallenges([]);
-          setStats({ total: 0, active: 0, completed: 0 });
+          setStats({ total: 0, active: 0, completed: 0, savedArtifacts: 0 });
         }
       } catch {
         setChallenges([]);
-        setStats({ total: 0, active: 0, completed: 0 });
+        setStats({ total: 0, active: 0, completed: 0, savedArtifacts: 0 });
       }
 
       setLoading(false);
@@ -82,8 +88,49 @@ function JourneyContent() {
       </p>
 
       {stats && <JourneyInsights stats={stats} />}
-      {challenges && <ActiveChallenges challenges={challenges} />}
-      {challenges && <ChallengeHistoryTable challenges={challenges} />}
+
+      {/* Sub-navigation tabs */}
+      <div className="flex border-b border-zinc-100 dark:border-zinc-800 mb-6" data-testid="journey-tabs">
+        <button
+          type="button"
+          onClick={() => setActiveTab("challenges")}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "challenges"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+          }`}
+          data-testid="tab-challenges"
+        >
+          Challenges &amp; Progress
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("vault")}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "vault"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+          }`}
+          data-testid="tab-vault"
+        >
+          My Artifacts Vault
+          {savedArtifacts.length > 0 && (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+              {savedArtifacts.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "challenges" && challenges && (
+        <>
+          <ActiveChallenges challenges={challenges} />
+          <ChallengeHistoryTable challenges={challenges} />
+        </>
+      )}
+      {activeTab === "vault" && (
+        <ArtifactVault artifacts={savedArtifacts} />
+      )}
     </main>
   );
 }

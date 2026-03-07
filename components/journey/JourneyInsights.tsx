@@ -16,14 +16,13 @@ export function JourneyInsights({ stats }: { stats: JourneyStats }) {
     { label: "Total Challenges", value: stats.total },
     { label: "Active", value: stats.active },
     { label: "Completed", value: stats.completed },
-    { label: "Saved Artifacts", value: 0 },
+    { label: "Saved Artifacts", value: stats.savedArtifacts },
   ];
 
   return (
     <section className="mb-10">
       <div className="flex items-baseline gap-3 mb-4">
         <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Journey Insights</h2>
-        <span className="text-xs text-zinc-400">Real data coming soon</span>
       </div>
 
       {/* Stats row */}
