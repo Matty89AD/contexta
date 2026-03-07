@@ -106,3 +106,15 @@ export async function updateChallengeTitle(
     .eq("id", id);
   if (error) throw error;
 }
+
+export async function updateChallengeStatus(
+  supabase: SupabaseClient,
+  id: string,
+  status: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("challenges")
+    .update({ status })
+    .eq("id", id);
+  if (error) throw error;
+}

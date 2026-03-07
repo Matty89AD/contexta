@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { RefreshCw, Pencil, Check, X } from "lucide-react";
-import type { Challenge } from "@/lib/db/types";
+import { RefreshCw, Pencil, Check, X, ChevronDown } from "lucide-react";
+import type { Challenge, ChallengeStatus } from "@/lib/db/types";
 import type { ArtifactRecommendation } from "@/lib/db/types";
+import { CHALLENGE_STATUSES } from "@/lib/db/types";
 import { DOMAIN_LABELS, ROLE_LABELS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,6 +15,70 @@ function logEvent(event: string, properties?: Record<string, unknown>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ event, properties }),
   }).catch(() => {});
+}
+
+const STATUS_LABELS: Record<ChallengeStatus, string> = {
+  open: "Open",
+  in_progress: "In Progress",
+  completed: "Completed",
+  archived: "Archived",
+  abandoned: "Abandoned",
+};
+
+const STATUS_STYLES: Record<ChallengeStatus, string> = {
+  open: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800",
+  in_progress: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800",
+  completed: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800",
+  archived: "bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700",
+  abandoned: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800",
+};
+
+function StatusPicker({
+  initial,
+  challengeId,
+}: {
+  initial: ChallengeStatus;
+  challengeId: string;
+}) {
+  const [status, setStatus] = useState<ChallengeStatus>(initial);
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = async (next: ChallengeStatus) => {
+    if (next === status) return;
+    setSaving(true);
+    setStatus(next);
+    try {
+      await fetch(`/api/challenges/${challengeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="relative inline-flex items-center">
+      <select
+        value={status}
+        onChange={(e) => handleChange(e.target.value as ChallengeStatus)}
+        disabled={saving}
+        aria-label="Challenge status"
+        className={`appearance-none cursor-pointer text-[11px] font-bold uppercase tracking-wide pl-2.5 pr-6 py-1 rounded border transition disabled:opacity-60 ${STATUS_STYLES[status]}`}
+      >
+        {CHALLENGE_STATUSES.map((s) => (
+          <option key={s} value={s}>
+            {STATUS_LABELS[s]}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        size={11}
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60"
+      />
+    </div>
+  );
 }
 
 function RecommendationCard({
@@ -266,7 +331,7 @@ function ChallengePageContent() {
               &quot;{challenge.summary ?? challenge.raw_description}&quot;
             </p>
             {domains.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {domains.map((d) => (
                   <span
                     key={d}
@@ -277,6 +342,10 @@ function ChallengePageContent() {
                 ))}
               </div>
             )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">Status</span>
+              <StatusPicker initial={challenge.status} challengeId={id} />
+            </div>
           </div>
         </div>
 

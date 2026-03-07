@@ -4,9 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { JourneyInsights } from "@/components/journey/JourneyInsights";
-import { ActiveChallenges } from "@/components/journey/ActiveChallenges";
 import { ChallengeHistoryTable } from "@/components/journey/ChallengeHistoryTable";
 import { ArtifactVault } from "@/components/journey/ArtifactVault";
+import { NewsCard } from "@/components/journey/NewsCard";
 import type { Challenge, SavedArtifact } from "@/lib/db/types";
 import type { JourneyStats } from "@/services/journey";
 
@@ -97,7 +97,7 @@ function JourneyContent() {
   if (loading) return <LoadingSkeleton />;
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-12">
+    <main className="max-w-4xl xl:max-w-5xl mx-auto px-4 py-12">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Your Journey</h1>
@@ -107,65 +107,72 @@ function JourneyContent() {
         </div>
       </div>
 
-      {stats && <JourneyInsights stats={stats} />}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_240px] gap-6 items-start">
+        {/* Main content */}
+        <div className="min-w-0">
+          {stats && challenges && <JourneyInsights stats={stats} challenges={challenges} />}
 
-      {/* Sub-navigation tabs */}
-      <div
-        className="flex border-b-2 border-zinc-200 dark:border-zinc-700 mb-6"
-        role="tablist"
-        aria-label="Journey sections"
-        data-testid="journey-tabs"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "challenges"}
-          aria-controls="journey-challenges-panel"
-          id="journey-tab-challenges"
-          onClick={() => setTab("challenges")}
-          className={`px-4 py-3 text-sm font-medium border-b-2 -mb-0.5 transition-colors ${
-            activeTab === "challenges"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-          }`}
-          data-testid="tab-challenges"
-        >
-          Challenges
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "vault"}
-          aria-controls="journey-vault-panel"
-          id="journey-tab-vault"
-          onClick={() => setTab("vault")}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-0.5 transition-colors whitespace-nowrap ${
-            activeTab === "vault"
-              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-          }`}
-          data-testid="tab-vault"
-        >
-          Artifacts Vault
-          {savedArtifacts.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
-              {savedArtifacts.length}
-            </span>
+          {/* Sub-navigation tabs */}
+          <div
+            className="flex border-b-2 border-zinc-200 dark:border-zinc-700 mb-6"
+            role="tablist"
+            aria-label="Journey sections"
+            data-testid="journey-tabs"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "challenges"}
+              aria-controls="journey-challenges-panel"
+              id="journey-tab-challenges"
+              onClick={() => setTab("challenges")}
+              className={`px-4 py-3 text-sm font-medium border-b-2 -mb-0.5 transition-colors ${
+                activeTab === "challenges"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+              data-testid="tab-challenges"
+            >
+              Challenges
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "vault"}
+              aria-controls="journey-vault-panel"
+              id="journey-tab-vault"
+              onClick={() => setTab("vault")}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-0.5 transition-colors whitespace-nowrap ${
+                activeTab === "vault"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+              data-testid="tab-vault"
+            >
+              Artifacts Vault
+              {savedArtifacts.length > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                  {savedArtifacts.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {activeTab === "challenges" && challenges && (
+            <div id="journey-challenges-panel" role="tabpanel" aria-labelledby="journey-tab-challenges">
+              <ChallengeHistoryTable challenges={challenges} />
+            </div>
           )}
-        </button>
-      </div>
+          {activeTab === "vault" && (
+            <div id="journey-vault-panel" role="tabpanel" aria-labelledby="journey-tab-vault">
+              <ArtifactVault artifacts={savedArtifacts} />
+            </div>
+          )}
+        </div>
 
-      {activeTab === "challenges" && challenges && (
-        <div id="journey-challenges-panel" role="tabpanel" aria-labelledby="journey-tab-challenges">
-          <ActiveChallenges challenges={challenges} />
-          <ChallengeHistoryTable challenges={challenges} />
-        </div>
-      )}
-      {activeTab === "vault" && (
-        <div id="journey-vault-panel" role="tabpanel" aria-labelledby="journey-tab-vault">
-          <ArtifactVault artifacts={savedArtifacts} />
-        </div>
-      )}
+        {/* News sidebar */}
+        <NewsCard />
+      </div>
     </main>
   );
 }

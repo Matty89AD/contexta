@@ -67,13 +67,18 @@ export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] 
     );
   }
 
+  const sorted = [...challenges].sort((a, b) => {
+    const isActiveA = a.status === "open" || a.status === "in_progress" ? 0 : 1;
+    const isActiveB = b.status === "open" || b.status === "in_progress" ? 0 : 1;
+    return isActiveA - isActiveB;
+  });
   const visible =
-    filter === "all" ? challenges : challenges.filter((c) => c.status === filter);
+    filter === "all" ? sorted : sorted.filter((c) => c.status === filter);
   const filterOptions: FilterOption[] = ["all", "open", "in_progress", "completed", "archived", "abandoned"];
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div className="flex flex-col gap-3 mb-4">
         <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Challenge History</h2>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
           {filterOptions.map((option) => (
@@ -124,7 +129,11 @@ export function ChallengeHistoryTable({ challenges }: { challenges: Challenge[] 
                 <Link
                   key={c.id}
                   href={`/challenges/${c.id}`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                  className={`flex items-center gap-4 pl-4 pr-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 border-l-4 ${
+                    c.status === "open" || c.status === "in_progress"
+                      ? "border-indigo-400 dark:border-indigo-500"
+                      : "border-transparent"
+                  }`}
                 >
                   {/* Title + description */}
                   <div className="flex-1 min-w-0">

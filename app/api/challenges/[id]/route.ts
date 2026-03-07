@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UnauthorizedError, NotFoundError, ValidationError } from "@/core/errors";
 import { getChallengeById } from "@/repositories/challenges";
 import { saveChallengeResult, autoTitle } from "@/services/challenge";
-import { updateChallengeTitle } from "@/repositories/challenges";
+import { updateChallengeTitle, updateChallengeStatus } from "@/repositories/challenges";
 import type { ArtifactRecommendation } from "@/lib/db/types";
 
 export async function GET(
@@ -49,6 +49,7 @@ export async function PATCH(
     const body = await request.json() as {
       is_saved?: boolean;
       title?: string;
+      status?: string;
       recommendations?: ArtifactRecommendation[];
     };
 
@@ -72,6 +73,17 @@ export async function PATCH(
       const trimmed = body.title.trim();
       if (!trimmed) throw new ValidationError("title cannot be empty");
       await updateChallengeTitle(supabase, id, trimmed);
+    } else if (body.status !== undefined) {
+      // Status update
+      const VALID_STATUSES = ["open", "in_progress", "completed", "archived", "abandoned"];
+      if (!VALID_STATUSES.includes(body.status)) {
+        throw new ValidationError("invalid status value");
+      }
+      const challenge = await getChallengeById(supabase, id);
+      if (!challenge || challenge.user_id !== user.id) {
+        throw new NotFoundError("Challenge not found");
+      }
+      await updateChallengeStatus(supabase, id, body.status);
     }
 
     return NextResponse.json({ ok: true });
