@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SavedArtifact } from "@/lib/db/types";
+import { getServiceRoleClient } from "@/lib/supabase/server";
 
 export async function saveArtifact(
   supabase: SupabaseClient,
@@ -59,8 +60,9 @@ export async function getSavedArtifacts(
 
   const slugs = savedRows.map((r) => r.artifact_slug as string);
 
-  // Step 2: fetch artifact details by slug (no implicit FK join needed)
-  const { data: artifacts, error: artError } = await supabase
+  // Step 2: fetch artifact details by slug using service role to bypass RLS on artifacts table
+  const serviceSupabase = getServiceRoleClient();
+  const { data: artifacts, error: artError } = await serviceSupabase
     .from("artifacts")
     .select("slug, title, domains, use_case")
     .in("slug", slugs);
