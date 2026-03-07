@@ -11,6 +11,7 @@ export function ChallengeStep({
   loading,
   error,
   onBack,
+  onExit,
   initialDescription,
   initialDomains,
 }: {
@@ -22,6 +23,8 @@ export function ChallengeStep({
   loading: boolean;
   error: string | null;
   onBack?: () => void;
+  /** If provided, shows a cancel/exit link below the submit button (used during re-runs). */
+  onExit?: () => void;
   initialDescription?: string;
   initialDomains?: string[];
 }) {
@@ -143,6 +146,16 @@ export function ChallengeStep({
           </>
         )}
       </button>
+
+      {onExit && (
+        <button
+          type="button"
+          onClick={onExit}
+          className="w-full text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 py-1 transition"
+        >
+          Cancel re-run
+        </button>
+      )}
     </form>
   );
 }

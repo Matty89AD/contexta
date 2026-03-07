@@ -24,9 +24,9 @@ is implemented. Never include raw code blocks in the final document.
 
 Parse `$ARGUMENTS`:
 
-- If it contains `--changed-files=` → **Fast Path (Epic Edit)**
-- If the first token is `all`, or no argument is given → **Full Rewrite**
-- If the first token looks like an epic name (e.g. `epic-13`) but no `--changed-files` → **Guided Epic Edit**
+- If it contains `--changed-files=` → **Mode A — Fast Path (Epic Edit)**
+- If the first token is `all`, or no argument is given → **Mode C — Full Rewrite**
+- If the first token looks like an epic name (e.g. `epic-13`) but no `--changed-files` → **Mode B — Guided Epic Edit**
 
 ---
 
@@ -81,27 +81,36 @@ Use this when an epic name is given but no `--changed-files`. You must infer wha
    - The new/changed API route(s)
    - The new/changed component(s)
    - `lib/db/types.ts` if the spec mentions DB changes
-4. Determine the minimal set of edits (same as Fast Path step 4).
-5. Use Edit to apply changes (same as Fast Path step 5).
+4. Determine the minimal set of edits (same as Mode A step 4).
+5. Use Edit to apply changes (same as Mode A step 5).
 6. Commit.
 
 ---
 
-## MODE C — Full Rewrite [high token usage — only for `all`]
+## MODE C — Full Rewrite [high token usage — only for `all` or first-time]
 
 Use this only when `$ARGUMENTS` is `all` or blank, or when the document does not yet exist.
 
 ### Steps
 
 1. Read `documentation/DOCUMENTATION.md` fully (in sections if needed).
-2. Read `specs/*.md` — all spec files for scope.
-3. Read `lib/db/types.ts`, `core/config.ts`, key services and route files.
-4. Write the complete document from scratch following the document structure below.
-5. Commit.
+2. Read all spec files in `specs/*.md` — scope, acceptance criteria, out-of-scope.
+3. Read `requirements/spec.md` and `requirements/q-and-a.md` — product decisions and enums.
+4. Read implemented features from code:
+   - `supabase/migrations/*.sql` — what tables and columns exist; what RPCs exist.
+   - `lib/db/types.ts` — canonical enum values and data shapes.
+   - `services/*.ts` — what the system actually does.
+   - `app/api/*/route.ts` — what API endpoints exist and what inputs they accept.
+   - `components/flow/*.tsx`, `app/**/*.tsx` — what UI steps exist.
+   - `core/config.ts` — what is configurable via environment variables.
+   - `core/prompts/*.ts` — what the AI generates.
+   - `e2e/*.spec.ts` — what user journeys are tested.
+5. Write the complete document from scratch following the document structure below.
+6. Commit.
 
 ---
 
-## Document structure (for Mode C or new sections in Modes A/B)
+## Document structure
 
 ```
 # Contexta — Product Documentation
@@ -125,7 +134,30 @@ Use this only when `$ARGUMENTS` is `all` or blank, or when the document does not
 9. [Changelog](#9-changelog)
 ```
 
-### Feature section format (Modes A/B — write only the new section)
+---
+
+## Section writing rules (Mode C full sections; Modes A/B new sections only)
+
+**Section 1 — Product Overview**
+- One-paragraph product elevator pitch.
+- The core problem it solves.
+- The target user persona.
+- The three-step value loop (context → challenge → recommendations).
+
+**Section 2 — User Flow**
+- Write as a numbered narrative ("First the user does X. Then…").
+- Cover the full journey from landing to seeing recommendations, including the auth prompt.
+- Note where data is persisted (client-side vs. server) and when.
+- Include edge cases: what happens if the user hits Back, refreshes, or is not logged in.
+
+**Section 3 — Feature Reference**
+Write one sub-section per implemented feature. For each feature:
+- **What it does**: 1-2 plain-language sentences.
+- **What the user sees**: describe the UI element or interaction.
+- **Business rules**: list any rules that affect what the user can or cannot do.
+- **Status**: mark as `Implemented`, `Partially implemented`, or `Planned`.
+
+Feature section format (for new sections in Modes A/B):
 
 ```
 ### 3.N Feature Name
@@ -141,7 +173,36 @@ Use this only when `$ARGUMENTS` is `all` or blank, or when the document does not
 **Status**: Implemented
 ```
 
-### Changelog row format (always append, never remove old rows)
+**Section 4 — Data Model for PMs**
+- Do NOT show column names. Describe what information the system stores.
+- Use a table: Entity | What it represents | Key fields (in plain English) | Who can access it.
+- Cover: User Profiles, Challenges, Content Items, Content Chunks.
+- Note what's configurable vs. hardcoded.
+
+**Section 5 — API Reference**
+- One row per endpoint: Endpoint | Purpose | Auth required | Key inputs | Key outputs.
+- Use human-readable descriptions, not technical schemas.
+- Flag which endpoints require authentication.
+
+**Section 6 — Configuration & Tuning**
+- Table: Setting name | What it controls (plain English) | Default | Range / Options.
+- Cover every env var in `core/config.ts` plus any relevant ones in scripts.
+- Add a "Tuning guide" subsection: plain-language advice on when a PM might want to change each setting.
+
+**Section 7 — Known Limitations & Out of Scope**
+- Bullet list of what the system explicitly does NOT do today.
+- Reference the relevant spec's "Out of scope" items.
+- Flag user-visible limitations.
+
+**Section 8 — Future Epics (Planned)**
+- Table: Epic | What it adds | Status.
+- Derive from spec files that have no corresponding migration/service evidence.
+
+**Section 9 — Changelog**
+- Reverse-chronological table: Date | Version | Epic | Summary of changes.
+- Always append a new row; never delete old rows.
+
+Changelog row format:
 
 ```
 | YYYY-MM-DD | X.Y | Epic N | One-sentence plain-language summary of what changed. |
@@ -151,28 +212,11 @@ Use this only when `$ARGUMENTS` is `all` or blank, or when the document does not
 
 ## Versioning rules
 
-- `MAJOR.MINOR`:
-  - **MAJOR**: new user-facing page, flow, or major capability
-  - **MINOR**: enhancement to an existing flow or feature
-- Read current version from the document header; increment correctly.
-
----
-
-## Section writing rules (for new content)
-
-**New Feature sections** — answer four questions concisely:
-1. What does this feature do (in plain English, no jargon)?
-2. What does the user see / interact with?
-3. What business rules apply?
-4. What is the current status?
-
-**Data Model additions** — add a row to the existing table; describe the new entity or new field in plain English without column names.
-
-**API additions** — add rows to the existing API table: Endpoint | Purpose | Auth required | Key inputs | Key outputs.
-
-**Known Limitations removals** — use Edit to delete the bullet(s) that this epic resolves.
-
-**Future Epics removals** — use Edit to delete or update the row(s) that this epic delivers.
+- Version is `MAJOR.MINOR` where:
+  - `MAJOR` increments when a new user-facing flow or major capability is added.
+  - `MINOR` increments when a feature within an existing flow is enhanced.
+- Start at `1.0` if the file does not exist yet.
+- Read the existing version from the document header and increment correctly.
 
 ---
 
@@ -199,4 +243,4 @@ EOF
 - [ ] Resolved limitations removed from section 7.
 - [ ] Completed epics removed or updated in section 8.
 - [ ] No raw code, TypeScript, SQL, or JSON in the document body.
-- [ ] Language is accessible to a non-technical PM.
+- [ ] Language is accessible to a non-technical PM — no jargon without explanation.

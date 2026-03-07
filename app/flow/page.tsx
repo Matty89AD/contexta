@@ -120,7 +120,8 @@ function FlowContent() {
         } catch {
           // ignore
         }
-        setStep("challenge");
+        // Always go through the context step for re-runs (shows confirm view for logged-in users)
+        setStep("context");
       })
       .catch(() => {
         // Fall through to normal context step
@@ -176,9 +177,12 @@ function FlowContent() {
   }, []);
 
   const onSkipContext = useCallback(() => {
-    // Use whatever is already in contextData (from localStorage) or null
+    // Confirm existing context — ensure contextData is set from stored values
+    if (!contextData && initialContextFromStorage) {
+      setContextData(initialContextFromStorage);
+    }
     setStep("challenge");
-  }, []);
+  }, [contextData, initialContextFromStorage]);
 
   const onSubmitChallenge = useCallback(
     async (body: { raw_description: string; domains: string[] }) => {
@@ -252,6 +256,7 @@ function FlowContent() {
               loading={false}
               error={error}
               onBack={() => setStep("context")}
+              onExit={rerunId ? () => router.push(`/challenges/${rerunId}`) : undefined}
               initialDescription={descriptionForChallenge}
               initialDomains={domainsForChallenge}
             />

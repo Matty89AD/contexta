@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronLeft, Pencil } from "lucide-react";
 import {
   ROLES,
   COMPANY_STAGES,
@@ -20,6 +20,15 @@ export interface ContextData {
   experience_level: string;
 }
 
+function isComplete(data: ContextData | null | undefined): data is ContextData {
+  return !!(
+    data?.role &&
+    data?.company_stage &&
+    data?.team_size &&
+    data?.experience_level
+  );
+}
+
 function logEvent(event: string, properties?: Record<string, unknown>) {
   fetch("/api/events", {
     method: "POST",
@@ -35,9 +44,18 @@ export function ContextStep({
 }: {
   initialData?: ContextData | null;
   onComplete: (data: ContextData) => void;
-  /** If provided, shows a Skip button (used when context is already known from profile). */
+  /**
+   * If provided and initialData is fully populated, shows a confirmation view
+   * first ("Is your context still up to date?") instead of the full form.
+   * Calling onSkip() advances to the next step without re-saving context.
+   */
   onSkip?: () => void;
 }) {
+  // When the user already has complete context, start in confirm mode.
+  const [mode, setMode] = useState<"confirm" | "edit">(
+    onSkip && isComplete(initialData) ? "confirm" : "edit"
+  );
+
   const [role, setRole] = useState<string>(initialData?.role ?? "");
   const [companyStage, setCompanyStage] = useState<string>(
     initialData?.company_stage ?? ""
@@ -58,8 +76,7 @@ export function ContextStep({
     if (s) logEvent("stage_selected", { company_stage: s });
   }, []);
 
-  const canContinue =
-    role && companyStage && teamSize && experienceLevel;
+  const canContinue = role && companyStage && teamSize && experienceLevel;
 
   const handleContinue = () => {
     if (!canContinue) return;
@@ -71,8 +88,70 @@ export function ContextStep({
     });
   };
 
+  // — Confirm view —
+  if (mode === "confirm" && onSkip && isComplete(initialData)) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">
+            Is your context still up to date?
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400">
+            We&apos;ll use this to tailor your recommendations.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 divide-y divide-zinc-200 dark:divide-zinc-700 overflow-hidden">
+          {[
+            { label: "Role", value: ROLE_LABELS[initialData.role] },
+            { label: "Experience", value: EXPERIENCE_LABELS[initialData.experience_level] },
+            { label: "Company stage", value: COMPANY_STAGE_LABELS[initialData.company_stage] },
+            { label: "Team size", value: TEAM_SIZE_LABELS[initialData.team_size] },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex justify-between items-center px-5 py-3.5">
+              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</span>
+              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="w-full rounded-xl bg-indigo-600 text-white py-3 font-medium hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+          >
+            Yes, looks good
+            <ChevronRight size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("edit")}
+            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 py-3 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-sm flex items-center justify-center gap-2"
+          >
+            <Pencil size={14} />
+            Update my context
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // — Edit view —
+  const cameFromConfirm = onSkip && isComplete(initialData);
+
   return (
     <div className="space-y-8">
+      {cameFromConfirm && (
+        <button
+          type="button"
+          onClick={() => setMode("confirm")}
+          className="flex items-center text-sm text-zinc-500 hover:text-indigo-600 -mb-2"
+        >
+          <ChevronLeft size={16} /> Back
+        </button>
+      )}
+
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">Tell us about yourself</h1>
         <p className="text-zinc-500 dark:text-zinc-400">We&apos;ll tailor PM Artifacts based on your specific operational environment.</p>
@@ -166,26 +245,15 @@ export function ContextStep({
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={handleContinue}
-          disabled={!canContinue}
-          className="flex-1 rounded-xl bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition flex items-center justify-center gap-2"
-        >
-          Continue
-          <ChevronRight size={18} />
-        </button>
-        {onSkip && (
-          <button
-            type="button"
-            onClick={onSkip}
-            className="px-6 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 py-3 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-sm"
-          >
-            Skip
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={handleContinue}
+        disabled={!canContinue}
+        className="w-full rounded-xl bg-indigo-600 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+      >
+        Continue
+        <ChevronRight size={18} />
+      </button>
     </div>
   );
 }

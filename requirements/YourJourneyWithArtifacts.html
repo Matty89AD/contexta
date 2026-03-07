@@ -1,0 +1,407 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  BarChart3, 
+  Clock, 
+  CheckCircle2, 
+  Bookmark, 
+  MoreHorizontal, 
+  Search, 
+  Filter, 
+  ArrowRight,
+  TrendingUp,
+  BrainCircuit,
+  LayoutDashboard,
+  History,
+  PlusCircle,
+  User,
+  LogOut,
+  ChevronRight,
+  Bell,
+  Library,
+  Layers,
+  FileText,
+  Star,
+  ExternalLink,
+  Download
+} from 'lucide-react';
+
+const App = () => {
+  const [activeNav, setActiveNav] = useState('Your Journey');
+  const [activeTab, setActiveTab] = useState('Challenges'); // New state for sub-navigation
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  // Mock Data for Challenges
+  const activeChallenges = [
+    {
+      id: 'CH-102',
+      title: 'Scaling User Discovery',
+      summary: 'Establishing a continuous discovery habit across 3 cross-functional teams.',
+      status: 'In Progress',
+      artifact: 'Opportunity Solution Tree',
+      progress: 65,
+      category: 'Discovery'
+    },
+    {
+      id: 'CH-105',
+      title: 'Q3 Product Strategy',
+      summary: 'Defining North Star metrics and high-level initiatives for the growth squad.',
+      status: 'In Progress',
+      artifact: 'Working Backwards (Amazon)',
+      progress: 40,
+      category: 'Strategy'
+    }
+  ];
+
+  const historyData = [
+    { id: 'CH-099', title: 'Feature Prioritization', summary: 'Aligning stakeholders on the H2 roadmap.', status: 'Completed', category: 'Strategy', artifact: 'RICE Scoring', date: 'Oct 12, 2023', progress: 100 },
+    { id: 'CH-098', title: 'Developer API Launch', summary: 'Go-to-market strategy for external devs.', status: 'Archived', category: 'Growth', artifact: 'GTM Playbook', date: 'Oct 05, 2023', progress: 100 },
+    { id: 'CH-097', title: 'Mobile App Refresh', summary: 'UI/UX overhaul for iOS/Android.', status: 'Abandoned', category: 'Discovery', artifact: 'Jobs to be Done', date: 'Sep 28, 2023', progress: 20 },
+  ];
+
+  // New Mock Data for Playbook/Vault Artifacts
+  const savedArtifacts = [
+    {
+      id: 'ART-001',
+      name: 'RICE Scoring Framework',
+      type: 'Framework',
+      author: 'Intercom',
+      savedAt: '2 days ago',
+      category: 'Prioritization',
+      uses: 14
+    },
+    {
+      id: 'ART-002',
+      name: 'Working Backwards PR/FAQ',
+      type: 'Playbook',
+      author: 'Ian McAllister',
+      savedAt: '1 week ago',
+      category: 'Strategy',
+      uses: 8
+    },
+    {
+      id: 'ART-003',
+      name: 'Opportunity Solution Tree',
+      type: 'Framework',
+      author: 'Teresa Torres',
+      savedAt: '3 weeks ago',
+      category: 'Discovery',
+      uses: 22
+    },
+    {
+      id: 'ART-004',
+      name: 'North Star Metric Guide',
+      type: 'Article',
+      author: 'Amplitude',
+      savedAt: '1 month ago',
+      category: 'Growth',
+      uses: 5
+    }
+  ];
+
+  const thoughtLeaders = [
+    { name: 'Marty Cagan', challenges: 14, img: 'https://ui-avatars.com/api/?name=Marty+Cagan&background=random' },
+    { name: 'Lenny Rachitsky', challenges: 11, img: 'https://ui-avatars.com/api/?name=Lenny+Rachitsky&background=random' },
+    { name: 'Teresa Torres', challenges: 8, img: 'https://ui-avatars.com/api/?name=Teresa+Torres&background=random' },
+  ];
+
+  const stats = [
+    { label: 'Total Challenges', value: 42, icon: BarChart3, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Active', value: 12, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { label: 'Completed', value: 28, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Artifacts', value: savedArtifacts.length, icon: Library, color: 'text-purple-600', bg: 'bg-purple-50' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Top Header Navigation */}
+      <header className="fixed top-0 w-full bg-white border-b border-slate-200 z-50">
+        <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3 pr-6 border-r border-slate-100">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
+                <BrainCircuit className="text-white w-5 h-5" />
+              </div>
+              <span className="font-bold text-xl tracking-tight">Contexta</span>
+            </div>
+            
+            <nav className="hidden md:flex items-center gap-1">
+              {[
+                { name: 'Home', icon: LayoutDashboard },
+                { name: 'Your Journey', icon: TrendingUp },
+                { name: 'New Challenge', icon: PlusCircle },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveNav(item.name)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeNav === item.name 
+                    ? 'bg-slate-100 text-indigo-700' 
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.name}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button className="p-2 text-slate-400 hover:text-slate-600 relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="h-6 w-px bg-slate-200 mx-2"></div>
+            <div className="flex items-center gap-3 pl-2 group cursor-pointer">
+              <div className="w-9 h-9 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
+                <img src="https://ui-avatars.com/api/?name=Alex+PM" alt="User" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="pt-24 pb-12 px-6 max-w-[1400px] mx-auto">
+        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Your Journey</h1>
+            <p className="text-slate-500 mt-1 font-medium text-lg">Personal workspace with challenge and artifacts vault.</p>
+          </div>
+          <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm">
+            <PlusCircle className="w-5 h-5" />
+            Start New Challenge
+          </button>
+        </div>
+
+        {/* Section 1: Journey Insights */}
+        <section className="grid grid-cols-12 gap-6 mb-12">
+          {/* Stats Cards */}
+          <div className="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-100 transition-colors">
+                <div className={`${stat.bg} ${stat.color} w-10 h-10 rounded-xl flex items-center justify-center mb-4`}>
+                  <stat.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-3xl font-black text-slate-800 tracking-tight">{stat.value}</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Thought Leaders Row (Condensed) */}
+          <div className="col-span-12 lg:col-span-4 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">Top Contributors</span>
+             <div className="mt-4 space-y-4">
+               {thoughtLeaders.slice(0, 3).map((leader, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src={leader.img} className="w-8 h-8 rounded-full" alt={leader.name} />
+                      <span className="text-sm font-bold text-slate-700">{leader.name}</span>
+                    </div>
+                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-black text-slate-500">{leader.challenges}</span>
+                  </div>
+               ))}
+             </div>
+          </div>
+        </section>
+
+        {/* SUB-NAVIGATION TABS */}
+        <div className="border-b border-slate-200 mb-8">
+          <div className="flex gap-8">
+            <button 
+              onClick={() => setActiveTab('Challenges')}
+              className={`pb-4 text-sm font-black uppercase tracking-widest transition-all relative ${
+                activeTab === 'Challenges' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              Challenges & Progress
+              {activeTab === 'Challenges' && <div className="absolute bottom-0 left-0 w-full h-1 bg-indigo-600 rounded-t-full" />}
+            </button>
+            <button 
+              onClick={() => setActiveTab('Vault')}
+              className={`pb-4 text-sm font-black uppercase tracking-widest transition-all relative ${
+                activeTab === 'Vault' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              My Artifacts Vault
+              <span className="ml-2 bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded text-[10px]">
+                {savedArtifacts.length}
+              </span>
+              {activeTab === 'Vault' && <div className="absolute bottom-0 left-0 w-full h-1 bg-indigo-600 rounded-t-full" />}
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'Challenges' ? (
+          <>
+            {/* Section 2: Active Challenges */}
+            <section className="mb-14">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-black flex items-center gap-3 text-slate-900 tracking-tight uppercase">
+                  Active Challenges
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeChallenges.map((challenge) => (
+                  <div key={challenge.id} className="group bg-white rounded-3xl border border-slate-200 p-7 shadow-sm hover:shadow-xl transition-all duration-300">
+                    <div className="flex justify-between items-start mb-5">
+                      <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-100">
+                        {challenge.category}
+                      </span>
+                      <button className="text-slate-300 hover:text-slate-600 p-1">
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <h3 className="text-lg font-black text-slate-800 mb-2">{challenge.title}</h3>
+                    <p className="text-sm text-slate-500 mb-6 line-clamp-2">{challenge.summary}</p>
+                    
+                    <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
+                          <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">{challenge.artifact}</span>
+                        </div>
+                        <span className="text-[11px] font-black text-indigo-600">{challenge.progress}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                        <div className="bg-indigo-500 h-full rounded-full transition-all" style={{ width: `${challenge.progress}%` }}></div>
+                      </div>
+                    </div>
+
+                    <button className="w-full bg-slate-900 hover:bg-indigo-600 text-white py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all">
+                      Continue Execution
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Section 3: History Table */}
+            <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+               <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="font-black text-slate-800 uppercase text-sm tracking-widest">Challenge History</h3>
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-slate-400" />
+                    <input className="text-sm focus:outline-none" placeholder="Search history..." />
+                  </div>
+               </div>
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left">
+                   <thead className="bg-slate-50 text-[10px] uppercase font-black text-slate-400">
+                      <tr>
+                        <th className="px-8 py-4">Challenge</th>
+                        <th className="px-8 py-4">Artifact</th>
+                        <th className="px-8 py-4">Status</th>
+                        <th className="px-8 py-4 text-right">Activity</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-slate-100">
+                     {historyData.map((item) => (
+                       <tr key={item.id} className="hover:bg-slate-50 transition-all cursor-pointer group">
+                         <td className="px-8 py-5">
+                            <p className="text-sm font-bold text-slate-800">{item.title}</p>
+                            <p className="text-xs text-slate-400">{item.category}</p>
+                         </td>
+                         <td className="px-8 py-5 text-xs text-slate-600 font-medium">{item.artifact}</td>
+                         <td className="px-8 py-5">
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-slate-100">{item.status}</span>
+                         </td>
+                         <td className="px-8 py-5 text-right text-xs text-slate-400 font-bold">{item.date}</td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+            </section>
+          </>
+        ) : (
+          /* VAULT / PLAYBOOK TAB CONTENT */
+          <section className="animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Artifacts Vault</h2>
+                <p className="text-slate-500 text-sm font-medium">Your personal library of saved frameworks and playbooks.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search your artifact..."
+                    className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+                <button className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600">
+                  <Filter className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {savedArtifacts.map((artifact) => (
+                <div key={artifact.id} className="group bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="bg-indigo-50 p-2 rounded-lg">
+                      <Layers className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <button className="text-slate-300 hover:text-amber-400 transition-colors">
+                      <Star className="w-5 h-5 fill-current" />
+                    </button>
+                  </div>
+                  
+                  <h4 className="text-sm font-black text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors cursor-pointer leading-tight">
+                    {artifact.name}
+                  </h4>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mb-4">
+                    By {artifact.author}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                      {artifact.type}
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded">
+                      {artifact.category}
+                    </span>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <History className="w-3 h-3" />
+                      <span className="text-[10px] font-bold">{artifact.uses} uses</span>
+                    </div>
+                    <div className="flex gap-2">
+                       <button title="Download PDF" className="p-1.5 hover:bg-slate-50 text-slate-400 rounded-md">
+                         <Download className="w-3.5 h-3.5" />
+                       </button>
+                       <button title="Apply to new challenge" className="p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                         <ExternalLink className="w-3.5 h-3.5" />
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add New Discovery Card */}
+              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-indigo-300 transition-all">
+                <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-indigo-50 transition-colors">
+                  <Search className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
+                </div>
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Find More</h4>
+                <p className="text-[10px] text-slate-400 mt-1">*Coming Soon: Explore our artifact database</p>
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default App;
