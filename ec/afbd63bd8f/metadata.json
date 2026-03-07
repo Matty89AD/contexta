@@ -1,0 +1,20 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "ecafbd63bd8f",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "app/journey/page.tsx",
+    "components/ui/StatCard.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ec/afbd63bd8f/0/metadata.json",
+      "transcript": "/ec/afbd63bd8f/0/full.jsonl",
+      "context": "/ec/afbd63bd8f/0/context.md",
+      "content_hash": "/ec/afbd63bd8f/0/content_hash.txt",
+      "prompt": "/ec/afbd63bd8f/0/prompt.txt"
+    }
+  ]
+}

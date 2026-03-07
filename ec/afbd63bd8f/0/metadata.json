@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "ecafbd63bd8f",
+  "session_id": "bd7dfa5c-3d12-4829-a472-72f41d92915e",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-07T20:32:51.501952Z",
+  "branch": "master",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "app/journey/page.tsx",
+    "components/ui/StatCard.tsx"
+  ],
+  "agent": "Cursor",
+  "turn_id": "f30f9cb81fe0",
+  "checkpoint_transcript_start": 14,
+  "transcript_lines_at_start": 14,
+  "initial_attribution": {
+    "calculated_at": "2026-03-07T20:32:51.465974Z",
+    "agent_lines": 4,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 4,
+    "agent_percentage": 100
+  }
+}
