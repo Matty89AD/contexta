@@ -1,5 +1,7 @@
 # Epic 15: Artifact Vault
 
+> **Status:** ✅ done  |  **As of:** 2026-03-08
+
 ## Goal
 Allow users to manually save artifacts to a personal vault from the artifact detail screen, then view and access those artifacts from a new "My Artifacts Vault" tab on the Journey page.
 
