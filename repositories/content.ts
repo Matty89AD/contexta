@@ -120,3 +120,15 @@ export async function listContent(
   if (error) throw error;
   return (data ?? []) as Content[];
 }
+
+/** Delete all chunks for a content record (used before re-processing). */
+export async function deleteChunksByContentId(
+  supabase: SupabaseClient,
+  contentId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("content_chunks")
+    .delete()
+    .eq("content_id", contentId);
+  if (error) throw error;
+}

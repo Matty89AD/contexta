@@ -30,6 +30,13 @@ export class UnauthorizedError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(message: string = "Forbidden") {
+    super(message, "FORBIDDEN", 403);
+    this.name = "ForbiddenError";
+  }
+}
+
 export class AIProviderError extends AppError {
   constructor(message: string, cause?: unknown) {
     super(message, "AI_PROVIDER_ERROR", 502);

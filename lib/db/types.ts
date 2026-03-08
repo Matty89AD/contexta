@@ -71,6 +71,8 @@ export interface Profile {
   company_stage: CompanyStage | null;
   team_size: TeamSize | null;
   experience_level: ExperienceLevel | null;
+  /** Epic 16 — Admin flag. */
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -132,6 +134,10 @@ export interface Content {
   publication_date: string | null;
   language: string;
   extraction_confidence: number | null;
+  /** Epic 16 — Admin UI: content lifecycle status. */
+  status: ContentStatus;
+  /** Epic 16 — Admin UI: raw transcript/text for processing. */
+  transcript_raw: string | null;
   created_at: string;
 }
 
@@ -149,6 +155,9 @@ export interface ContentInsert {
   publication_date?: string | null;
   language?: string;
   extraction_confidence?: number | null;
+  /** Epic 16 — Admin UI fields (optional at insert). */
+  status?: ContentStatus;
+  transcript_raw?: string | null;
 }
 
 export interface ContentChunk {
@@ -179,6 +188,33 @@ export interface ChunkWithContent {
   similarity?: number;
   /** Full-text keyword relevance score (0–1) from hybrid RAG retrieval (Epic 7). */
   keywordScore?: number;
+}
+
+/** Epic 16 — Admin UI */
+export const CONTENT_STATUSES = [
+  "draft",
+  "pending_review",
+  "active",
+  "archived",
+] as const;
+export type ContentStatus = (typeof CONTENT_STATUSES)[number];
+
+export const NEWS_POST_TYPES = ["podcast", "artifact", "article"] as const;
+export type NewsPostType = (typeof NEWS_POST_TYPES)[number];
+
+export const NEWS_POST_STATUSES = ["draft", "published"] as const;
+export type NewsPostStatus = (typeof NEWS_POST_STATUSES)[number];
+
+export interface NewsPost {
+  id: string;
+  type: NewsPostType;
+  title: string;
+  description: string;
+  published_date: string;
+  status: NewsPostStatus;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 /** Epic 10 — Artifact-Optimized Recommendations */

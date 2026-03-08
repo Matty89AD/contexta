@@ -25,11 +25,18 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  // Protect /journey and /profile — redirect unauthenticated users to login
   const protectedPaths = ["/journey", "/profile"];
   if (protectedPaths.some((p) => pathname.startsWith(p)) && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Protect /admin — unauthenticated users redirect to /
+  if (pathname.startsWith("/admin")) {
+    if (!user) return NextResponse.redirect(new URL("/", request.url));
   }
 
   return response;
