@@ -12,8 +12,76 @@ const DEFAULT_CHAT_MODEL = "openai/gpt-4o-mini";
  */
 const DEFAULT_INGEST_MODEL = "google/gemini-2.0-flash";
 
-/** Default embedding model (1536 dims, matches text-embedding-3-small); override with OPENROUTER_EMBEDDING_MODEL. */
+/**
+ * Default embedding model (1536 dims, matches pgvector index).
+ * When using OpenAI directly the "openai/" prefix is stripped automatically.
+ * Override with OPENROUTER_EMBEDDING_MODEL.
+ */
 const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
+
+/**
+ * Resolve the embedding client and model name.
+ * Prefers direct OpenAI API (OPENAI_API_KEY) because OpenRouter's embedding
+ * routing is unreliable ("No successful provider responses").
+ * Falls back to OpenRouter if OPENAI_API_KEY is not set.
+ */
+function resolveEmbeddingClient(openrouterKey: string): {
+  client: OpenAI;
+  model: string;
+} {
+  const openaiKey = (process.env.OPENAI_API_KEY ?? "").trim();
+  const modelRaw = (process.env.OPENROUTER_EMBEDDING_MODEL ?? "").trim();
+  const configuredModel = modelRaw || DEFAULT_EMBEDDING_MODEL;
+
+  if (openaiKey) {
+    // Direct OpenAI — strip the "openai/" provider prefix if present
+    const model = configuredModel.replace(/^openai\//, "");
+    return { client: new OpenAI({ apiKey: openaiKey }), model };
+  }
+
+  // Fall back to OpenRouter
+  return {
+    client: new OpenAI({ apiKey: openrouterKey, baseURL: OPENROUTER_BASE_URL }),
+    model: configuredModel,
+  };
+}
+
+/** Shared embedding implementation used by both providers. */
+async function callEmbeddingAPI(
+  client: OpenAI,
+  model: string,
+  text: string
+): Promise<number[]> {
+  let res: Awaited<ReturnType<typeof client.embeddings.create>>;
+  try {
+    res = await client.embeddings.create({
+      model,
+      input: text,
+      encoding_format: "float",
+    });
+  } catch (apiErr) {
+    throw new Error(
+      `Embedding API error (model: ${model}): ${
+        apiErr instanceof Error ? apiErr.message : String(apiErr)
+      }`
+    );
+  }
+  // OpenRouter returns HTTP 200 with {"error":{...}} instead of throwing
+  const rawRes = res as unknown as Record<string, unknown>;
+  if (rawRes.error) {
+    const orErr = rawRes.error as Record<string, unknown>;
+    throw new Error(
+      `Embedding API error (model: ${model}): ${
+        orErr.message ?? orErr.code ?? JSON.stringify(orErr)
+      }`
+    );
+  }
+  const embedding = res.data?.[0]?.embedding;
+  if (!Array.isArray(embedding) || embedding.length === 0) {
+    throw new Error(`Embedding API returned empty embedding (model: ${model})`);
+  }
+  return embedding;
+}
 
 /**
  * Ingest provider for background transcript jobs (Epic 17).
@@ -26,15 +94,11 @@ export function createOpenRouterIngestProvider(apiKey?: string): AIProvider {
   if (!key) {
     throw new Error("OPENROUTER_API_KEY is required for OpenRouter provider");
   }
-  const openai = new OpenAI({
-    apiKey: key,
-    baseURL: OPENROUTER_BASE_URL,
-  });
+  const openai = new OpenAI({ apiKey: key, baseURL: OPENROUTER_BASE_URL });
   const ingestModelRaw = (process.env.OPENROUTER_INGEST_MODEL ?? "").trim();
   const chatModelRaw = (process.env.OPENROUTER_CHAT_MODEL ?? "").trim();
   const ingestModel = ingestModelRaw || chatModelRaw || DEFAULT_INGEST_MODEL;
-  const embeddingModelRaw = (process.env.OPENROUTER_EMBEDDING_MODEL ?? "").trim();
-  const embeddingModel = embeddingModelRaw || DEFAULT_EMBEDDING_MODEL;
+  const { client: embeddingClient, model: embeddingModel } = resolveEmbeddingClient(key);
 
   return {
     async generateText(prompt, options) {
@@ -49,55 +113,12 @@ export function createOpenRouterIngestProvider(apiKey?: string): AIProvider {
         response_format: options?.jsonMode ? { type: "json_object" } : undefined,
       });
       const content = completion.choices[0]?.message?.content;
-      if (content == null) {
-        throw new Error("OpenRouter returned empty content");
-      }
+      if (content == null) throw new Error("OpenRouter returned empty content");
       return content;
     },
 
     async generateEmbedding(text: string): Promise<number[]> {
-      let res: Awaited<ReturnType<typeof openai.embeddings.create>>;
-      try {
-        res = await openai.embeddings.create({
-          model: embeddingModel,
-          input: text,
-          // Explicitly request float format — prevents SDK from silently
-          // returning a base64 string when OpenRouter returns base64 encoding
-          encoding_format: "float",
-        });
-      } catch (apiErr) {
-        console.error("[OpenRouter] Embedding API threw:", apiErr);
-        throw new Error(
-          `OpenRouter embedding API error (model: ${embeddingModel}): ${
-            apiErr instanceof Error ? apiErr.message : String(apiErr)
-          }`
-        );
-      }
-      // OpenRouter occasionally returns HTTP 200 with {"error":{...}} instead
-      // of throwing — detect this and surface the actual error message.
-      const rawRes = res as unknown as Record<string, unknown>;
-      if (rawRes.error) {
-        const orErr = rawRes.error as Record<string, unknown>;
-        throw new Error(
-          `OpenRouter embeddings error: ${orErr.message ?? orErr.code ?? JSON.stringify(orErr)}`
-        );
-      }
-
-      const item = res.data?.[0];
-      const embedding = item?.embedding;
-      if (!Array.isArray(embedding) || embedding.length === 0) {
-        console.error("[OpenRouter] Bad embedding response:", {
-          model: embeddingModel,
-          topLevelKeys: Object.keys(rawRes),
-          dataLength: res.data?.length,
-          itemKeys: item ? Object.keys(item) : undefined,
-          embeddingType: typeof embedding,
-        });
-        throw new Error(
-          `OpenRouter returned empty embedding (model: ${embeddingModel})`
-        );
-      }
-      return embedding;
+      return callEmbeddingAPI(embeddingClient, embeddingModel, text);
     },
   };
 }
@@ -107,20 +128,22 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
   if (!key) {
     throw new Error("OPENROUTER_API_KEY is required for OpenRouter provider");
   }
-  const openai = new OpenAI({
-    apiKey: key,
-    baseURL: OPENROUTER_BASE_URL,
-  });
+  const openai = new OpenAI({ apiKey: key, baseURL: OPENROUTER_BASE_URL });
   const chatModelRaw = (process.env.OPENROUTER_CHAT_MODEL ?? "").trim();
   const chatModel = chatModelRaw || DEFAULT_CHAT_MODEL;
-  const embeddingModelRaw = (process.env.OPENROUTER_EMBEDDING_MODEL ?? "").trim();
-  const embeddingModel = embeddingModelRaw || DEFAULT_EMBEDDING_MODEL;
+  const { client: embeddingClient, model: embeddingModel } = resolveEmbeddingClient(key);
 
   if (process.env.NODE_ENV === "development") {
     console.log(
       "[OpenRouter] chat model:",
       chatModel,
-      chatModelRaw ? "" : "(OPENROUTER_CHAT_MODEL not set in env, using default)"
+      chatModelRaw ? "" : "(OPENROUTER_CHAT_MODEL not set, using default)"
+    );
+    const usingOpenAIDirect = !!(process.env.OPENAI_API_KEY ?? "").trim();
+    console.log(
+      "[Embedding] model:",
+      embeddingModel,
+      usingOpenAIDirect ? "(via OpenAI direct)" : "(via OpenRouter)"
     );
   }
 
@@ -137,44 +160,12 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
         response_format: options?.jsonMode ? { type: "json_object" } : undefined,
       });
       const content = completion.choices[0]?.message?.content;
-      if (content == null) {
-        throw new Error("OpenRouter returned empty content");
-      }
+      if (content == null) throw new Error("OpenRouter returned empty content");
       return content;
     },
 
     async generateEmbedding(text: string): Promise<number[]> {
-      let res: Awaited<ReturnType<typeof openai.embeddings.create>>;
-      try {
-        res = await openai.embeddings.create({
-          model: embeddingModel,
-          input: text,
-          // Explicitly request float format — prevents SDK from silently
-          // returning a base64 string when OpenRouter returns base64 encoding
-          encoding_format: "float",
-        });
-      } catch (apiErr) {
-        console.error("[OpenRouter] Embedding API threw:", apiErr);
-        throw new Error(
-          `OpenRouter embedding API error (model: ${embeddingModel}): ${
-            apiErr instanceof Error ? apiErr.message : String(apiErr)
-          }`
-        );
-      }
-      // OpenRouter returns HTTP 200 with {"error":{...}} instead of throwing
-      const rawRes = res as unknown as Record<string, unknown>;
-      if (rawRes.error) {
-        const orErr = rawRes.error as Record<string, unknown>;
-        throw new Error(
-          `OpenRouter embeddings error: ${orErr.message ?? orErr.code ?? JSON.stringify(orErr)}`
-        );
-      }
-      const item = res.data?.[0];
-      const embedding = item?.embedding;
-      if (!Array.isArray(embedding) || embedding.length === 0) {
-        throw new Error(`OpenRouter returned empty embedding (model: ${embeddingModel})`);
-      }
-      return embedding;
+      return callEmbeddingAPI(embeddingClient, embeddingModel, text);
     },
   };
 }
