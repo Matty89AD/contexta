@@ -56,21 +56,37 @@ export function createOpenRouterIngestProvider(apiKey?: string): AIProvider {
     },
 
     async generateEmbedding(text: string): Promise<number[]> {
-      const res = await openai.embeddings.create({
-        model: embeddingModel,
-        input: text,
-      });
-      const embedding = res.data?.[0]?.embedding;
-      if (!embedding) {
-        console.error(
-          "[OpenRouter] Empty embedding response — model:",
-          embeddingModel,
-          "| data length:",
-          res.data?.length ?? "undefined",
-          "| response keys:",
-          Object.keys(res as object)
+      let res: Awaited<ReturnType<typeof openai.embeddings.create>>;
+      try {
+        res = await openai.embeddings.create({
+          model: embeddingModel,
+          input: text,
+          // Explicitly request float format — prevents SDK from silently
+          // returning a base64 string when OpenRouter returns base64 encoding
+          encoding_format: "float",
+        });
+      } catch (apiErr) {
+        console.error("[OpenRouter] Embedding API threw:", apiErr);
+        throw new Error(
+          `OpenRouter embedding API error (model: ${embeddingModel}): ${
+            apiErr instanceof Error ? apiErr.message : String(apiErr)
+          }`
         );
-        throw new Error(`OpenRouter returned empty embedding (model: ${embeddingModel})`);
+      }
+      const item = res.data?.[0];
+      const embedding = item?.embedding;
+      if (!Array.isArray(embedding) || embedding.length === 0) {
+        console.error("[OpenRouter] Bad embedding response:", {
+          model: embeddingModel,
+          topLevelKeys: Object.keys(res as object),
+          dataLength: res.data?.length,
+          itemKeys: item ? Object.keys(item) : undefined,
+          embeddingType: typeof embedding,
+          embeddingLength: Array.isArray(embedding) ? embedding.length : "N/A",
+        });
+        throw new Error(
+          `OpenRouter returned empty embedding (model: ${embeddingModel}, data[0].embedding type: ${typeof embedding})`
+        );
       }
       return embedding;
     },
@@ -119,21 +135,37 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
     },
 
     async generateEmbedding(text: string): Promise<number[]> {
-      const res = await openai.embeddings.create({
-        model: embeddingModel,
-        input: text,
-      });
-      const embedding = res.data?.[0]?.embedding;
-      if (!embedding) {
-        console.error(
-          "[OpenRouter] Empty embedding response — model:",
-          embeddingModel,
-          "| data length:",
-          res.data?.length ?? "undefined",
-          "| response keys:",
-          Object.keys(res as object)
+      let res: Awaited<ReturnType<typeof openai.embeddings.create>>;
+      try {
+        res = await openai.embeddings.create({
+          model: embeddingModel,
+          input: text,
+          // Explicitly request float format — prevents SDK from silently
+          // returning a base64 string when OpenRouter returns base64 encoding
+          encoding_format: "float",
+        });
+      } catch (apiErr) {
+        console.error("[OpenRouter] Embedding API threw:", apiErr);
+        throw new Error(
+          `OpenRouter embedding API error (model: ${embeddingModel}): ${
+            apiErr instanceof Error ? apiErr.message : String(apiErr)
+          }`
         );
-        throw new Error(`OpenRouter returned empty embedding (model: ${embeddingModel})`);
+      }
+      const item = res.data?.[0];
+      const embedding = item?.embedding;
+      if (!Array.isArray(embedding) || embedding.length === 0) {
+        console.error("[OpenRouter] Bad embedding response:", {
+          model: embeddingModel,
+          topLevelKeys: Object.keys(res as object),
+          dataLength: res.data?.length,
+          itemKeys: item ? Object.keys(item) : undefined,
+          embeddingType: typeof embedding,
+          embeddingLength: Array.isArray(embedding) ? embedding.length : "N/A",
+        });
+        throw new Error(
+          `OpenRouter returned empty embedding (model: ${embeddingModel}, data[0].embedding type: ${typeof embedding})`
+        );
       }
       return embedding;
     },
