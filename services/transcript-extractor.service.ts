@@ -44,6 +44,42 @@ export async function extractTranscript(url: string): Promise<TranscriptResult> 
   );
 
   return {
-    transcript: stdout.trim(),
+    transcript: cleanTranscript(stdout),
   };
+}
+
+/**
+ * Normalise raw CLI output into clean prose:
+ * - Strip leading "Transcript:" label
+ * - Join short caption lines into continuous text
+ * - Treat >> speaker-change markers as paragraph breaks
+ */
+function cleanTranscript(raw: string): string {
+  // Remove leading "Transcript:" label (case-insensitive, optional whitespace)
+  let text = raw.replace(/^\s*transcript\s*:?\s*/i, "").trim();
+
+  // Split into lines and rebuild as paragraphs
+  const lines = text.split("\n");
+  const paragraphs: string[] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    const stripped = line.trim();
+    if (!stripped) continue;
+
+    if (stripped.startsWith(">>")) {
+      // Flush current paragraph, start new one with speaker content
+      if (current.length) {
+        paragraphs.push(current.join(" "));
+        current = [];
+      }
+      const content = stripped.replace(/^>>\s*/, "").trim();
+      if (content) current.push(content);
+    } else {
+      current.push(stripped);
+    }
+  }
+  if (current.length) paragraphs.push(current.join(" "));
+
+  return paragraphs.join("\n\n").trim();
 }
