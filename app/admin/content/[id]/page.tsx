@@ -37,6 +37,7 @@ export default function AdminContentEdit() {
   const [processing, setProcessing] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isFromUrl, setIsFromUrl] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -64,6 +65,14 @@ export default function AdminContentEdit() {
       setKeywords(tagsToInput(data.keywords ?? []));
       setPublicationDate(data.publication_date ?? "");
       setStatus(data.status ?? "draft");
+      // Check if this content was created from a transcript job (URL import)
+      if (data.status === "draft" && data.transcript_raw) {
+        const jobRes = await fetch(`/api/admin/transcript-jobs?content_id=${id}`);
+        if (jobRes.ok) {
+          const job = await jobRes.json();
+          setIsFromUrl(job !== null);
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -185,8 +194,8 @@ export default function AdminContentEdit() {
         />
       </div>
 
-      {/* Draft-from-URL banner */}
-      {content.status === "draft" && content.transcript_raw && (
+      {/* Draft-from-URL banner — only for content created via transcript job */}
+      {isFromUrl && content.status === "draft" && content.transcript_raw && (
         <div className="mb-4 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
           <span className="text-blue-500 text-lg leading-none">🔗</span>
           <div>
@@ -206,9 +215,7 @@ export default function AdminContentEdit() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-              {content.status === "draft" && content.transcript_raw
-                ? "Run Ingestion"
-                : "Process now"}
+              {isFromUrl ? "Run Ingestion" : "Process now"}
             </p>
             <p className="text-xs text-zinc-400 mt-0.5">
               Chunk transcript → generate embeddings → extract intelligence
@@ -219,11 +226,7 @@ export default function AdminContentEdit() {
             disabled={processing}
             className="shrink-0 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
           >
-            {processing
-              ? "Processing…"
-              : content.status === "draft" && content.transcript_raw
-              ? "Run Ingestion"
-              : "Process now"}
+            {processing ? "Processing…" : isFromUrl ? "Run Ingestion" : "Process now"}
           </button>
         </div>
         {processMsg && (

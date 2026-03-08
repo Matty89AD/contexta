@@ -56,11 +56,20 @@ export async function POST(request: Request) {
   }
 }
 
-/** GET /api/admin/transcript-jobs — list recent jobs for the current admin */
-export async function GET() {
+/** GET /api/admin/transcript-jobs — list recent jobs, or look up by ?content_id= */
+export async function GET(request: Request) {
   try {
     const user = await requireAdmin();
+    const { searchParams } = new URL(request.url);
+    const contentId = searchParams.get("content_id");
     const serviceClient = getServiceRoleClient();
+
+    if (contentId) {
+      const { findJobByContentId } = await import("@/repositories/transcript-jobs.repository");
+      const job = await findJobByContentId(serviceClient, contentId);
+      return NextResponse.json(job ?? null);
+    }
+
     const jobs = await listJobs(serviceClient, user.id);
     return NextResponse.json(jobs);
   } catch (e) {
