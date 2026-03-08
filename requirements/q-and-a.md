@@ -254,3 +254,106 @@ c (later with evals)
 
 separate
 **A21.**
+
+---
+
+## Epic 16 — Admin UI (open questions)
+
+*Please answer below each question. Only append your answers; do not remove the questions.*
+
+---
+
+### Access and authentication
+
+**Q22.** How should `/admin` be protected? Options:
+- (a) Hard-coded email allowlist in an env var (e.g. `ADMIN_EMAILS=you@example.com`)
+- (b) A boolean `is_admin` column on the `profiles` table
+- (c) A Supabase role / RLS policy
+
+**A22.**
+b
+---
+
+### Content status workflow
+
+**Q23.** The `content` table has no `status` field yet. I'd propose four states: `draft → pending_review → active → archived`. Does that match your intent? Any state to add, remove, or rename?
+
+**A23.**
+no, sounds good
+---
+
+### Transcript generation (MVP scope)
+
+**Q24.** For MVP, should auto-transcript generation be in or out of scope? Options:
+- (a) In scope — integrate an external API (e.g. summarize.sh or similar) to generate transcripts from a URL
+- (b) Out of scope for MVP — admin pastes/uploads transcript text manually; auto-generation is a future epic
+
+**A24.**
+b
+---
+
+### "blog" as a content type
+
+**Q25.** You mentioned "blog" as a content type, but the current `CONTENT_SOURCE_TYPES` enum is `podcast | video | website | book`. Should we add `blog` as a distinct type, or should blog posts map to `website`?
+
+**A25.**
+leave blog out
+---
+
+### News posts — data model
+
+**Q26.** The `NewsCard` on the Journey page uses hardcoded mock data (type, title, description, date). For the admin-managed version, which additional fields do you want on a news post?
+- (a) Minimal: type, title, description, date, status — no changes to the current shape
+- (b) Add a source URL (link out to the original piece)
+- (c) Add image/thumbnail support
+- (d) Other fields you have in mind?
+
+**A26.**
+a
+---
+
+### News post status workflow
+
+**Q27.** Proposed two states for news posts: `draft` and `published`. Is that enough, or do you want a review step (e.g. `draft → pending_review → published → archived`)?
+
+**A27.**
+keep it simple
+---
+
+### Ingest pipeline — trigger
+
+**Q28.** When an admin submits a URL + transcript, should the chunking / embedding / intelligence pipeline:
+- (a) Run immediately and automatically in the background
+- (b) Require an explicit "Process now" button so the admin can review the raw content first
+
+**A28.**
+b
+---
+
+### Editable metadata fields
+
+**Q29.** After content is ingested, which metadata fields should be editable from the admin UI? Proposed editable set: title, URL, author, domains, topics, keywords, publication_date, status. Anything you'd add or make read-only (e.g. raw chunks, embedding vectors)?
+
+**A29.**
+like you proposed
+---
+
+### Content sources (cron) — MVP scope
+
+**Q30.** For the content source monitoring feature (e.g. watch Lenny's Podcast feed for new episodes), should we:
+- (a) Skip entirely for MVP — no UI placeholder
+- (b) Include a read-only "Content Sources" section in the admin UI as a scaffold for later, but with no active functionality
+- (c) Implement a basic version (add source URL + schedule, trigger scrape manually) with auto-polling deferred
+
+**A30.**
+b
+---
+
+### Admin home / dashboard
+
+**Q31.** Should the admin landing page be:
+- (a) A dashboard with headline stats (total content, pending review count, active count, news posts count)
+- (b) Go straight to the content list — no separate dashboard screen
+
+**A31.**
+a

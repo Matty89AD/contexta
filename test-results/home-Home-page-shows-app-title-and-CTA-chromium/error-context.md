@@ -1,0 +1,133 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Contexta" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e5]:
+        - link "Start a Challenge" [ref=e6] [cursor=pointer]:
+          - /url: /flow
+        - button "Open menu" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+          - img [ref=e11]
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - img [ref=e19]
+          - generic [ref=e21]: Now with 50+ PM Artifacts
+        - heading "Everything you need to grow as a Product Manager" [level=1] [ref=e22]:
+          - text: Everything you need
+          - text: to grow as a Product Manager
+        - paragraph [ref=e23]:
+          - text: Share what's blocking you.
+          - text: Get curated PM Artifacts — the most relevant frameworks, principles, and real-world playbooks from the best product leaders.
+        - generic [ref=e24]:
+          - link "Start your first challenge →" [ref=e25] [cursor=pointer]:
+            - /url: /flow
+          - link "How it works" [ref=e26] [cursor=pointer]:
+            - /url: "#how-it-works"
+        - paragraph [ref=e27]: No account needed. Get your first PM Artifacts in under 3 minutes.
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - paragraph [ref=e31]: 50+
+          - paragraph [ref=e32]: PM Artifacts
+        - generic [ref=e33]:
+          - paragraph [ref=e34]: 999+
+          - paragraph [ref=e35]: Content Sources
+        - generic [ref=e36]:
+          - paragraph [ref=e37]: 400+
+          - paragraph [ref=e38]: Thought Leaders
+        - generic [ref=e39]:
+          - paragraph [ref=e40]: 6+
+          - paragraph [ref=e41]: All PM Domains Covered
+      - generic [ref=e43]:
+        - generic [ref=e45]:
+          - heading "Everything you need to grow as a Product Manager" [level=2] [ref=e46]
+          - paragraph [ref=e47]: Contexta matches you to the right PM Artifacts at the right time.
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - img [ref=e51]
+            - paragraph [ref=e63]: Experience-based matching
+            - paragraph [ref=e64]: Get PM Artifacts matched to your challenge based on your role, stage, and experience level.
+          - generic [ref=e65]:
+            - img [ref=e67]
+            - paragraph [ref=e70]: Learn new skills
+            - paragraph [ref=e71]: Discover frameworks and playbooks curated to help you grow in your exact situation.
+          - generic [ref=e72]:
+            - img [ref=e74]
+            - paragraph [ref=e80]: Top thought leaders
+            - paragraph [ref=e81]: See your top ranked thought leaders ranked for your challenge and learn from them.
+      - generic [ref=e83]:
+        - heading "How it works" [level=2] [ref=e86]
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: "01"
+            - paragraph [ref=e90]: Set your context
+            - paragraph [ref=e91]: Your role, stage, and experience — once, saved for next time.
+          - generic [ref=e92]:
+            - generic [ref=e93]: "02"
+            - paragraph [ref=e94]: Describe your challenge
+            - paragraph [ref=e95]: In your own words. What's blocking you or your team?
+          - generic [ref=e96]:
+            - generic [ref=e97]: "03"
+            - paragraph [ref=e98]: Get matched content
+            - paragraph [ref=e99]: Curated podcast episodes, articles, and books — instantly.
+      - generic [ref=e101]:
+        - heading "What challenge are you facing today?" [level=2] [ref=e104]
+        - generic [ref=e105]:
+          - link "We have too many ideas and no clear prioritization framework Strategy" [ref=e106] [cursor=pointer]:
+            - /url: /flow?description=We%20have%20too%20many%20ideas%20and%20no%20clear%20prioritization%20framework&domains=strategy
+            - paragraph [ref=e107]: We have too many ideas and no clear prioritization framework
+            - generic [ref=e108]: Strategy
+          - link "I struggle to align stakeholders on the roadmap Strategy" [ref=e109] [cursor=pointer]:
+            - /url: /flow?description=I%20struggle%20to%20align%20stakeholders%20on%20the%20roadmap&domains=strategy
+            - paragraph [ref=e110]: I struggle to align stakeholders on the roadmap
+            - generic [ref=e111]: Strategy
+          - link "Our team ships fast but rarely acts on user feedback Discovery" [ref=e112] [cursor=pointer]:
+            - /url: /flow?description=Our%20team%20ships%20fast%20but%20rarely%20acts%20on%20user%20feedback&domains=discovery
+            - paragraph [ref=e113]: Our team ships fast but rarely acts on user feedback
+            - generic [ref=e114]: Discovery
+          - link "I'm stepping into a leadership role and don't know where to start Leadership" [ref=e115] [cursor=pointer]:
+            - /url: /flow?description=I'm%20stepping%20into%20a%20leadership%20role%20and%20don't%20know%20where%20to%20start&domains=leadership
+            - paragraph [ref=e116]: I'm stepping into a leadership role and don't know where to start
+            - generic [ref=e117]: Leadership
+      - generic [ref=e122]:
+        - heading "Ready to solve your next challenge?" [level=2] [ref=e123]
+        - paragraph [ref=e124]: Join the movement of Product Managers who use Contexta to navigate complex product decisions.
+        - link "Get Started Now" [ref=e125] [cursor=pointer]:
+          - /url: /flow
+          - text: Get Started Now
+          - img [ref=e126]
+      - generic [ref=e129]:
+        - generic [ref=e130]:
+          - generic [ref=e131]:
+            - paragraph [ref=e132]: Product
+            - list [ref=e133]:
+              - listitem [ref=e134]:
+                - link "Start a Challenge" [ref=e135] [cursor=pointer]:
+                  - /url: /flow
+              - listitem [ref=e136]:
+                - link "How it works" [ref=e137] [cursor=pointer]:
+                  - /url: /#how-it-works
+          - generic [ref=e138]:
+            - paragraph [ref=e139]: About
+            - list [ref=e140]:
+              - listitem [ref=e141]:
+                - link "MVP Presentation" [ref=e142] [cursor=pointer]:
+                  - /url: /presentation2.html
+              - listitem [ref=e143]:
+                - link "Matching Logic" [ref=e144] [cursor=pointer]:
+                  - /url: /matching-logic.html
+        - paragraph [ref=e145]: © 2026 Contexta
+  - status [ref=e146]:
+    - generic [ref=e147]:
+      - img [ref=e149]
+      - generic [ref=e151]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e152] [cursor=pointer]:
+          - img [ref=e153]
+  - alert [ref=e156]
+```

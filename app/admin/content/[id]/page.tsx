@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ContentWithChunkCount } from "@/repositories/admin";
 import { CONTENT_STATUSES, CHALLENGE_DOMAINS } from "@/lib/db/types";
@@ -28,6 +28,7 @@ function tagsToInput(arr: string[]): string {
 export default function AdminContentEdit() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
+  const router = useRouter();
   const [content, setContent] = useState<ContentWithChunkCount | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export default function AdminContentEdit() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Save failed");
-      await load();
+      router.push("/admin/content");
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Save failed");
     } finally {

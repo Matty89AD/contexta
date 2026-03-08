@@ -44,6 +44,7 @@ export function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -54,11 +55,26 @@ export function Nav() {
 
   useEffect(() => {
     const supabase = createClient();
+
+    const checkAdmin = async (userId: string) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", userId)
+        .single();
+      setIsAdmin(data?.is_admin === true);
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) checkAdmin(u.id);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) checkAdmin(u.id);
+      else setIsAdmin(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -158,6 +174,15 @@ export function Nav() {
                     >
                       My Journey
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent transition"
+                      >
+                        Admin
+                      </Link>
+                    )}
                     <div className="border-t border-border mt-1 mb-1" />
                     <button
                       type="button"

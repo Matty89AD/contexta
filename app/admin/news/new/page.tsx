@@ -40,7 +40,7 @@ export default function AdminNewsNew() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create post");
-      router.push(`/admin/news/${data.id}`);
+      router.push("/admin/news");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create post");
       setSubmitting(false);

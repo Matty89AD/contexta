@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { NewsPostFields } from "@/components/admin/NewsPostFields";
 import type { NewsPost, NewsPostType, NewsPostStatus } from "@/lib/db/types";
@@ -9,6 +9,7 @@ import type { NewsPost, NewsPostType, NewsPostStatus } from "@/lib/db/types";
 export default function AdminNewsEdit() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
+  const router = useRouter();
   const [post, setPost] = useState<NewsPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export default function AdminNewsEdit() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Save failed");
-      setPost(data);
+      router.push("/admin/news");
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Save failed");
     } finally {
