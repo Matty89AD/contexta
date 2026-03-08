@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 4.0 &nbsp;|&nbsp; **Last updated:** 2026-03-08 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 4.1 &nbsp;|&nbsp; **Last updated:** 2026-03-09 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -24,6 +24,7 @@
    - [3.13 Artifact Vault](#313-artifact-vault)
    - [3.14 Admin UI](#314-admin-ui)
    - [3.15 Journey News Feed](#315-journey-news-feed)
+   - [3.16 Auto-Transcript from URL](#316-auto-transcript-from-url)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -619,6 +620,32 @@ A static read-only placeholder page describing a future cron-based monitoring sy
 
 ---
 
+### 3.16 Auto-Transcript from URL
+
+**What it does**: Lets admins generate a transcript and pre-fill a content draft by pasting any URL — a YouTube video, a podcast RSS feed, a direct audio file, or a web page. The system detects the URL type, extracts the transcript in the background, runs content intelligence automatically, and creates a ready-to-review draft. The admin receives a notification when the job is done and can then trigger ingestion with one click.
+
+**What the user sees**: A new **"Add from URL"** button on the `/admin/content` page. Clicking it opens a three-step modal:
+1. **URL entry** — the admin pastes a URL; the interface detects and displays the URL type (YouTube video, Podcast RSS feed, Podcast episode, or Web page).
+2. **Podcast RSS episode picker** (RSS feeds only) — a table of the 50 most recent episodes is shown; the admin selects one before continuing.
+3. **Confirmation** — the admin sees the URL, detected type, and an estimated processing time before clicking "Generate Transcript" to start the job.
+
+Once the job is submitted, a **bell icon** in the admin navigation shows how many jobs are pending or processing. When a job finishes, a toast notification appears with a link to the newly created draft content page. Failed jobs also trigger a toast with the error message.
+
+On the draft content page (`/admin/content/[id]`), all metadata fields (title, author, publication date, source type) and the raw transcript are pre-filled and ready to review. An **"Run Ingestion"** button is visible while the content is in draft status — clicking it generates the semantic embeddings and chunks that make the content searchable by users.
+
+**Business rules**:
+- Only admins can create or view transcript jobs.
+- A job is processed asynchronously after the HTTP response is returned — the admin does not wait on the page for it to complete.
+- Transcript extraction uses a 10-minute timeout; if the job exceeds this, it is marked as failed with an explanatory message.
+- Content intelligence (domain classification, keyword extraction, tagging) runs automatically inside the job pipeline. The admin does not need to trigger it separately.
+- Embeddings and search chunks are only generated when the admin explicitly clicks "Run Ingestion" on the draft review page.
+- After ingestion the admin changes the content status to "active" to make it visible to the matching engine.
+- Authenticated/paywalled content, bulk URL submission, scheduled re-ingestion, and inline transcript editing are all explicitly out of scope for this version.
+
+**Status**: Implemented
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -632,6 +659,7 @@ The following describes what information the system stores, in plain language. C
 | **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
 | **Saved Artifact** | A record of one artifact saved to a user's personal Artifact Vault | Link to the user, link to the artifact (by slug), and the date it was saved | The user themselves only |
 | **News Post** | A news item published to the Journey page news feed | Type (podcast, artifact, article), title, short description, display date (free text, e.g. "Mar 2026"), status (draft or published), sort order, and timestamps | Internal team via the Admin UI; published posts are visible to all users on the Journey page |
+| **Transcript Job** | A background processing job that extracts a transcript from a URL and creates a draft content item | The source URL, detected URL type (YouTube, Podcast RSS, Podcast episode, or Web page), job status (pending / processing / completed / failed), error message if applicable, link to the resulting draft content item (once complete), and timestamps | Admin users only |
 
 ### Key rules
 
@@ -683,6 +711,9 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `GET /api/admin/news/[id]` | Return a single news post | **Admin only** | News post ID (in URL) | Full news post record |
 | `PATCH /api/admin/news/[id]` | Update a news post | **Admin only** | Any subset of: type, title, description, display date, status, sort order | Updated news post record |
 | `DELETE /api/admin/news/[id]` | Hard-delete a news post | **Admin only** | News post ID (in URL) | Success confirmation |
+| `POST /api/admin/transcript-jobs` | Submit a URL to create a background transcript extraction job. For podcast RSS feed URLs the response includes a list of recent episodes so the admin can select one before confirming. | **Admin only** | URL (in body) | Job ID, detected URL type, and episode list (RSS feeds only); HTTP 202 on success |
+| `GET /api/admin/transcript-jobs` | Return the 20 most recent transcript jobs for the current admin | **Admin only** | None | List of jobs with status, URL, URL type, and link to content item (if completed) |
+| `GET /api/admin/transcript-jobs/[id]` | Return a single transcript job by ID | **Admin only** | Job ID (in URL) | Full job record including status, error message, and content item ID if completed |
 
 ### Notes on the challenge endpoints
 
@@ -720,9 +751,16 @@ All settings are controlled via environment variables. They do not require a cod
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key — grants full DB access, used server-side only | — | String | **Yes** |
 | `OPENROUTER_API_KEY` | API key for the AI provider (OpenRouter) used for text generation and embeddings | — | String | **Yes** |
 | `OPENROUTER_CHAT_MODEL` | The specific AI model used for text generation. Switching to a faster model can significantly reduce response times. | `openai/gpt-4o-mini` | Any model available on OpenRouter | No |
+| `OPENROUTER_INGEST_MODEL` | The AI model used for content intelligence extraction inside background transcript jobs. Uses a model with a larger context window than the chat model so that full podcast transcripts (30–80K tokens) fit in a single call. Falls back to `OPENROUTER_CHAT_MODEL` if not set. | `google/gemini-2.0-flash` | Any model available on OpenRouter | No |
 | `NEXT_PUBLIC_SITE_URL` | The public base URL of the deployment. Used to build the OAuth callback redirect URL for Google sign-in. Must be set correctly in production for Google OAuth to work. | — | Valid URL (e.g. `https://yourapp.com`) | For Google OAuth |
 
 ### Tuning guide for PMs
+
+**"Transcript jobs are failing with a context-length error for long podcast episodes"**
+- The default ingest model (`google/gemini-2.0-flash`) has a 1M token context window and should handle most transcripts. If you are using a different model via `OPENROUTER_INGEST_MODEL`, switch to one with a larger context window (1M+ tokens recommended for long-form audio).
+
+**"Transcript job intelligence extraction feels low quality (wrong domain, poor keywords)"**
+- Set `OPENROUTER_INGEST_MODEL` to a higher-capability model (e.g. `google/gemini-2.0-pro` or `anthropic/claude-3.5-sonnet`). Background jobs are not user-facing, so latency is not a concern — you can prioritise quality over speed.
 
 **"The challenge summary loading screen takes too long (over 15 seconds)"**
 - Switch to a faster model by setting `OPENROUTER_CHAT_MODEL` (e.g. `google/gemini-flash-1.5-8b` or `meta-llama/llama-3.3-70b-instruct`). This requires no code change — just an environment variable update.
@@ -802,6 +840,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-09 | 4.1 | Epic 17 | Added Auto-Transcript from URL: admins can now paste any URL (YouTube video, podcast RSS feed, direct audio file, or web page) to automatically generate a transcript, extract metadata, and create a pre-filled draft content item in the background. A notification bell in the admin nav shows in-progress job count and fires a toast when a job completes. "Run Ingestion" button on the draft review page triggers embedding generation to make content searchable. Added Transcript Job to the Data Model, three new admin-only API endpoints, and a new `OPENROUTER_INGEST_MODEL` configuration setting. |
 | 2026-03-08 | 4.0 | Epic 16 | Added Admin UI: a protected web interface at `/admin` for internal content and news management. Admins can create, edit, process, and delete content items; publish and manage news posts; and view a dashboard of knowledge base stats. The Journey page news feed is now live-fetched from the database (published posts only) rather than hardcoded. Added 13 new API endpoints (9 admin-only, 1 public). Updated Data Model to add News Post entity and admin flag on User Profile, and content lifecycle status on Content Item. Removed "No admin content management UI" from Known Limitations and "Content management UI" from Future Epics. |
 | 2026-03-07 | 3.2 | Epic 15 | Added Artifact Vault: users can save artifacts from the detail page ("Add to Artifact Vault" / "Saved to Vault" toggle) and browse their full personal collection in a new "My Artifacts Vault" tab on the Journey page. The "Saved Artifacts" stat card on Journey now shows the real count. Added three new API endpoints for save/unsave/check. Removed "No Save to Playbook" from Known Limitations and from Future Epics. Updated Data Model and API Reference accordingly. |
 | 2026-03-06 | 3.1 | — | Improved artifact knowledge card retrieval to use both vector similarity and keyword search in parallel. Vector matches are ranked first; keyword-only matches are appended, ensuring content that explicitly names the artifact is never missed. |
