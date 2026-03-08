@@ -73,19 +73,28 @@ export function createOpenRouterIngestProvider(apiKey?: string): AIProvider {
           }`
         );
       }
+      // OpenRouter occasionally returns HTTP 200 with {"error":{...}} instead
+      // of throwing — detect this and surface the actual error message.
+      const rawRes = res as unknown as Record<string, unknown>;
+      if (rawRes.error) {
+        const orErr = rawRes.error as Record<string, unknown>;
+        throw new Error(
+          `OpenRouter embeddings error: ${orErr.message ?? orErr.code ?? JSON.stringify(orErr)}`
+        );
+      }
+
       const item = res.data?.[0];
       const embedding = item?.embedding;
       if (!Array.isArray(embedding) || embedding.length === 0) {
         console.error("[OpenRouter] Bad embedding response:", {
           model: embeddingModel,
-          topLevelKeys: Object.keys(res as object),
+          topLevelKeys: Object.keys(rawRes),
           dataLength: res.data?.length,
           itemKeys: item ? Object.keys(item) : undefined,
           embeddingType: typeof embedding,
-          embeddingLength: Array.isArray(embedding) ? embedding.length : "N/A",
         });
         throw new Error(
-          `OpenRouter returned empty embedding (model: ${embeddingModel}, data[0].embedding type: ${typeof embedding})`
+          `OpenRouter returned empty embedding (model: ${embeddingModel})`
         );
       }
       return embedding;
@@ -152,20 +161,18 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
           }`
         );
       }
+      // OpenRouter returns HTTP 200 with {"error":{...}} instead of throwing
+      const rawRes = res as unknown as Record<string, unknown>;
+      if (rawRes.error) {
+        const orErr = rawRes.error as Record<string, unknown>;
+        throw new Error(
+          `OpenRouter embeddings error: ${orErr.message ?? orErr.code ?? JSON.stringify(orErr)}`
+        );
+      }
       const item = res.data?.[0];
       const embedding = item?.embedding;
       if (!Array.isArray(embedding) || embedding.length === 0) {
-        console.error("[OpenRouter] Bad embedding response:", {
-          model: embeddingModel,
-          topLevelKeys: Object.keys(res as object),
-          dataLength: res.data?.length,
-          itemKeys: item ? Object.keys(item) : undefined,
-          embeddingType: typeof embedding,
-          embeddingLength: Array.isArray(embedding) ? embedding.length : "N/A",
-        });
-        throw new Error(
-          `OpenRouter returned empty embedding (model: ${embeddingModel}, data[0].embedding type: ${typeof embedding})`
-        );
+        throw new Error(`OpenRouter returned empty embedding (model: ${embeddingModel})`);
       }
       return embedding;
     },
