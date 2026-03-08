@@ -33,11 +33,15 @@ export async function extractTranscript(url: string): Promise<TranscriptResult> 
     SUMMARIZE_MODEL: process.env.SUMMARIZE_MODEL ?? "google/gemini-2.0-flash-lite",
   };
 
-  const { stdout } = await execFileAsync(summarizeBin, [url, "--extract"], {
-    env,
-    timeout: TIMEOUT_MS,
-    maxBuffer: 50 * 1024 * 1024, // 50 MB for long transcripts
-  });
+  const { stdout } = await execFileAsync(
+    summarizeBin,
+    [url, "--extract", "--format", "text", "--plain", "--no-color"],
+    {
+      env,
+      timeout: TIMEOUT_MS,
+      maxBuffer: 50 * 1024 * 1024, // 50 MB for long transcripts
+    }
+  );
 
   return {
     transcript: stdout.trim(),
