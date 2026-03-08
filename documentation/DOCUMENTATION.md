@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 3.2 &nbsp;|&nbsp; **Last updated:** 2026-03-07 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 4.0 &nbsp;|&nbsp; **Last updated:** 2026-03-08 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -22,6 +22,8 @@
    - [3.11 Your Journey](#311-your-journey)
    - [3.12 Save & Revisit Challenge Results](#312-save--revisit-challenge-results)
    - [3.13 Artifact Vault](#313-artifact-vault)
+   - [3.14 Admin UI](#314-admin-ui)
+   - [3.15 Journey News Feed](#315-journey-news-feed)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -568,23 +570,73 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
+### 3.14 Admin UI
+
+**What it does**: Provides a protected web interface at `/admin` for the internal team to manage the knowledge base — adding and processing content, editing metadata, publishing news posts, and monitoring content health — without needing command-line access.
+
+**What the user sees**: A sidebar-navigated admin area with four sections: Dashboard, Content, News Posts, and Content Sources. Only users with an admin flag on their account can access it; all other users (including logged-in non-admins) are redirected to the home page when they try to visit any `/admin` URL.
+
+**Dashboard**
+The landing page at `/admin` shows headline stat cards: total content items broken down by status (draft, pending review, active, archived) and total news posts broken down by status (draft, published). Quick-action links navigate to "Add content" and "New news post."
+
+**Content management**
+- The content list page shows all content items in a filterable, searchable table. Columns include title, source type, primary domain, status, and creation date. Tabs filter by status; dropdowns filter by source type and domain; a text box filters by title (client-side).
+- The "Add content" form captures source type (podcast, video, website, book), URL (stored as provenance — nothing is fetched), optional title, and a transcript/full-text textarea. Submitting creates a draft content record.
+- The content edit page exposes all editable metadata: title, URL, author, domains, topics, keywords, publication date, and status. A read-only panel shows source type, chunk count, extraction confidence, and creation date.
+- A **"Process now"** button on the edit page triggers the full ingest pipeline: the stored transcript is chunked, each chunk is embedded and indexed, intelligence metadata is extracted, and the status advances automatically to "pending review." Re-processing a previously processed item replaces all existing chunks.
+
+**News post management**
+- The news posts list shows all posts with title, type (podcast, artifact, article), display date, status, and sort order. Posts can be toggled between draft and published directly from the list, or deleted with a two-step confirmation.
+- The news post editor captures type, title, description (the short text shown in the Journey news card), display date (free text, e.g. "Mar 2026"), status, and sort order.
+
+**Content Sources scaffold**
+A static read-only placeholder page describing a future cron-based monitoring system. No database interaction. The "Add source" button is disabled with a "Coming soon" tooltip.
+
+**Business rules**:
+- All `/admin` routes are server-side guarded — unauthenticated users and non-admins are redirected to the home page before any page renders.
+- The `is_admin` flag must be set directly in the database by an operator; there is no self-serve admin upgrade flow.
+- Content items with status "active" cannot be hard-deleted — the API returns an error. Only "draft" and "archived" items can be deleted.
+- After a successful "Process now" run, status advances to "pending review." The team manually moves items to "active" when ready to include them in matching.
+- The Admin link appears in the navigation dropdown only for users who have the admin flag.
+
+**Status**: Implemented
+
+---
+
+### 3.15 Journey News Feed
+
+**What it does**: Replaces the hardcoded mock news items on the Journey page with live published news posts fetched from the database, so the team can manage what appears in the news section without a code deployment.
+
+**What the user sees**: The "What's New" (NewsCard) section on the Journey page. Previously this showed static placeholder cards baked into the code. Now it shows only news posts that have been published via the Admin UI, ordered by sort order (ascending) and then by creation date (newest first). If no published posts exist, the entire section is hidden.
+
+**Business rules**:
+- Only news posts with status "published" are shown. Draft posts are invisible to end users.
+- The display order is controlled by the sort order field set in the Admin UI — lower numbers appear first.
+- Removing a post from the feed is done by unpublishing it in the Admin UI (no deletion required).
+- The public endpoint that serves the news feed (`/api/journey/news`) returns an empty array silently on error, so a failed database call does not break the Journey page.
+
+**Status**: Implemented
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
 
 | Entity | What it represents | Key information stored | Who can access it |
 |--------|-------------------|----------------------|-------------------|
-| **User Profile** | One record per signed-in user | Email (via the auth system), role, company stage, team size, experience level (all context fields are optional at sign-up and filled in automatically from browser storage), timestamps | The user themselves only |
+| **User Profile** | One record per signed-in user | Email (via the auth system), role, company stage, team size, experience level (all context fields are optional at sign-up and filled in automatically from browser storage), admin flag, timestamps | The user themselves only (admin flag managed by operators) |
 | **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in), lifecycle status (open / in progress / completed / archived / abandoned — defaults to "open"), save state (saved / unsaved), save timestamp, display title (auto-generated on save, user-editable), and the full list of artifact recommendations stored at save time | The user themselves only (or anonymous, stored temporarily in the browser) |
-| **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score | Internal service only (not exposed to end users directly) |
+| **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score; lifecycle status (draft, pending review, active, archived); raw transcript text (stored temporarily for processing) | Internal team via the Admin UI; end users see derived results only |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
 | **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
 | **Saved Artifact** | A record of one artifact saved to a user's personal Artifact Vault | Link to the user, link to the artifact (by slug), and the date it was saved | The user themselves only |
+| **News Post** | A news item published to the Journey page news feed | Type (podcast, artifact, article), title, short description, display date (free text, e.g. "Mar 2026"), status (draft or published), sort order, and timestamps | Internal team via the Admin UI; published posts are visible to all users on the Journey page |
 
 ### Key rules
 
 - User data (profiles, challenges) is access-controlled — each user can only see their own data.
-- Content and content chunks are managed by the internal team only (no user-facing content management).
+- Content and content chunks are managed by the internal team via the Admin UI (`/admin/content`). Command-line scripts remain available for bulk ingestion.
 - A challenge record is always created in the database when the pipeline runs (including for anonymous users). However, only **explicitly saved** challenges appear in the Journey. Unsaved challenge records are invisible to the user and are treated as abandoned.
 - Signed-in users save a challenge by clicking the "Save Challenge" button on the Results page. Guests see a "Create account to save" prompt instead.
 - The knowledge base is pre-seeded by the team; there is no user-generated content in the current version.
@@ -618,6 +670,19 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `GET /api/challenges/[id]/resume` | Return the stored phase-1 fields for a specific challenge so the client can re-enter the recommendations step without re-running phase 1 | **Yes** | Challenge ID (in URL) | Challenge summary, problem statement, desired outcome, domains, raw description |
 | `POST /api/events` | Log a user interaction event for analytics | No | Event name, optional properties (artifact slug, title, etc.) | Empty response (fire-and-forget) |
 | `GET /api/health` | Check that the service and AI provider are running | No | None | Status confirmation |
+| `GET /api/journey/news` | Return all published news posts ordered by sort order (ascending) then creation date (newest first) | No | None | Array of published news post records (type, title, description, display date, sort order) |
+| `GET /api/admin/stats` | Return dashboard headline counts for content items and news posts, broken down by status | **Admin only** | None | Content item counts by status; news post counts by status |
+| `GET /api/admin/content` | Return a paginated, filterable list of all content items | **Admin only** | Optional filters: status, source type, domain, title search (query param `q`) | Paginated list of content items with chunk count |
+| `POST /api/admin/content` | Create a new draft content item | **Admin only** | Source type, URL, optional title, optional transcript text | Newly created content item record |
+| `GET /api/admin/content/[id]` | Return a single content item with its chunk count | **Admin only** | Content ID (in URL) | Full content item record including transcript and chunk count |
+| `PATCH /api/admin/content/[id]` | Update editable metadata fields or status for a content item | **Admin only** | Any subset of: title, URL, author, domains, topics, keywords, publication date, status | Updated content item record |
+| `DELETE /api/admin/content/[id]` | Hard-delete a content item (only allowed for draft or archived items) | **Admin only** | Content ID (in URL) | Success confirmation; 409 error if status is active |
+| `POST /api/admin/content/[id]/process` | Trigger the ingest pipeline on a content item's stored transcript | **Admin only** | Content ID (in URL) | Number of chunks created; status advances to pending review |
+| `GET /api/admin/news` | Return all news posts (all statuses) | **Admin only** | None | Full list of news post records |
+| `POST /api/admin/news` | Create a new news post | **Admin only** | Type, title, description, display date, status, optional sort order | Newly created news post record |
+| `GET /api/admin/news/[id]` | Return a single news post | **Admin only** | News post ID (in URL) | Full news post record |
+| `PATCH /api/admin/news/[id]` | Update a news post | **Admin only** | Any subset of: type, title, description, display date, status, sort order | Updated news post record |
+| `DELETE /api/admin/news/[id]` | Hard-delete a news post | **Admin only** | News post ID (in URL) | Success confirmation |
 
 ### Notes on the challenge endpoints
 
@@ -704,7 +769,6 @@ The following are intentional decisions for the current version. They are not bu
 - **Challenge status is read-only** — users can see the status of each challenge (open, in progress, completed, etc.) but cannot manually change it through the UI in the current version. Status update controls are deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
-- **No admin content management UI** — content is added to the knowledge base via command-line ingestion scripts, not a dashboard.
 - **No analytics dashboard** — user events are logged to the server console. There is no third-party analytics integration or internal dashboard in the current version.
 - **No Q&A or cited-answer format** — the product returns curated artifact recommendations, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
 - **No audience-targeting metadata** — artifacts and content items are not tagged by target role, company stage, or experience level. Domain overlap is the only structured signal in the matching score.
@@ -731,7 +795,6 @@ The following are intentional decisions for the current version. They are not bu
 | Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
 | Analytics pipeline | Integrate server events with a third-party analytics tool (e.g. Segment, PostHog). Enable funnel analysis, recommendation quality tracking, and content performance reporting. | Planned (post-MVP) |
-| Content management UI | Allow internal team members to add, edit, tag, and retire content items via a web interface rather than the CLI. | Planned (post-MVP) |
 
 ---
 
@@ -739,6 +802,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-08 | 4.0 | Epic 16 | Added Admin UI: a protected web interface at `/admin` for internal content and news management. Admins can create, edit, process, and delete content items; publish and manage news posts; and view a dashboard of knowledge base stats. The Journey page news feed is now live-fetched from the database (published posts only) rather than hardcoded. Added 13 new API endpoints (9 admin-only, 1 public). Updated Data Model to add News Post entity and admin flag on User Profile, and content lifecycle status on Content Item. Removed "No admin content management UI" from Known Limitations and "Content management UI" from Future Epics. |
 | 2026-03-07 | 3.2 | Epic 15 | Added Artifact Vault: users can save artifacts from the detail page ("Add to Artifact Vault" / "Saved to Vault" toggle) and browse their full personal collection in a new "My Artifacts Vault" tab on the Journey page. The "Saved Artifacts" stat card on Journey now shows the real count. Added three new API endpoints for save/unsave/check. Removed "No Save to Playbook" from Known Limitations and from Future Epics. Updated Data Model and API Reference accordingly. |
 | 2026-03-06 | 3.1 | — | Improved artifact knowledge card retrieval to use both vector similarity and keyword search in parallel. Vector matches are ranked first; keyword-only matches are appended, ensuring content that explicitly names the artifact is never missed. |
 | 2026-03-06 | 3.0 | Epic 14 | Added explicit save flow: results now appear on a dedicated `/results` page outside the flow stepper; signed-in users save with a "Save Challenge" button, guests see a "Create account to save" prompt. Saved challenges appear on a permanent `/challenges/[id]` page with stored recommendations (no AI re-run), inline title rename, and a Rerun button that prefills the flow. Journey now shows only saved challenges and links each row to the saved challenge page. Context step gains a Skip button for signed-in users. |
