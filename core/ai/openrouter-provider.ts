@@ -60,9 +60,17 @@ export function createOpenRouterIngestProvider(apiKey?: string): AIProvider {
         model: embeddingModel,
         input: text,
       });
-      const embedding = res.data[0]?.embedding;
+      const embedding = res.data?.[0]?.embedding;
       if (!embedding) {
-        throw new Error("OpenRouter returned empty embedding");
+        console.error(
+          "[OpenRouter] Empty embedding response — model:",
+          embeddingModel,
+          "| data length:",
+          res.data?.length ?? "undefined",
+          "| response keys:",
+          Object.keys(res as object)
+        );
+        throw new Error(`OpenRouter returned empty embedding (model: ${embeddingModel})`);
       }
       return embedding;
     },
@@ -115,9 +123,17 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
         model: embeddingModel,
         input: text,
       });
-      const embedding = res.data[0]?.embedding;
+      const embedding = res.data?.[0]?.embedding;
       if (!embedding) {
-        throw new Error("OpenRouter returned empty embedding");
+        console.error(
+          "[OpenRouter] Empty embedding response — model:",
+          embeddingModel,
+          "| data length:",
+          res.data?.length ?? "undefined",
+          "| response keys:",
+          Object.keys(res as object)
+        );
+        throw new Error(`OpenRouter returned empty embedding (model: ${embeddingModel})`);
       }
       return embedding;
     },

@@ -148,7 +148,12 @@ export async function processContentById(
     createdChunks.push(chunk);
   }
 
-  // Extract intelligence (non-fatal)
+  // Extract intelligence (non-fatal).
+  // Skip document-level fields if already populated by the transcript-job pipeline
+  // (extraction_confidence > 0 means the background job already ran a higher-quality
+  // extraction with the ingest model). Always update chunk-level metadata because
+  // chunks were just (re-)created and need fresh chunk_type / key_concepts.
+  const alreadyExtracted = (content.extraction_confidence ?? 0) > 0;
   try {
     const intel = await extractContentIntelligence(
       ai,
@@ -156,14 +161,16 @@ export async function processContentById(
       chunks,
       content.source_type
     );
-    await contentRepo.updateContentIntelligence(supabase, contentId, {
-      topics: intel.topics,
-      keywords: intel.keywords,
-      author: intel.author,
-      publication_date: intel.publication_date,
-      language: intel.language,
-      extraction_confidence: intel.extraction_confidence,
-    });
+    if (!alreadyExtracted) {
+      await contentRepo.updateContentIntelligence(supabase, contentId, {
+        topics: intel.topics,
+        keywords: intel.keywords,
+        author: intel.author,
+        publication_date: intel.publication_date,
+        language: intel.language,
+        extraction_confidence: intel.extraction_confidence,
+      });
+    }
     for (let i = 0; i < createdChunks.length; i++) {
       const chunkIntel = intel.chunks[i];
       if (chunkIntel) {
