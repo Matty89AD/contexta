@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Content, ContentStatus, ContentSourceType, ChallengeDomain } from "@/lib/db/types";
 import { CONTENT_STATUSES, CONTENT_SOURCE_TYPES, CHALLENGE_DOMAINS } from "@/lib/db/types";
+import AddFromUrlModal from "@/components/admin/AddFromUrlModal";
 
 const STATUS_LABELS: Record<ContentStatus, string> = {
   draft: "Draft",
@@ -30,6 +31,7 @@ export default function AdminContentList() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showAddFromUrl, setShowAddFromUrl] = useState(false);
 
   const fetchContent = async () => {
     setLoading(true);
@@ -95,12 +97,20 @@ export default function AdminContentList() {
             {total} items total
           </p>
         </div>
-        <Link
-          href="/admin/content/new"
-          className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
-        >
-          + Add content
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddFromUrl(true)}
+            className="px-4 py-2 rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-sm font-medium transition-colors"
+          >
+            + Add from URL
+          </button>
+          <Link
+            href="/admin/content/new"
+            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
+          >
+            + Add content
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -276,6 +286,16 @@ export default function AdminContentList() {
             </button>
           </div>
         </div>
+      )}
+
+      {showAddFromUrl && (
+        <AddFromUrlModal
+          onClose={() => setShowAddFromUrl(false)}
+          onJobStarted={() => {
+            setShowAddFromUrl(false);
+            // List will update when NotificationBell receives Realtime event
+          }}
+        />
       )}
     </div>
   );

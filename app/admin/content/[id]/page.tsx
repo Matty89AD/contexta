@@ -185,11 +185,31 @@ export default function AdminContentEdit() {
         />
       </div>
 
-      {/* Process now */}
+      {/* Draft-from-URL banner */}
+      {content.status === "draft" && content.transcript_raw && (
+        <div className="mb-4 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <span className="text-blue-500 text-lg leading-none">🔗</span>
+          <div>
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              Generated from URL — review transcript and metadata before ingesting
+            </p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+              All fields are pre-filled. Use &ldquo;Run Ingestion&rdquo; below to generate
+              embeddings and make this content searchable.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Run Ingestion / Process now */}
       <div className="mb-6 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Process now</p>
+            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+              {content.status === "draft" && content.transcript_raw
+                ? "Run Ingestion"
+                : "Process now"}
+            </p>
             <p className="text-xs text-zinc-400 mt-0.5">
               Chunk transcript → generate embeddings → extract intelligence
             </p>
@@ -199,7 +219,11 @@ export default function AdminContentEdit() {
             disabled={processing}
             className="shrink-0 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
           >
-            {processing ? "Processing…" : "Process now"}
+            {processing
+              ? "Processing…"
+              : content.status === "draft" && content.transcript_raw
+              ? "Run Ingestion"
+              : "Process now"}
           </button>
         </div>
         {processMsg && (
@@ -214,6 +238,26 @@ export default function AdminContentEdit() {
           </p>
         )}
       </div>
+
+      {/* Read-only transcript preview (from URL import) */}
+      {content.transcript_raw && (
+        <div className="mb-6 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+            Transcript (read-only)
+          </p>
+          <div className="max-h-64 overflow-y-auto rounded-lg bg-zinc-50 dark:bg-zinc-800 px-3 py-2">
+            <pre className="text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap font-mono">
+              {content.transcript_raw.slice(0, 5000)}
+              {content.transcript_raw.length > 5000 && (
+                <span className="text-zinc-400">
+                  {"\n\n… "}
+                  {content.transcript_raw.length - 5000} more characters
+                </span>
+              )}
+            </pre>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="space-y-5">
         <div>

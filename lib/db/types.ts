@@ -238,6 +238,41 @@ export interface ArtifactRecommendation {
   isMostRelevant: boolean;
 }
 
+/** Epic 17 — Auto-Generate Transcript from URL */
+export const TRANSCRIPT_JOB_URL_TYPES = [
+  "youtube",
+  "podcast_rss",
+  "podcast_episode",
+  "webpage",
+] as const;
+export type TranscriptJobUrlType = (typeof TRANSCRIPT_JOB_URL_TYPES)[number];
+
+export const TRANSCRIPT_JOB_STATUSES = [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+] as const;
+export type TranscriptJobStatus = (typeof TRANSCRIPT_JOB_STATUSES)[number];
+
+export interface TranscriptJob {
+  id: string;
+  created_by: string;
+  url: string;
+  url_type: TranscriptJobUrlType;
+  status: TranscriptJobStatus;
+  error_message: string | null;
+  content_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TranscriptJobInsert {
+  created_by: string;
+  url: string;
+  url_type: TranscriptJobUrlType;
+}
+
 /** Epic 15 — Artifact Vault */
 export interface SavedArtifact {
   slug: string;

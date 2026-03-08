@@ -46,6 +46,28 @@ test.describe("Admin API routes — unauthenticated access", () => {
     const res = await request.get("/api/admin/news");
     expect(res.status()).toBe(401);
   });
+
+  test("GET /api/admin/transcript-jobs returns 401", async ({ request }) => {
+    const res = await request.get("/api/admin/transcript-jobs");
+    expect(res.status()).toBe(401);
+  });
+
+  test("POST /api/admin/transcript-jobs returns 401", async ({ request }) => {
+    const res = await request.post("/api/admin/transcript-jobs", {
+      data: { url: "https://example.com" },
+    });
+    expect(res.status()).toBe(401);
+  });
+
+  test("GET /api/admin/transcript-jobs/nonexistent returns 401", async ({ request }) => {
+    const res = await request.get("/api/admin/transcript-jobs/some-id");
+    expect(res.status()).toBe(401);
+  });
+
+  test("GET /api/admin/rss-feed returns 401", async ({ request }) => {
+    const res = await request.get("/api/admin/rss-feed?url=https://example.com/feed");
+    expect(res.status()).toBe(401);
+  });
 });
 
 test.describe("Public journey/news endpoint", () => {
