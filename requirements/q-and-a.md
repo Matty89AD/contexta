@@ -357,3 +357,106 @@ b
 
 **A31.**
 a
+
+---
+
+## Epic 19 — Auto Artifact Detection + News Proposal Pipeline (open questions)
+
+*Please answer below each question. Only append your answers; do not remove the questions.*
+
+---
+
+### Artifact auto-detection
+
+**Q32.** How should the system determine whether a detected artifact is "new"? Options:
+- (a) Exact title/slug match against the existing `artifacts` table (fast, can miss near-duplicates)
+- (b) LLM receives the full list of existing artifact titles and decides whether the detected artifact is meaningfully different (fuzzy deduplication)
+- (c) LLM flags candidates; admin resolves conflicts manually in the review UI
+
+**A32.**
+c - If possible duplicates are detected the series can already mention them
+---
+
+**Q33.** At which point in the pipeline should artifact detection run?
+- (a) During the background transcript job (Epic 17 flow) — after metadata extraction, before chunk/embedding generation; detected artifacts are attached to the transcript job result
+- (b) During "Run Ingestion" (after chunks/embeddings are generated) — detection uses actual chunk content for higher accuracy
+- (c) As a separate explicit "Detect artifacts" button on the content edit page — admin triggers it manually after reviewing the transcript
+
+**A33.**
+b or c - what makes more sense?
+---
+
+**Q34.** How much should the LLM auto-populate for a detected artifact?
+- (a) Minimal: `title` + `slug` + `domains` only — admin fills `use_case` and other fields before activating
+- (b) Full: `title`, `slug`, `domains`, `use_case` (1–2 sentence description of what the artifact is and when to use it) — admin just reviews and activates
+- (c) Full, plus an auto-generated description and how-to steps — admin reviews a richer draft
+
+**A34.**
+c
+---
+
+**Q35.** Should the artifact status workflow mirror the content 4-state flow (`draft → pending_review → active → archived`) or use a simpler 2-state model (`draft → active`)?
+
+**A35.**
+is there is a use case to differentiate between draft and pending_review, then full
+---
+
+**Q36.** Should artifact management get its own admin section (`/admin/artifacts` with a list, edit, publish/archive UI), or is the review/activation handled solely through the notification flow with no dedicated CRUD list page?
+
+**A36.**
+own section, so it is easier to find duplicats.
+---
+
+**Q37.** Should detected-artifact notifications use the existing bell icon system from Epic 17 (transcript jobs), or a new distinct notification channel/type?
+
+**A37.**
+same
+---
+
+### News article proposal flow
+
+**Q38.** When should a news article proposal be auto-generated?
+- (a) Automatically, server-side, the moment a content piece or artifact's status transitions to `active` (inside the PATCH handler)
+- (b) Via an explicit "Generate news proposal" button on the content or artifact edit page — admin triggers it when they're ready
+- (c) Automatically, but only when the admin explicitly activates the item via a dedicated "Activate + generate proposal" action (combined CTA)
+
+**A38.**
+a
+---
+
+**Q39.** Should every activation trigger a new proposal, or only the first-ever activation of a given item (i.e., skip if the item was previously active, archived, and then re-activated)?
+
+**A39.**
+new proposal
+---
+
+**Q40.** Where should generated news proposals appear in the admin?
+- (a) Directly in the existing `/admin/news` list with `status = 'draft'` and an "AI draft" badge — no separate inbox
+- (b) A new `/admin/news/proposals` queue that separates AI-generated drafts from manually created posts; admin promotes or discards from there
+- (c) A dedicated "Proposals" tab within the existing `/admin/news` page
+
+**A40.**
+a
+---
+
+**Q41.** Should the LLM pre-fill all `news_posts` fields (type, title, description, published_date)? And should the admin be able to edit the proposal before publishing, or is a one-click "Publish as-is" flow sufficient for MVP?
+
+**A41.**
+pre-fill + admin can edit it
+
+---
+
+## Resolved decisions (Epic 19)
+
+| # | Topic | Decision |
+|---|--------|----------|
+| Q32 | Artifact deduplication | LLM flags candidates; admin resolves conflicts in review UI. Near-duplicates get a `possible_duplicate_of` field + warning banner. |
+| Q33 | Detection trigger | (b) Automatic during "Run Ingestion" — detection uses chunk content for accuracy. "Re-detect" button also exposed on content edit page. |
+| Q34 | LLM auto-populate depth | (c) Full: title, slug, domains, use_case + description + how-to intro + how-to steps stored in `detail` JSONB. |
+| Q35 | Artifact status workflow | 4-state: `draft → pending_review → active → archived`. `draft` = AI-generated/unreviewed; `pending_review` = admin edited but not final. |
+| Q36 | Artifact admin UI | New `/admin/artifacts` section with list, edit, status management. |
+| Q37 | Notification channel | Extend existing bell icon (Epic 17) via new `admin_notifications` table + Supabase Realtime. |
+| Q38 | News proposal trigger | (a) Auto server-side when `status → active` in the PATCH handler for content and artifacts. |
+| Q39 | Repeat proposals | New proposal on every activation (including re-activations). |
+| Q40 | Proposals location | In existing `/admin/news` list with `status = 'draft'` and "AI draft" badge. |
+| Q41 | Proposal fields | LLM pre-fills all fields (type, title, description, published_date); admin can edit before publishing. |
