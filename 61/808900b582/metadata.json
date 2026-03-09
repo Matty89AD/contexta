@@ -1,0 +1,20 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "61808900b582",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".cursor/skills/code-review/SKILL.md",
+    "playwright-report/index.html"
+  ],
+  "sessions": [
+    {
+      "metadata": "/61/808900b582/0/metadata.json",
+      "transcript": "/61/808900b582/0/full.jsonl",
+      "context": "/61/808900b582/0/context.md",
+      "content_hash": "/61/808900b582/0/content_hash.txt",
+      "prompt": "/61/808900b582/0/prompt.txt"
+    }
+  ]
+}

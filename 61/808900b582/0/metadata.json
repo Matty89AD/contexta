@@ -1,0 +1,24 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "61808900b582",
+  "session_id": "158d1a27-686e-4ca2-9568-b3c64bdb3580",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-09T12:41:56.436117Z",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".cursor/skills/code-review/SKILL.md",
+    "playwright-report/index.html"
+  ],
+  "agent": "Cursor",
+  "turn_id": "4240a81ac99b",
+  "initial_attribution": {
+    "calculated_at": "2026-03-09T12:41:56.418593Z",
+    "agent_lines": 90,
+    "human_added": 607,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 698,
+    "agent_percentage": 12.893982808022923
+  }
+}
