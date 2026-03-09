@@ -1,0 +1,13 @@
+please check the code for constants directly in page.tsx files and move them to the @lib/constants.ts with clear commenting where they are get used.
+
+---
+
+why did you introduce @lib/constants-home.ts and why not only @lib/constants.ts ?
+
+---
+
+in @app/artifacts/[slug]/page.tsx are also const define like STATUS_LABELS. Is it better to leave them there in stead of having all const value (not stylings) in the global constant file?
+
+---
+
+ok, then the change you made before, was it useful or would a undo make more sense?
