@@ -54,6 +54,23 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* Artifacts stats */}
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3">
+          Artifacts
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <StatCard label="Total" value={stats?.artifacts.total} className="col-span-1" />
+          {(["draft", "pending_review", "active", "archived"] as const).map((s) => (
+            <StatCard
+              key={s}
+              label={STATUS_LABELS[s]}
+              value={stats?.artifacts.by_status[s]}
+            />
+          ))}
+        </div>
+      </section>
+
       {/* News stats */}
       <section className="mb-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3">
@@ -71,6 +88,18 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* Notifications */}
+      {stats?.unread_notifications != null && stats.unread_notifications > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl">
+            <span className="text-indigo-500 text-lg">🔔</span>
+            <p className="text-sm text-indigo-700 dark:text-indigo-300">
+              {stats.unread_notifications} unread notification{stats.unread_notifications !== 1 ? "s" : ""} — check the bell icon above.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Quick actions */}
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-3">
@@ -82,6 +111,12 @@ export default function AdminDashboard() {
             className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
           >
             + Add content
+          </Link>
+          <Link
+            href="/admin/artifacts/new"
+            className="px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium transition-colors"
+          >
+            + New artifact
           </Link>
           <Link
             href="/admin/news/new"

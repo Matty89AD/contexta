@@ -11,6 +11,7 @@ import type {
   NewsPost,
   NewsPostType,
   NewsPostStatus,
+  ArtifactStatus,
 } from "@/lib/db/types";
 
 // ---------------------------------------------------------------------------
@@ -20,16 +21,21 @@ import type {
 export interface AdminStats {
   content: { total: number; by_status: Record<ContentStatus, number> };
   news: { total: number; by_status: Record<NewsPostStatus, number> };
+  artifacts: { total: number; by_status: Record<ArtifactStatus, number> };
+  unread_notifications: number;
 }
 
 export async function getStats(supabase: SupabaseClient): Promise<AdminStats> {
-  const [contentRows, newsRows] = await Promise.all([
+  const [contentRows, newsRows, artifactRows, notifRows] = await Promise.all([
     supabase.from("content").select("status"),
     supabase.from("news_posts").select("status"),
+    supabase.from("artifacts").select("status"),
+    supabase.from("admin_notifications").select("id", { count: "exact", head: true }).eq("is_read", false),
   ]);
 
   const contentStatuses = (contentRows.data ?? []) as { status: ContentStatus }[];
   const newsStatuses = (newsRows.data ?? []) as { status: NewsPostStatus }[];
+  const artifactStatuses = (artifactRows.data ?? []) as { status: ArtifactStatus }[];
 
   const contentByStatus: Record<ContentStatus, number> = {
     draft: 0,
@@ -46,9 +52,21 @@ export async function getStats(supabase: SupabaseClient): Promise<AdminStats> {
     newsByStatus[row.status] = (newsByStatus[row.status] ?? 0) + 1;
   }
 
+  const artifactByStatus: Record<ArtifactStatus, number> = {
+    draft: 0,
+    pending_review: 0,
+    active: 0,
+    archived: 0,
+  };
+  for (const row of artifactStatuses) {
+    artifactByStatus[row.status] = (artifactByStatus[row.status] ?? 0) + 1;
+  }
+
   return {
     content: { total: contentStatuses.length, by_status: contentByStatus },
     news: { total: newsStatuses.length, by_status: newsByStatus },
+    artifacts: { total: artifactStatuses.length, by_status: artifactByStatus },
+    unread_notifications: notifRows.count ?? 0,
   };
 }
 
@@ -232,6 +250,10 @@ export interface NewsPostCreate {
   published_date: string;
   status?: NewsPostStatus;
   sort_order?: number;
+  /** Epic 19 — AI-generated proposal fields. */
+  is_ai_generated?: boolean;
+  source_type?: "content" | "artifact" | null;
+  source_id?: string | null;
 }
 
 export async function createNews(
@@ -247,6 +269,9 @@ export async function createNews(
       published_date: input.published_date,
       status: input.status ?? "draft",
       sort_order: input.sort_order ?? 0,
+      is_ai_generated: input.is_ai_generated ?? false,
+      source_type: input.source_type ?? null,
+      source_id: input.source_id ?? null,
     })
     .select()
     .single();

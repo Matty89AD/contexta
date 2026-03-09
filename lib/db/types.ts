@@ -215,9 +215,19 @@ export interface NewsPost {
   published_date: string;
   status: NewsPostStatus;
   sort_order: number;
+  /** Epic 19 — true if created by news proposal LLM. */
+  is_ai_generated: boolean;
+  /** Epic 19 — 'content' | 'artifact' | null. */
+  source_type: 'content' | 'artifact' | null;
+  /** Epic 19 — source item id. */
+  source_id: string | null;
   created_at: string;
   updated_at: string;
 }
+
+/** Epic 19 — Artifact status workflow. */
+export const ARTIFACT_STATUSES = ['draft', 'pending_review', 'active', 'archived'] as const;
+export type ArtifactStatus = (typeof ARTIFACT_STATUSES)[number];
 
 /** Epic 10 — Artifact-Optimized Recommendations */
 export interface Artifact {
@@ -228,6 +238,14 @@ export interface Artifact {
   use_case: string;
   /** Pre-generated LLM detail (Epic 11). Null if not yet generated. */
   detail?: unknown;
+  /** Epic 19 — Status workflow. Default 'active' for seeded artifacts. */
+  status: ArtifactStatus;
+  /** Epic 19 — true if created by artifact detection LLM. */
+  is_ai_generated: boolean;
+  /** Epic 19 — content item that triggered detection. */
+  source_content_id: string | null;
+  /** Epic 19 — slug of possibly-duplicate existing artifact. */
+  possible_duplicate_of: string | null;
   created_at: string;
 }
 
@@ -292,4 +310,18 @@ export interface SavedArtifact {
   domains: string[];
   use_case: string;
   saved_at: string;
+}
+
+/** Epic 19 — Admin notification types. */
+export const ADMIN_NOTIFICATION_TYPES = ['artifact_detected', 'news_proposal_generated'] as const;
+export type AdminNotificationType = (typeof ADMIN_NOTIFICATION_TYPES)[number];
+
+export interface AdminNotification {
+  id: string;
+  type: AdminNotificationType;
+  title: string;
+  body: string | null;
+  link_url: string | null;
+  is_read: boolean;
+  created_at: string;
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import type { TranscriptJob, TranscriptJobStatus } from "@/lib/db/types";
+import type { TranscriptJob, TranscriptJobStatus, AdminNotification } from "@/lib/db/types";
 
 const STATUS_LABELS: Record<TranscriptJobStatus, string> = {
   pending: "Queued",
@@ -22,19 +22,20 @@ const STATUS_COLORS: Record<TranscriptJobStatus, string> = {
 interface Toast {
   id: number;
   message: string;
-  type: "success" | "error";
+  type: "success" | "error" | "info";
   href?: string;
 }
 
 export default function NotificationBell({ userId }: { userId: string }) {
   const [jobs, setJobs] = useState<TranscriptJob[]>([]);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastCounter = useRef(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const addToast = useCallback(
-    (message: string, type: "success" | "error", href?: string) => {
+    (message: string, type: "success" | "error" | "info", href?: string) => {
       const id = ++toastCounter.current;
       setToasts((prev) => [...prev, { id, message, type, href }]);
       setTimeout(() => {
@@ -55,11 +56,32 @@ export default function NotificationBell({ userId }: { userId: string }) {
     }
   }, []);
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/notifications");
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {
+      // silently ignore
+    }
+  }, []);
+
   useEffect(() => {
     fetchJobs();
-  }, [fetchJobs]);
+    fetchNotifications();
+  }, [fetchJobs, fetchNotifications]);
 
-  // Supabase Realtime subscription
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch("/api/admin/notifications", { method: "PATCH" });
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {
+      // silently ignore
+    }
+  };
+
+  // Supabase Realtime — transcript jobs
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -89,7 +111,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
             addToast(`Transcript failed for ${short}`, "error");
           }
 
-          // Refresh full list
           fetchJobs();
         }
       )
@@ -99,6 +120,36 @@ export default function NotificationBell({ userId }: { userId: string }) {
       void supabase.removeChannel(channel);
     };
   }, [userId, addToast, fetchJobs]);
+
+  // Supabase Realtime — admin_notifications
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin_notifications_" + userId)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "admin_notifications",
+        },
+        (payload) => {
+          const newNotif = payload.new as AdminNotification;
+          setNotifications((prev) => [newNotif, ...prev]);
+
+          if (newNotif.type === "artifact_detected") {
+            addToast(newNotif.title, "info", newNotif.link_url ?? undefined);
+          } else if (newNotif.type === "news_proposal_generated") {
+            addToast(newNotif.title, "info", newNotif.link_url ?? undefined);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, addToast]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -111,9 +162,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  const activeCount = jobs.filter(
+  const activeJobCount = jobs.filter(
     (j) => j.status === "pending" || j.status === "processing"
   ).length;
+  const unreadNotifCount = notifications.filter((n) => !n.is_read).length;
+  const totalBadge = activeJobCount + unreadNotifCount;
+
+  const hasItems = jobs.length > 0 || notifications.length > 0;
 
   return (
     <>
@@ -122,29 +177,67 @@ export default function NotificationBell({ userId }: { userId: string }) {
         <button
           onClick={() => setOpen((v) => !v)}
           className="relative p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          aria-label="Transcript job notifications"
+          aria-label="Notifications"
         >
           <BellIcon />
-          {activeCount > 0 && (
+          {totalBadge > 0 && (
             <span className="absolute top-1 right-1 min-w-[16px] h-4 flex items-center justify-center bg-indigo-600 text-white text-[10px] font-bold rounded-full px-0.5">
-              {activeCount}
+              {totalBadge}
             </span>
           )}
         </button>
 
         {open && (
           <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
               <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Transcript Jobs
+                Notifications
               </p>
+              {unreadNotifCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Mark all read
+                </button>
+              )}
             </div>
-            {jobs.length === 0 ? (
+
+            {!hasItems ? (
               <div className="px-4 py-6 text-center text-xs text-zinc-400">
-                No recent jobs
+                No recent notifications
               </div>
             ) : (
-              <ul className="max-h-72 overflow-y-auto divide-y divide-zinc-50 dark:divide-zinc-800">
+              <ul className="max-h-80 overflow-y-auto divide-y divide-zinc-50 dark:divide-zinc-800">
+                {/* Admin notifications (newest first) */}
+                {notifications.slice(0, 20).map((notif) => (
+                  <li
+                    key={notif.id}
+                    className={`px-4 py-3 ${!notif.is_read ? "bg-indigo-50/40 dark:bg-indigo-950/20" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 line-clamp-2">
+                          {notif.title}
+                        </p>
+                        <p className="text-[10px] text-zinc-400 mt-0.5">
+                          {new Date(notif.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      {notif.link_url && (
+                        <Link
+                          href={notif.link_url}
+                          className="shrink-0 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                          onClick={() => setOpen(false)}
+                        >
+                          View →
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                ))}
+
+                {/* Transcript jobs */}
                 {jobs.map((job) => (
                   <li key={job.id} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-2">
@@ -190,7 +283,9 @@ export default function NotificationBell({ userId }: { userId: string }) {
             className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
               toast.type === "success"
                 ? "bg-green-600 text-white"
-                : "bg-red-600 text-white"
+                : toast.type === "error"
+                ? "bg-red-600 text-white"
+                : "bg-indigo-600 text-white"
             }`}
           >
             <span>{toast.message}</span>

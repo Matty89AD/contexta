@@ -101,9 +101,16 @@ export default function AdminNewsList() {
                   className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
                 >
                   <td className="px-4 py-3">
-                    <span className="font-medium text-zinc-800 dark:text-zinc-200 line-clamp-1">
-                      {post.title}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-zinc-800 dark:text-zinc-200 line-clamp-1">
+                        {post.title}
+                      </span>
+                      {post.is_ai_generated && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 font-medium shrink-0">
+                          AI draft
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell text-zinc-500 dark:text-zinc-400">
                     {post.type}

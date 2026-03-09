@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient, getServiceRoleClient } from "@/lib/supabase/server";
-import * as adminRepo from "@/repositories/admin";
+import {
+  getArtifactById,
+  updateArtifact,
+  deleteArtifact,
+} from "@/repositories/artifacts";
 import { generateNewsProposal } from "@/services/news-proposal";
 import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
 import { UnauthorizedError, ForbiddenError, NotFoundError, AppError } from "@/core/errors";
@@ -30,9 +34,9 @@ export async function GET(
     await requireAdmin();
     const { id } = await params;
     const serviceClient = getServiceRoleClient();
-    const content = await adminRepo.getContentById(serviceClient, id);
-    if (!content) throw new NotFoundError(`Content ${id} not found`);
-    return NextResponse.json(content);
+    const artifact = await getArtifactById(serviceClient, id);
+    if (!artifact) throw new NotFoundError(`Artifact ${id} not found`);
+    return NextResponse.json(artifact);
   } catch (e) {
     if (e instanceof AppError) {
       return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -50,31 +54,36 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const serviceClient = getServiceRoleClient();
-    const content = await adminRepo.updateContent(serviceClient, id, body);
 
-    // Epic 19: trigger news proposal whenever status transitions to active
+    // Get current artifact to detect status transition
+    const current = await getArtifactById(serviceClient, id);
+    if (!current) throw new NotFoundError(`Artifact ${id} not found`);
+
+    const updated = await updateArtifact(serviceClient, id, body);
+
+    // Trigger news proposal whenever status transitions to active (per spec Q39: every activation)
     if (body.status === "active") {
       try {
         const ai = createOpenRouterProvider();
         await generateNewsProposal(
           {
-            type: "content",
+            type: "artifact",
             id,
-            title: content.title,
-            author: content.author,
-            source_type: content.source_type,
-            domains: content.domains,
+            title: updated.title,
+            domains: updated.domains,
+            use_case: updated.use_case,
+            description: (updated.detail as Record<string, unknown> | null)?.description as string | undefined,
           },
           ai,
           serviceClient
         );
       } catch (e) {
         // Non-fatal
-        console.error("[news-proposal] failed for content", id, e);
+        console.error("[news-proposal] failed for artifact", id, e);
       }
     }
 
-    return NextResponse.json(content);
+    return NextResponse.json(updated);
   } catch (e) {
     if (e instanceof AppError) {
       return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -91,13 +100,12 @@ export async function DELETE(
     await requireAdmin();
     const { id } = await params;
     const serviceClient = getServiceRoleClient();
-    await adminRepo.deleteContent(serviceClient, id);
+    await deleteArtifact(serviceClient, id);
     return NextResponse.json({ success: true });
   } catch (e) {
     if (e instanceof AppError) {
       return NextResponse.json({ error: e.message }, { status: e.statusCode });
     }
-    // Guard error from repository (non-AppError)
     if (e instanceof Error && e.message.includes("Cannot delete")) {
       return NextResponse.json({ error: e.message }, { status: 409 });
     }

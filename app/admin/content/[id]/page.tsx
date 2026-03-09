@@ -36,6 +36,8 @@ export default function AdminContentEdit() {
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | null>(null);
+  const [detecting, setDetecting] = useState(false);
+  const [detectMsg, setDetectMsg] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [isFromUrl, setIsFromUrl] = useState(false);
 
@@ -136,6 +138,26 @@ export default function AdminContentEdit() {
       setProcessMsg(e instanceof Error ? e.message : "Processing failed");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleDetect = async () => {
+    if (detecting) return;
+    if (content?.chunk_count === 0) {
+      setDetectMsg("No chunks yet — run ingestion first.");
+      return;
+    }
+    setDetecting(true);
+    setDetectMsg(null);
+    try {
+      const res = await fetch(`/api/admin/artifacts/${id}/detect`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Detection failed");
+      setDetectMsg(`Done — ${data.count} new artifact${data.count !== 1 ? "s" : ""} detected.`);
+    } catch (e) {
+      setDetectMsg(e instanceof Error ? e.message : "Detection failed");
+    } finally {
+      setDetecting(false);
     }
   };
 
@@ -252,6 +274,46 @@ export default function AdminContentEdit() {
           </p>
         )}
       </div>
+
+      {/* Re-detect artifacts */}
+      {content.chunk_count > 0 && (
+        <div className="mb-6 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                Re-detect artifacts
+              </p>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Scan chunks for PM frameworks not yet in the knowledge base
+              </p>
+            </div>
+            <button
+              onClick={handleDetect}
+              disabled={detecting}
+              className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+            >
+              {detecting && (
+                <svg className="animate-spin h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              )}
+              {detecting ? "Detecting…" : "Re-detect"}
+            </button>
+          </div>
+          {detectMsg && !detecting && (
+            <p
+              className={`text-xs mt-3 ${
+                detectMsg.startsWith("Done")
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {detectMsg}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Read-only transcript preview (from URL import) */}
       {content.transcript_raw && (

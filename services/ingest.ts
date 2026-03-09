@@ -5,6 +5,7 @@ import type { ContentChunk, ContentInsert, ContentSourceType } from "@/lib/db/ty
 import { ChallengeDomain } from "@/lib/db/types";
 import { extractContentIntelligence } from "@/services/content-intelligence";
 import { generateContentSummary } from "@/services/content-summary";
+import { detectArtifactsFromContent } from "@/services/artifact-detection";
 import { chunkTranscript } from "@/core/utils/chunking";
 import { NotFoundError, ValidationError } from "@/core/errors";
 import { logger } from "@/core/logger";
@@ -232,6 +233,14 @@ export async function processContentById(
     .update({ status: "pending_review" })
     .eq("id", contentId);
   if (error) throw error;
+
+  // Epic 19: detect artifacts from content (non-fatal)
+  try {
+    const detected = await detectArtifactsFromContent(contentId, ai, supabase);
+    logger.info("Artifact detection complete", { contentId, count: detected.count });
+  } catch (e) {
+    logger.error("[artifact-detection] failed for content", { contentId, error: e });
+  }
 
   logger.info("Processed content", { contentId, chunk_count: createdChunks.length });
   return { chunk_count: createdChunks.length };
