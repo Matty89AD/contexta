@@ -21,8 +21,7 @@ import type { ChallengeDomain } from "../lib/db/types";
 // ---------------------------------------------------------------------------
 // Domain assignments — derived from challenge ground truth and speaker focus
 // ---------------------------------------------------------------------------
-// Format: normalised title → [primary, ...additional]
-// primary_domain = first entry; domains array = all entries.
+// Format: normalised title → domains[]
 
 const DOMAIN_MAP: Record<string, ChallengeDomain[]> = {
   "ada chen rekhi":                              ["discovery", "leadership"],
@@ -64,7 +63,7 @@ async function main() {
 
   const { data, error } = await supabase
     .from("content")
-    .select("id, title, primary_domain, domains")
+    .select("id, title, domains")
     .order("title");
 
   if (error) {
@@ -89,10 +88,7 @@ async function main() {
       continue;
     }
 
-    const alreadySet =
-      row.primary_domain != null &&
-      Array.isArray(row.domains) &&
-      row.domains.length > 0;
+    const alreadySet = Array.isArray(row.domains) && row.domains.length > 0;
 
     if (alreadySet && !force) {
       console.log(`  ~ SKIP     "${row.title}" — already has domains (use --force to overwrite)`);
@@ -102,10 +98,7 @@ async function main() {
 
     const { error: updateError } = await supabase
       .from("content")
-      .update({
-        primary_domain: domains[0],
-        domains: domains,
-      })
+      .update({ domains })
       .eq("id", row.id);
 
     if (updateError) {

@@ -17,7 +17,6 @@ export async function createContent(
       source_type: input.source_type,
       title: input.title,
       url: input.url ?? null,
-      primary_domain: input.primary_domain ?? null,
       domains: input.domains ?? [],
     })
     .select()

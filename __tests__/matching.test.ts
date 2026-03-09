@@ -9,40 +9,26 @@ import { hasDomainOverlap } from "@/services/matching";
 
 describe("hasDomainOverlap", () => {
   it("returns true when challenge domain is in content domains", () => {
-    expect(
-      hasDomainOverlap(["strategy"], ["strategy", "leadership"], null)
-    ).toBe(true);
+    expect(hasDomainOverlap(["strategy"], ["strategy", "leadership"])).toBe(true);
   });
 
   it("returns true when one of multiple challenge domains matches", () => {
     expect(
-      hasDomainOverlap(
-        ["delivery", "growth"],
-        ["growth", "discovery"],
-        null
-      )
+      hasDomainOverlap(["delivery", "growth"], ["growth", "discovery"])
     ).toBe(true);
   });
 
   it("returns false when no overlap exists", () => {
-    expect(
-      hasDomainOverlap(["strategy"], ["delivery", "growth"], null)
-    ).toBe(false);
+    expect(hasDomainOverlap(["strategy"], ["delivery", "growth"])).toBe(false);
   });
 
-  it("falls back to primary_domain when content domains array is empty", () => {
-    expect(
-      hasDomainOverlap(["leadership"], [], "leadership" as ChallengeDomain)
-    ).toBe(true);
-  });
-
-  it("returns false when both arrays empty and primary_domain is null", () => {
-    expect(hasDomainOverlap(["strategy"], [], null)).toBe(false);
+  it("returns false when content domains array is empty", () => {
+    expect(hasDomainOverlap(["strategy"], [])).toBe(false);
   });
 
   it("handles multi-domain challenge against single content domain", () => {
     expect(
-      hasDomainOverlap(["strategy", "discovery", "delivery"], ["discovery"], null)
+      hasDomainOverlap(["strategy", "discovery", "delivery"], ["discovery"])
     ).toBe(true);
   });
 });
@@ -73,8 +59,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 function makeChunk(
   contentId: string,
   similarity: number,
-  contentDomains: ChallengeDomain[],
-  primaryDomain: ChallengeDomain | null = null
+  contentDomains: ChallengeDomain[]
 ): ChunkWithContent {
   return {
     chunk: {
@@ -92,7 +77,6 @@ function makeChunk(
       source_type: "podcast",
       title: `Content ${contentId}`,
       url: null,
-      primary_domain: primaryDomain,
       domains: contentDomains,
       topics: [],
       keywords: [],
@@ -100,6 +84,9 @@ function makeChunk(
       publication_date: null,
       language: "en",
       extraction_confidence: null,
+      status: "active",
+      transcript_raw: null,
+      summary: null,
       created_at: "2025-01-01T00:00:00Z",
     },
     similarity,
@@ -188,16 +175,6 @@ describe("runMatching – Epic 6 behavior", () => {
     expect(byId["both"].matchReason).toBe("structured_fit");
     expect(byId["one"].matchReason).toBe("semantic");
     expect(byId["none"].matchReason).toBe("semantic");
-  });
-
-  it("falls back to primary_domain when content.domains is empty (backward compat)", async () => {
-    const candidates = [
-      makeChunk("legacy", 0.75, [], "strategy" as ChallengeDomain),
-    ];
-    vi.mocked(embeddingsRepo.findSimilarChunks).mockResolvedValue(candidates);
-
-    const result = await runMatching(fakeSupa, [0.1], ["strategy"], "test challenge");
-    expect(result[0].matchReason).toBe("structured_fit");
   });
 
   it("limits results to TOP_K", async () => {

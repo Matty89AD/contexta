@@ -25,22 +25,12 @@ const CANDIDATE_COUNT = 20;
 /** Top N chunks passed to the recommendations LLM (Epic 7: 6–8). */
 const RETURN_TOP = 8;
 
-/**
- * Determines whether any challenge domain overlaps with content domains.
- * Falls back to primary_domain if the domains array is empty (Epic 6 backward compat).
- */
+/** Determines whether any challenge domain overlaps with content domains. */
 export function hasDomainOverlap(
   challengeDomains: ChallengeDomain[],
-  contentDomains: ChallengeDomain[],
-  primaryDomain: ChallengeDomain | null
+  contentDomains: ChallengeDomain[]
 ): boolean {
-  const effective =
-    contentDomains.length > 0
-      ? contentDomains
-      : primaryDomain
-      ? [primaryDomain]
-      : [];
-  return challengeDomains.some((d) => effective.includes(d));
+  return challengeDomains.some((d) => contentDomains.includes(d));
 }
 
 /**
@@ -138,11 +128,7 @@ export async function runMatching(
   const ranked: RankedMatch[] = Array.from(mergedMap.values()).map(
     ({ chunkWithContent, similarity, keywordScore, fromVector, fromKeyword }) => {
       const contentDomains: ChallengeDomain[] = chunkWithContent.content.domains ?? [];
-      const overlap = hasDomainOverlap(
-        challengeDomains,
-        contentDomains,
-        chunkWithContent.content.primary_domain
-      );
+      const overlap = hasDomainOverlap(challengeDomains, contentDomains);
       const structuredFitScore = overlap ? 1 : 0.5;
       const finalScore =
         STRUCTURED_FIT_WEIGHT * structuredFitScore +

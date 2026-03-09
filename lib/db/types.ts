@@ -124,7 +124,6 @@ export interface Content {
   source_type: ContentSourceType;
   title: string;
   url: string | null;
-  primary_domain: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). */
   domains: ChallengeDomain[];
   /** Epic 8 — Content Intelligence Service fields. */
@@ -147,7 +146,6 @@ export interface ContentInsert {
   source_type: ContentSourceType;
   title: string;
   url?: string | null;
-  primary_domain?: ChallengeDomain | null;
   /** Multi-domain support (Epic 6). */
   domains?: ChallengeDomain[];
   /** Epic 8 — Content Intelligence Service fields (optional at insert; populated after extraction). */

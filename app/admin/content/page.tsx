@@ -199,7 +199,7 @@ export default function AdminContentList() {
                     {item.source_type}
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-zinc-500 dark:text-zinc-400">
-                    {item.domains[0] ?? item.primary_domain ?? "—"}
+                    {item.domains[0] ?? "—"}
                   </td>
                   <td className="px-4 py-3">
                     <select
