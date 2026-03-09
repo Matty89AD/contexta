@@ -1,6 +1,6 @@
 # Epic 19 — Smart Artifact Detection + News Proposal Pipeline
 
-> **Status:** 🔲 planned
+> **Status:** ✅ done  |  **As of:** 2026-03-09
 
 ## Goal
 
