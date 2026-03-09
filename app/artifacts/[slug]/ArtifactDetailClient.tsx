@@ -96,7 +96,7 @@ function DetailSkeleton() {
 
 function KnowledgeSkeleton() {
   return (
-    <div className="flex gap-4 overflow-x-hidden">
+    <div className="flex gap-4 overflow-x-hidden px-4 pt-3 pb-4">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
@@ -124,7 +124,7 @@ function KnowledgeCarousel({
     );
   }
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
+    <div className="flex gap-4 overflow-x-auto px-4 pt-3 pb-6">
       {cards.map((card) => {
         const view = viewMap.get(card.id) ?? null;
         const isViewed = view !== null;
@@ -438,7 +438,7 @@ export function ArtifactDetailClient({
       </div>
 
       {/* Knowledge base section */}
-      <div>
+      <div className="mt-10 mb-20">
         <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4">
           Who talks about it
         </h2>
