@@ -1,0 +1,1 @@
+In a previous session we created @lib/constants-home.ts but decided to not use a separat const file instead leaving the const definition wihtin the page.tsx because it was single use. It seems when reverting the change, you didn't delete the file. Please check if the const are defined in the page.tsx and then delete the @lib/constants-home.ts file
