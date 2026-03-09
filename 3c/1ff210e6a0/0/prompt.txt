@@ -1,0 +1,13 @@
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /Users/mattyaldoyaili/.cursor/projects/Users-mattyaldoyaili-Documents-dev-projects-contexta/assets/image-5a7116bf-0b2f-470a-becb-0896322d9b7f.png
+
+These images can be copied for use in other locations.
+</image_files>
+
+as you can see in the screenshot, that padding margins for the content card carousel is not right. the first card is on the loft and all cards on the top not shown correctly. Also increase the margin botton so that the white space is increased
+
+---
+
+/clear
