@@ -138,6 +138,8 @@ export interface Content {
   status: ContentStatus;
   /** Epic 16 — Admin UI: raw transcript/text for processing. */
   transcript_raw: string | null;
+  /** Epic 18 — generated summary (2–4 sentences). */
+  summary: string | null;
   created_at: string;
 }
 
@@ -271,6 +273,16 @@ export interface TranscriptJobInsert {
   created_by: string;
   url: string;
   url_type: TranscriptJobUrlType;
+}
+
+/** Epic 18 — Content view tracking. */
+export interface ContentView {
+  id: string;
+  user_id: string;
+  content_id: string;
+  first_viewed_at: string;
+  last_viewed_at: string;
+  view_count: number;
 }
 
 /** Epic 15 — Artifact Vault */

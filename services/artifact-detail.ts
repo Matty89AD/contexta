@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AIProvider } from "@/core/ai/types";
-import type { Artifact } from "@/lib/db/types";
+import type { Artifact, ChallengeDomain, ContentSourceType } from "@/lib/db/types";
 import { findSimilarChunks, findChunksByKeyword } from "@/repositories/embeddings";
 import { updateArtifactDetail } from "@/repositories/artifacts";
 import {
@@ -19,8 +19,17 @@ export interface KnowledgeCard {
   id: string;
   title: string;
   author: string | null;
-  source_type: string;
+  source_type: ContentSourceType;
   url: string | null;
+  /** Epic 18 — enriched fields */
+  topics: string[];
+  keywords: string[];
+  domains: ChallengeDomain[];
+  publication_date: string | null;
+  summary: string | null;
+  extraction_confidence: number | null;
+  /** Word count of transcript_raw (for read/listen time estimate). */
+  word_count: number | null;
 }
 
 /**
@@ -119,12 +128,22 @@ export async function getArtifactKnowledge(
   const seen = new Map<string, KnowledgeCard>();
   for (const { content } of [...vectorChunks, ...keywordChunks]) {
     if (!seen.has(content.id)) {
+      const wordCount = content.transcript_raw
+        ? content.transcript_raw.trim().split(/\s+/).length
+        : null;
       seen.set(content.id, {
         id: content.id,
         title: content.title,
         author: content.author ?? null,
         source_type: content.source_type,
         url: content.url ?? null,
+        topics: content.topics ?? [],
+        keywords: content.keywords ?? [],
+        domains: content.domains ?? [],
+        publication_date: content.publication_date ?? null,
+        summary: content.summary ?? null,
+        extraction_confidence: content.extraction_confidence ?? null,
+        word_count: wordCount,
       });
     }
   }

@@ -4,6 +4,7 @@ import * as contentRepo from "@/repositories/content";
 import type { ContentChunk, ContentInsert, ContentSourceType } from "@/lib/db/types";
 import { ChallengeDomain } from "@/lib/db/types";
 import { extractContentIntelligence } from "@/services/content-intelligence";
+import { generateContentSummary } from "@/services/content-summary";
 import { chunkTranscript } from "@/core/utils/chunking";
 import { NotFoundError, ValidationError } from "@/core/errors";
 import { logger } from "@/core/logger";
@@ -96,6 +97,25 @@ export async function ingestContent(
       topics: intel.topics,
       confidence: intel.extraction_confidence,
     });
+
+    // Epic 18: generate summary after intelligence (non-fatal)
+    const chunksForSummary = createdChunks.map((c, i) => ({
+      body: c.body,
+      chunk_type: intel.chunks[i]?.chunk_type ?? null,
+      chunk_index: c.chunk_index,
+    }));
+    const summary = await generateContentSummary(
+      ai,
+      input.title,
+      input.source_type,
+      intel.author,
+      chunksForSummary,
+      intel.topics,
+      intel.keywords
+    );
+    if (summary) {
+      await contentRepo.updateContentSummary(supabase, content.id, summary);
+    }
   } catch (e) {
     logger.error("Content intelligence extraction failed (non-fatal)", {
       contentId: content.id,
@@ -179,6 +199,28 @@ export async function processContentById(
           key_concepts: chunkIntel.key_concepts,
         });
       }
+    }
+
+    // Epic 18: regenerate summary on reprocess (non-fatal)
+    const effectiveTopics = alreadyExtracted ? content.topics : intel.topics;
+    const effectiveKeywords = alreadyExtracted ? content.keywords : intel.keywords;
+    const effectiveAuthor = alreadyExtracted ? content.author : intel.author;
+    const chunksForSummary = createdChunks.map((c, i) => ({
+      body: c.body,
+      chunk_type: intel.chunks[i]?.chunk_type ?? null,
+      chunk_index: c.chunk_index,
+    }));
+    const summary = await generateContentSummary(
+      ai,
+      content.title,
+      content.source_type,
+      effectiveAuthor,
+      chunksForSummary,
+      effectiveTopics,
+      effectiveKeywords
+    );
+    if (summary) {
+      await contentRepo.updateContentSummary(supabase, contentId, summary);
     }
   } catch (e) {
     logger.error("Intelligence extraction failed (non-fatal)", { contentId, error: e });

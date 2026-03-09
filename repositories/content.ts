@@ -121,6 +121,19 @@ export async function listContent(
   return (data ?? []) as Content[];
 }
 
+/** Update the generated summary for a content record (Epic 18). */
+export async function updateContentSummary(
+  supabase: SupabaseClient,
+  contentId: string,
+  summary: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("content")
+    .update({ summary })
+    .eq("id", contentId);
+  if (error) throw error;
+}
+
 /** Delete all chunks for a content record (used before re-processing). */
 export async function deleteChunksByContentId(
   supabase: SupabaseClient,

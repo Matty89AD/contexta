@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bookmark } from "lucide-react";
+import { ArrowLeft, Bookmark, Info } from "lucide-react";
 import type { Artifact } from "@/lib/db/types";
+import type { ContentView } from "@/lib/db/types";
 import type { ArtifactDetailOutput, KnowledgeCard } from "@/services/artifact-detail";
 import { DOMAIN_LABELS, SOURCE_TYPE_LABELS } from "@/lib/constants";
+import { ContentOverlay } from "@/components/artifacts/ContentOverlay";
 
 function SkeletonBlock({ className }: { className?: string }) {
   return (
@@ -105,7 +107,15 @@ function KnowledgeSkeleton() {
   );
 }
 
-function KnowledgeCarousel({ cards }: { cards: KnowledgeCard[] }) {
+function KnowledgeCarousel({
+  cards,
+  viewMap,
+  onCardClick,
+}: {
+  cards: KnowledgeCard[];
+  viewMap: Map<string, ContentView>;
+  onCardClick: (card: KnowledgeCard) => void;
+}) {
   if (cards.length === 0) {
     return (
       <p className="text-zinc-400 text-sm">
@@ -115,24 +125,41 @@ function KnowledgeCarousel({ cards }: { cards: KnowledgeCard[] }) {
   }
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
-      {cards.map((card) => (
-        <div
-          key={card.id}
-          className="flex-shrink-0 w-64 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4"
-        >
-          <div className="mb-2">
-            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400">
-              {SOURCE_TYPE_LABELS[card.source_type] ?? card.source_type}
-            </span>
-          </div>
-          <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1 line-clamp-2">
-            {card.title}
-          </h4>
-          {card.author && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">{card.author}</p>
-          )}
-        </div>
-      ))}
+      {cards.map((card) => {
+        const view = viewMap.get(card.id) ?? null;
+        const isViewed = view !== null;
+        return (
+          <button
+            key={card.id}
+            type="button"
+            onClick={() => onCardClick(card)}
+            data-testid={`knowledge-card-${card.id}`}
+            className="flex-shrink-0 w-64 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4 text-left cursor-pointer hover:ring-2 hover:ring-indigo-300 dark:hover:ring-indigo-700 transition relative group"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400">
+                {SOURCE_TYPE_LABELS[card.source_type] ?? card.source_type}
+              </span>
+              <Info
+                size={12}
+                className="text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-400 transition"
+              />
+            </div>
+            <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1 line-clamp-2">
+              {card.title}
+            </h4>
+            {card.author && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">{card.author}</p>
+            )}
+            {isViewed && (
+              <div className="flex items-center gap-1 mt-auto" data-testid={`viewed-badge-${card.id}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Viewed</span>
+              </div>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -159,6 +186,8 @@ export function ArtifactDetailClient({
   const [cardsLoading, setCardsLoading] = useState(true);
   const [saved, setSaved] = useState<boolean | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [viewMap, setViewMap] = useState<Map<string, ContentView>>(new Map());
+  const [overlayCard, setOverlayCard] = useState<KnowledgeCard | null>(null);
 
   useEffect(() => {
     // 1. Static detail — fast DB read
@@ -183,10 +212,44 @@ export function ArtifactDetailClient({
         .catch(() => setProTip(undefined));
     }
 
-    // 3. Knowledge cards — parallel vector search
+    // 3. Knowledge cards — parallel vector search, then hydrate view status
     fetch(`/api/artifacts/${artifact.slug}/knowledge`)
       .then((r) => r.json())
-      .then((data: { cards?: KnowledgeCard[] }) => setCards(data.cards ?? []))
+      .then(async (data: { cards?: KnowledgeCard[] }) => {
+        const fetchedCards = data.cards ?? [];
+        setCards(fetchedCards);
+        // Batch-fetch view status for all cards (auth only; 401 = unauthenticated → skip)
+        if (fetchedCards.length > 0) {
+          const results = await Promise.allSettled(
+            fetchedCards.map((card) =>
+              fetch(`/api/content/${card.id}/view`).then((r) => {
+                if (r.status === 401) return null;
+                return r.json() as Promise<{
+                  viewed: boolean;
+                  first_viewed_at: string | null;
+                  last_viewed_at: string | null;
+                  view_count: number | null;
+                }>;
+              })
+            )
+          );
+          const map = new Map<string, ContentView>();
+          results.forEach((result, i) => {
+            if (result.status === "fulfilled" && result.value?.viewed) {
+              const v = result.value;
+              map.set(fetchedCards[i].id, {
+                id: "",
+                user_id: "",
+                content_id: fetchedCards[i].id,
+                first_viewed_at: v.first_viewed_at!,
+                last_viewed_at: v.last_viewed_at!,
+                view_count: v.view_count!,
+              });
+            }
+          });
+          setViewMap(map);
+        }
+      })
       .catch(() => setCards([]))
       .finally(() => setCardsLoading(false));
 
@@ -219,12 +282,55 @@ export function ArtifactDetailClient({
     }
   }
 
+  async function handleCardClick(card: KnowledgeCard) {
+    setOverlayCard(card);
+    // Record view (auth only — silent fail on 401)
+    try {
+      const res = await fetch(`/api/content/${card.id}/view`, { method: "POST" });
+      if (res.ok) {
+        // Refresh view status for this card
+        const viewRes = await fetch(`/api/content/${card.id}/view`);
+        if (viewRes.ok) {
+          const v = (await viewRes.json()) as {
+            viewed: boolean;
+            first_viewed_at: string | null;
+            last_viewed_at: string | null;
+            view_count: number | null;
+          };
+          if (v.viewed) {
+            setViewMap((prev) => {
+              const next = new Map(prev);
+              next.set(card.id, {
+                id: "",
+                user_id: "",
+                content_id: card.id,
+                first_viewed_at: v.first_viewed_at!,
+                last_viewed_at: v.last_viewed_at!,
+                view_count: v.view_count!,
+              });
+              return next;
+            });
+          }
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
   // Merge: use personalised pro_tip once loaded, fall back to static detail's generic one
   const displayedProTip =
     proTip !== undefined ? proTip : detail?.pro_tip ?? null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      {overlayCard && (
+        <ContentOverlay
+          card={overlayCard}
+          view={viewMap.get(overlayCard.id) ?? null}
+          onClose={() => setOverlayCard(null)}
+        />
+      )}
       {/* Back button */}
       <button
         type="button"
@@ -339,7 +445,11 @@ export function ArtifactDetailClient({
         {cardsLoading ? (
           <KnowledgeSkeleton />
         ) : (
-          <KnowledgeCarousel cards={cards ?? []} />
+          <KnowledgeCarousel
+            cards={cards ?? []}
+            viewMap={viewMap}
+            onCardClick={handleCardClick}
+          />
         )}
       </div>
     </div>
