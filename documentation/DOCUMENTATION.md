@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 4.1 &nbsp;|&nbsp; **Last updated:** 2026-03-09 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 4.2 &nbsp;|&nbsp; **Last updated:** 2026-03-09 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -25,6 +25,7 @@
    - [3.14 Admin UI](#314-admin-ui)
    - [3.15 Journey News Feed](#315-journey-news-feed)
    - [3.16 Auto-Transcript from URL](#316-auto-transcript-from-url)
+   - [3.17 Content Card Enrichment](#317-content-card-enrichment)
 4. [Data Model for PMs](#4-data-model-for-pms)
 5. [API Reference](#5-api-reference)
 6. [Configuration & Tuning](#6-configuration--tuning)
@@ -646,6 +647,29 @@ On the draft content page (`/admin/content/[id]`), all metadata fields (title, a
 
 ---
 
+### 3.17 Content Card Enrichment
+
+**What it does**: When a user views an artifact detail page, each knowledge base card is now interactive. Clicking a card opens a detailed overlay showing an AI-generated summary of the content item, its topics, keywords, domain badges, and an estimated read or listen time. Signed-in users also have their views tracked — a "Viewed" badge appears on cards they have already opened.
+
+**What the user sees**: Knowledge base cards at the bottom of the artifact detail page now show a subtle info icon and respond to clicks. Tapping a card opens a centred modal overlay:
+- **Header** — source type badge (Podcast / Video / Article / Book), title, author and publication date (when available), and an estimated reading or listening time based on the transcript length.
+- **Body** — an AI-generated 2–4 sentence summary of the content item; pill lists of topics and keywords; domain badges.
+- **Footer** — for signed-in users who have viewed the card before: a line showing the first-seen date and total view count. For all users: an "Open [source type]" button that opens the original URL in a new tab; the button is disabled with a tooltip if no URL is stored.
+The overlay closes by pressing Escape, clicking the X button, or clicking outside the panel. A small filled dot plus a "Viewed" label appears in the bottom-left corner of any card the signed-in user has previously opened.
+
+**Business rules**:
+- Summaries are generated automatically at the end of the ingestion pipeline; if generation fails the ingest still succeeds and the summary is stored as null. The overlay shows "No summary available." gracefully in that case.
+- The summary generation uses a smart chunk selection strategy: chunks classified as "summary" type are preferred; if none exist, the first two and last two chunks are used instead; if no chunks exist at all, the AI synthesises from the title, topics, and keywords alone.
+- Re-processing a content item (via Admin UI → "Run Ingestion") also regenerates the summary.
+- View tracking is available to signed-in users only. Anonymous users see the overlay without any view history or "Viewed" badges.
+- View records accumulate: each time a user opens the same content card the view count increments and the "last seen" timestamp updates. The first-seen date never changes.
+- View status is fetched in parallel for all cards on page load so there is no additional delay after cards appear.
+- Estimated time is shown only when transcript text is stored for the content item. Video and podcast content uses 130 words per minute; articles and books use 200 words per minute.
+
+**Status**: Implemented
+
+---
+
 ## 4. Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -654,12 +678,13 @@ The following describes what information the system stores, in plain language. C
 |--------|-------------------|----------------------|-------------------|
 | **User Profile** | One record per signed-in user | Email (via the auth system), role, company stage, team size, experience level (all context fields are optional at sign-up and filled in automatically from browser storage), admin flag, timestamps | The user themselves only (admin flag managed by operators) |
 | **Challenge** | One record per challenge submitted | Raw description, AI-generated summary, problem statement, desired outcome statement, domain(s) selected, optional subdomain and impact text, link to the user who submitted it (if signed in), lifecycle status (open / in progress / completed / archived / abandoned — defaults to "open"), save state (saved / unsaved), save timestamp, display title (auto-generated on save, user-editable), and the full list of artifact recommendations stored at save time | The user themselves only (or anonymous, stored temporarily in the browser) |
-| **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, summary, key takeaways, domain(s); and since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score; lifecycle status (draft, pending review, active, archived); raw transcript text (stored temporarily for processing) | Internal team via the Admin UI; end users see derived results only |
+| **Content Item** | One curated piece of content (podcast, article, etc.) | Title, source type, URL, domain(s); since Epic 8: topics, keywords, author, publication date, content category, language, and extraction confidence score; lifecycle status (draft, pending review, active, archived); raw transcript text; and since Epic 18: an AI-generated 2–4 sentence summary | Internal team via the Admin UI; end users see enriched metadata in the knowledge card overlay |
 | **Content Chunk** | A segment of a content item, used for matching | The chunk text, an AI embedding for semantic search, a full-text index for keyword search, a pointer to its parent content item; and since Epic 8: chunk type classification and key concepts extracted by the AI | Internal service only; surfaced indirectly on artifact detail knowledge base cards |
 | **Artifact** | A named PM framework or methodology in the recommendation catalog | Unique slug (URL identifier), display title, one or more practice domains, a use-case description, and pre-generated AI detail (description, suitability, thought leaders, how-to steps, generic Pro-Tipp) | Surfaced to users on recommendation cards and artifact detail pages |
 | **Saved Artifact** | A record of one artifact saved to a user's personal Artifact Vault | Link to the user, link to the artifact (by slug), and the date it was saved | The user themselves only |
 | **News Post** | A news item published to the Journey page news feed | Type (podcast, artifact, article), title, short description, display date (free text, e.g. "Mar 2026"), status (draft or published), sort order, and timestamps | Internal team via the Admin UI; published posts are visible to all users on the Journey page |
 | **Transcript Job** | A background processing job that extracts a transcript from a URL and creates a draft content item | The source URL, detected URL type (YouTube, Podcast RSS, Podcast episode, or Web page), job status (pending / processing / completed / failed), error message if applicable, link to the resulting draft content item (once complete), and timestamps | Admin users only |
+| **Content View** | A record of a signed-in user opening a knowledge card overlay for a specific content item | Link to the user, link to the content item, first-seen timestamp, last-seen timestamp, and total view count | The user themselves only (each user can only see their own view history) |
 
 ### Key rules
 
@@ -686,7 +711,10 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `POST /api/challenges/[id]/recommendations` | Phase 2: generate artifact recommendations for an existing challenge | No | Challenge ID (in URL) | 3–5 artifact recommendations (each with title, domains, use case, tailored explanation, and most-relevant flag) |
 | `GET /api/artifacts/[slug]/detail` | Return the pre-generated static deep-dive content for a specific artifact | No | Artifact slug (in URL) | Description, company stage suitability, thought leaders, generic Pro-Tipp, how-to intro, numbered how-to steps |
 | `POST /api/artifacts/[slug]/pro-tip` | Generate a personalised Pro-Tipp for an artifact given a specific challenge | No | Artifact slug (in URL), challenge summary and domains (in body) | Personalised 2–3 sentence Pro-Tipp |
-| `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated content cards (title, author, source type, URL) |
+| `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated enriched content cards (title, author, source type, URL, summary, topics, keywords, domains, publication date, and estimated word count) |
+| `GET /api/content/[id]` | Return full metadata for a single content item (used by the knowledge card overlay) | No | Content ID (in URL) | Title, source type, author, URL, publication date, domains, topics, keywords, AI-generated summary, extraction confidence, and estimated word count |
+| `GET /api/content/[id]/view` | Check whether the signed-in user has viewed a specific content item | **Yes** | Content ID (in URL) | Viewed flag, first-seen timestamp, last-seen timestamp, and view count; returns 401 if unauthenticated |
+| `POST /api/content/[id]/view` | Record that the signed-in user has opened a content item overlay (increments the view count on repeat opens) | **Yes** | Content ID (in URL) | Success confirmation; returns 401 if unauthenticated (client fails silently) |
 | `GET /api/challenges/[id]` | Load a saved challenge with its stored recommendations | **Yes** | Challenge ID (in URL) | Full challenge record including stored artifact recommendations, title, save timestamp |
 | `PATCH /api/challenges/[id]` | Save a challenge (with recommendations) or rename its title | **Yes** | Challenge ID (in URL); body: save flag, recommendations array, and/or new title | Success confirmation |
 | `PATCH /api/challenges/[id]/claim` | Link an anonymous challenge to the signed-in user's account | Yes | Challenge ID (in URL) | Success confirmation |
@@ -729,8 +757,14 @@ All endpoints return JSON. All errors include a plain-text description of what w
 - All three artifact-related calls (`/detail`, `/pro-tip`, `/knowledge`) are fired in parallel by the client on page load.
 - `/detail` is a GET request and requires no body — it always returns the stored pre-generated content.
 - `/pro-tip` is only called when a `challengeSummary` is available in the client; it is skipped entirely when the user visits the artifact page without a challenge context.
-- `/knowledge` uses vector similarity search — it embeds the artifact title and use case, then finds the most semantically related content chunks in the knowledge base, deduplicating to one result per content item.
+- `/knowledge` uses vector similarity search — it embeds the artifact title and use case, then finds the most semantically related content chunks in the knowledge base, deduplicating to one result per content item. Since Epic 18, each returned card is enriched with the full content metadata (summary, topics, keywords, domains, publication date, word count) so the overlay can render without a second round-trip.
 - A failure in any one of the three calls does not affect the other two.
+
+### Notes on content view endpoints
+
+- `GET /api/content/[id]/view` and `POST /api/content/[id]/view` both require authentication. A 401 response means the user is not signed in; the client ignores this silently — unauthenticated users still see the overlay but view tracking is skipped.
+- On every overlay open, the client fires `POST /api/content/[id]/view` and then immediately re-fetches `GET /api/content/[id]/view` to refresh the local view state without a page reload.
+- The first open creates a view record; subsequent opens increment the view count and update the last-seen timestamp. The first-seen timestamp never changes.
 
 ---
 
@@ -803,7 +837,6 @@ All settings are controlled via environment variables. They do not require a cod
 
 The following are intentional decisions for the current version. They are not bugs.
 
-- **No content detail screen from knowledge carousel** — clicking a knowledge base card on the artifact detail page does not navigate anywhere in the current version. Content detail pages are planned for a future epic.
 - **Challenge status is read-only** — users can see the status of each challenge (open, in progress, completed, etc.) but cannot manually change it through the UI in the current version. Status update controls are deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
@@ -828,7 +861,6 @@ The following are intentional decisions for the current version. They are not bu
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
-| Content detail screen | A dedicated page for each content item (podcast episode, article, etc.) navigated to from the artifact detail knowledge base carousel. | Planned (post-MVP) |
 | Archetype classification (Layer 3 matching) | Classify challenges into 5–7 problem archetypes; boost artifacts that match the archetype profile. Improves recommendation precision for common, well-understood challenge patterns. | Planned (post-MVP) |
 | Audience-targeting metadata | Tag content items and artifacts with the roles, company stages, and experience levels they are most suited to. Use this to add a role/stage/experience signal to the structured fit score. | Planned (post-MVP) |
 | Decision patterns | Store "When X → do Y (unless Z)" rules in the knowledge base; surface the most applicable rule alongside recommendations. Turns the product from a content finder into a decision guide. | Planned (post-MVP) |
@@ -840,6 +872,7 @@ The following are intentional decisions for the current version. They are not bu
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-09 | 4.2 | Epic 18 | Added Content Card Enrichment: knowledge base cards on the artifact detail page are now interactive. Clicking a card opens a modal overlay with an AI-generated summary, topics, keywords, domain badges, and an estimated read/listen time. Signed-in users have their views tracked per content item — a "Viewed" badge appears on previously-opened cards and the overlay shows a first-seen date and view count. Summaries are generated automatically during ingestion (and regenerated on reprocess) using a smart chunk selection strategy. Added three new API endpoints (`GET /api/content/[id]`, `GET /api/content/[id]/view`, `POST /api/content/[id]/view`), a new Content View entity in the data model, and enriched the knowledge card shape with full content metadata. Removed "No content detail screen from knowledge carousel" from Known Limitations. |
 | 2026-03-09 | 4.1 | Epic 17 | Added Auto-Transcript from URL: admins can now paste any URL (YouTube video, podcast RSS feed, direct audio file, or web page) to automatically generate a transcript, extract metadata, and create a pre-filled draft content item in the background. A notification bell in the admin nav shows in-progress job count and fires a toast when a job completes. "Run Ingestion" button on the draft review page triggers embedding generation to make content searchable. Added Transcript Job to the Data Model, three new admin-only API endpoints, and a new `OPENROUTER_INGEST_MODEL` configuration setting. |
 | 2026-03-08 | 4.0 | Epic 16 | Added Admin UI: a protected web interface at `/admin` for internal content and news management. Admins can create, edit, process, and delete content items; publish and manage news posts; and view a dashboard of knowledge base stats. The Journey page news feed is now live-fetched from the database (published posts only) rather than hardcoded. Added 13 new API endpoints (9 admin-only, 1 public). Updated Data Model to add News Post entity and admin flag on User Profile, and content lifecycle status on Content Item. Removed "No admin content management UI" from Known Limitations and "Content management UI" from Future Epics. |
 | 2026-03-07 | 3.2 | Epic 15 | Added Artifact Vault: users can save artifacts from the detail page ("Add to Artifact Vault" / "Saved to Vault" toggle) and browse their full personal collection in a new "My Artifacts Vault" tab on the Journey page. The "Saved Artifacts" stat card on Journey now shows the real count. Added three new API endpoints for save/unsave/check. Removed "No Save to Playbook" from Known Limitations and from Future Epics. Updated Data Model and API Reference accordingly. |
