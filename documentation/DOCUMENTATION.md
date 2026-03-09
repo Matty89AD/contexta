@@ -1,41 +1,49 @@
 # Contexta — Product Documentation
 
-> **Version:** 4.2 &nbsp;|&nbsp; **Last updated:** 2026-03-09 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 4.3 &nbsp;|&nbsp; **Last updated:** 2026-03-09 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
 ## Table of Contents
 
-1. [Product Overview](#1-product-overview)
-2. [User Flow](#2-user-flow)
-3. [Feature Reference](#3-feature-reference)
-   - [3.1 Context Collection](#31-context-collection)
-   - [3.2 Challenge Submission](#32-challenge-submission)
-   - [3.3 Matching Engine & Recommendations](#33-matching-engine--recommendations)
-   - [3.4 Multi-Domain Support](#34-multi-domain-support)
-   - [3.5 Content Ingestion](#35-content-ingestion)
-   - [3.6 Content Intelligence Service](#36-content-intelligence-service)
-   - [3.7 Authentication & Profiles](#37-authentication--profiles)
-   - [3.8 Challenge Eval Harness](#38-challenge-eval-harness)
-   - [3.9 Artifact Catalog](#39-artifact-catalog)
-   - [3.10 Artifact Detail Page](#310-artifact-detail-page)
-   - [3.11 Your Journey](#311-your-journey)
-   - [3.12 Save & Revisit Challenge Results](#312-save--revisit-challenge-results)
-   - [3.13 Artifact Vault](#313-artifact-vault)
-   - [3.14 Admin UI](#314-admin-ui)
-   - [3.15 Journey News Feed](#315-journey-news-feed)
-   - [3.16 Auto-Transcript from URL](#316-auto-transcript-from-url)
-   - [3.17 Content Card Enrichment](#317-content-card-enrichment)
-4. [Data Model for PMs](#4-data-model-for-pms)
-5. [API Reference](#5-api-reference)
-6. [Configuration & Tuning](#6-configuration--tuning)
-7. [Known Limitations & Out of Scope](#7-known-limitations--out-of-scope)
-8. [Future Epics (Planned)](#8-future-epics-planned)
-9. [Changelog](#9-changelog)
+- [Product Overview](#product-overview)
+- [User Flow](#user-flow)
+- [Feature Reference](#feature-reference)
+  - [Context Collection](#context-collection)
+  - [Challenge Submission](#challenge-submission)
+  - [Matching Engine & Recommendations](#matching-engine--recommendations)
+  - [Multi-Domain Support](#multi-domain-support)
+  - [Content Ingestion](#content-ingestion)
+  - [Content Intelligence Service](#content-intelligence-service)
+  - [Authentication & Profiles](#authentication--profiles)
+  - [Challenge Eval Harness](#challenge-eval-harness)
+  - [Artifact Catalog](#artifact-catalog)
+  - [Artifact Detail Page](#artifact-detail-page)
+  - [Your Journey](#your-journey)
+  - [Save & Revisit Challenge Results](#save--revisit-challenge-results)
+  - [Artifact Vault](#artifact-vault)
+  - [Admin UI](#admin-ui)
+  - [Journey News Feed](#journey-news-feed)
+  - [Auto-Transcript from URL](#auto-transcript-from-url)
+  - [Content Card Enrichment](#content-card-enrichment)
+  - [Smart Artifact Detection & News Proposals](#smart-artifact-detection--news-proposals)
+- [Data Model for PMs](#data-model-for-pms)
+- [API Reference](#api-reference)
+- [Configuration & Tuning](#configuration--tuning)
+- [AI Flows, Models & Prompts](#ai-flows-models--prompts)
+  - [Models](#models)
+  - [Flow 1 — User Challenge Pipeline](#flow-1--user-challenge-pipeline-real-time)
+  - [Flow 2 — Artifact Detail & Knowledge Cards](#flow-2--artifact-detail--knowledge-cards-on-demand)
+  - [Flow 3 — Content Ingestion Pipeline](#flow-3--content-ingestion-pipeline-background-job)
+  - [Prompt File Reference](#prompt-file-reference)
+  - [Cost & Token Notes](#cost--token-notes)
+- [Known Limitations & Out of Scope](#known-limitations--out-of-scope)
+- [Future Epics (Planned)](#future-epics-planned)
+- [Changelog](#changelog)
 
 ---
 
-## 1. Product Overview
+## Product Overview
 
 Contexta is an AI-powered recommendation tool for product leaders. A user describes a professional challenge they are facing — a prioritisation crisis, an unclear strategy, a misaligned team — and the system responds with 3 to 5 curated **PM artifact recommendations** (frameworks, methodologies, and mental models) that are most relevant to that specific challenge and context.
 
@@ -50,7 +58,7 @@ The core problem it solves: product leaders spend too much time searching for th
 
 ---
 
-## 2. User Flow
+## User Flow
 
 ### Getting started (no account required)
 
@@ -131,9 +139,9 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 ---
 
-## 3. Feature Reference
+## Feature Reference
 
-### 3.1 Context Collection
+### Context Collection
 
 **What it does**: Captures four pieces of information about the user before they describe their challenge. This context is used to tailor the AI summary and to influence which content is most relevant.
 
@@ -155,7 +163,7 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 ---
 
-### 3.2 Challenge Submission
+### Challenge Submission
 
 **What it does**: Collects the user's challenge description and domain(s), then triggers the AI pipeline in two asynchronous phases. Phase 1 generates the challenge summary; Phase 2 generates artifact recommendations. The user sees a loading screen during Phase 1, and the results page with the summary appears as soon as Phase 1 completes — without waiting for Phase 2.
 
@@ -178,7 +186,7 @@ A **"Zurück zu den Empfehlungen"** back button returns the user to their previo
 
 ---
 
-### 3.3 Matching Engine & Recommendations
+### Matching Engine & Recommendations
 
 **What it does**: Finds the most relevant content from the knowledge base for a given challenge, ranks it using three complementary scoring signals, and uses an AI model to select 3–5 artifacts from the known artifact catalog — writing a tailored explanation for why each one fits the user's specific challenge.
 
@@ -263,7 +271,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.4 Multi-Domain Support
+### Multi-Domain Support
 
 **What it does**: Allows users to select more than one domain when submitting a challenge, and ensures content that spans multiple domains is matched accordingly.
 
@@ -280,7 +288,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.5 Content Ingestion
+### Content Ingestion
 
 **What it does**: Allows curated content (podcasts, articles, frameworks, playbooks, case studies) to be loaded into the knowledge base so it becomes available for matching. Since Epic 8, ingestion also automatically extracts structured metadata from each content item using an AI model.
 
@@ -309,7 +317,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.6 Content Intelligence Service
+### Content Intelligence Service
 
 **What it does**: Automatically extracts structured metadata from every content item at the time of ingestion. A single AI call per content item analyses the full text and classifies both the document as a whole and each individual chunk within it.
 
@@ -352,7 +360,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.7 Authentication & Profiles
+### Authentication & Profiles
 
 **What it does**: Lets users create an account after completing a challenge to save their results and return to them later. The sign-up prompt appears on the results page — not before. Returning users can log in from the navigation bar. A profile page lets users manage their email and password.
 
@@ -387,7 +395,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.8 Challenge Eval Harness
+### Challenge Eval Harness
 
 **What it does**: Measures the quality of the matching engine by running a fixed set of 15 synthetic test challenges through the full retrieval pipeline and comparing the results against manually annotated ground truth. This gives the team a repeatable precision score they can track as the knowledge base grows or the matching engine changes.
 
@@ -417,7 +425,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.9 Artifact Catalog
+### Artifact Catalog
 
 **What it does**: Maintains a curated, pre-seeded list of known PM frameworks and methodologies (collectively called "artifacts"). Every recommendation returned to users is drawn exclusively from this list — the AI selects the best matches but can never invent or suggest an artifact that is not in the catalog. This guarantees that all recommendations are well-defined, named practices rather than vague suggestions.
 
@@ -444,7 +452,7 @@ Clicking any card navigates to the artifact detail page (Step 4). Exactly one it
 
 ---
 
-### 3.10 Artifact Detail Page
+### Artifact Detail Page
 
 **What it does**: Provides a full-page deep-dive for any artifact in the catalog. On load, three independent data requests fire in parallel — static artifact content (from the database), a personalised Pro-Tipp (from the AI, only when a challenge context is present), and knowledge base content cards (from a vector similarity search). Each section renders as soon as its data arrives, with skeleton placeholders shown in the meantime.
 
@@ -487,7 +495,7 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
-### 3.11 Your Journey
+### Your Journey
 
 **What it does**: Gives signed-in users a personal workspace showing all their **saved** challenges, summary stats, and quick navigation to any past challenge view.
 
@@ -507,7 +515,7 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
-### 3.12 Save & Revisit Challenge Results
+### Save & Revisit Challenge Results
 
 **What it does**: Lets signed-in users explicitly save a set of recommendations to their account, revisit them any time without re-running the AI, rename the challenge, and rerun the flow with the same challenge text prefilled.
 
@@ -541,7 +549,7 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
-### 3.13 Artifact Vault
+### Artifact Vault
 
 **What it does**: Lets signed-in users save specific artifacts to a personal collection — the Artifact Vault — directly from an artifact's detail page, then browse and revisit all saved artifacts from a dedicated tab on the Journey page.
 
@@ -572,7 +580,7 @@ Both tabs load from the pre-generated database record — for any artifact that 
 
 ---
 
-### 3.14 Admin UI
+### Admin UI
 
 **What it does**: Provides a protected web interface at `/admin` for the internal team to manage the knowledge base — adding and processing content, editing metadata, publishing news posts, and monitoring content health — without needing command-line access.
 
@@ -605,7 +613,7 @@ A static read-only placeholder page describing a future cron-based monitoring sy
 
 ---
 
-### 3.15 Journey News Feed
+### Journey News Feed
 
 **What it does**: Replaces the hardcoded mock news items on the Journey page with live published news posts fetched from the database, so the team can manage what appears in the news section without a code deployment.
 
@@ -621,7 +629,7 @@ A static read-only placeholder page describing a future cron-based monitoring sy
 
 ---
 
-### 3.16 Auto-Transcript from URL
+### Auto-Transcript from URL
 
 **What it does**: Lets admins generate a transcript and pre-fill a content draft by pasting any URL — a YouTube video, a podcast RSS feed, a direct audio file, or a web page. The system detects the URL type, extracts the transcript in the background, runs content intelligence automatically, and creates a ready-to-review draft. The admin receives a notification when the job is done and can then trigger ingestion with one click.
 
@@ -647,7 +655,7 @@ On the draft content page (`/admin/content/[id]`), all metadata fields (title, a
 
 ---
 
-### 3.17 Content Card Enrichment
+### Content Card Enrichment
 
 **What it does**: When a user views an artifact detail page, each knowledge base card is now interactive. Clicking a card opens a detailed overlay showing an AI-generated summary of the content item, its topics, keywords, domain badges, and an estimated read or listen time. Signed-in users also have their views tracked — a "Viewed" badge appears on cards they have already opened.
 
@@ -670,7 +678,29 @@ The overlay closes by pressing Escape, clicking the X button, or clicking outsid
 
 ---
 
-## 4. Data Model for PMs
+### Smart Artifact Detection & News Proposals
+
+**What it does**: After a content item is ingested, the system automatically analyses the content and detects any PM artifacts (frameworks, methodologies, tools) that are mentioned or explained in depth. Each detected artifact is saved as a `draft` in the artifact catalog for admin review before going live. In parallel, a draft news card is generated for the Journey news feed, also awaiting admin approval. The admin is notified in real-time via the notification bell.
+
+**What the admin sees**:
+- A notification badge appears on the bell icon in the admin nav. Clicking it reveals new entries such as "Detected: RICE Scoring" with a link to the draft artifact, and "News proposal ready" with a link to the draft news post.
+- The `/admin/artifacts` page lists all artifacts, filterable by status (draft / pending review / active / archived), domain, and AI-generated flag. Drafts from detection are tagged with a purple "AI detected" badge.
+- Clicking an artifact opens the editor with all fields pre-filled from the LLM output. The admin can review, edit any field, change the status to `active`, or delete.
+- A "Possible duplicate" warning banner appears if the LLM flagged a near-duplicate against an existing artifact.
+
+**Business rules**:
+- Detection analyses only the first 12 000 characters of concatenated chunk text. Content with very long transcripts may not have all artifacts detected in a single pass; re-detection can be triggered manually from the content detail page.
+- Detected artifacts are always created as `draft` and never surfaced to end users until an admin sets them to `active`.
+- Each ingestion run creates at most one news proposal per content item (the proposal is based on the content metadata, not on individual artifacts).
+- If the same content item is re-processed, detection runs again. Slugs that already exist in the DB are skipped automatically (slug uniqueness constraint).
+- News proposals are created as `draft` in the news_posts table. The admin must publish them from `/admin/news` for them to appear in the Journey feed.
+- Activating a content item or artifact from the admin UI also triggers a news proposal automatically (non-blocking; failures are logged but do not block the status update).
+
+**Status**: Implemented
+
+---
+
+## Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
 
@@ -701,7 +731,7 @@ The following describes what information the system stores, in plain language. C
 
 ---
 
-## 5. API Reference
+## API Reference
 
 All endpoints return JSON. All errors include a plain-text description of what went wrong.
 
@@ -768,7 +798,7 @@ All endpoints return JSON. All errors include a plain-text description of what w
 
 ---
 
-## 6. Configuration & Tuning
+## Configuration & Tuning
 
 All settings are controlled via environment variables. They do not require a code change to adjust.
 
@@ -833,31 +863,128 @@ All settings are controlled via environment variables. They do not require a cod
 
 ---
 
-## 7. Known Limitations & Out of Scope
+## AI Flows, Models & Prompts
 
-The following are intentional decisions for the current version. They are not bugs.
+This section maps every AI call in the system to its model, prompt file, output schema, and trigger. Use it as a reference when changing models, debugging inference costs, or auditing what the system does with user data.
 
-- **Challenge status is read-only** — users can see the status of each challenge (open, in progress, completed, etc.) but cannot manually change it through the UI in the current version. Status update controls are deferred.
+---
+
+### Models
+
+Three env vars control which models are used. All calls are routed through the OpenRouter API unless `OPENROUTER_EMBEDDING_MODEL` is an `openai/*` model **and** `OPENAI_API_KEY` is set — in that case embedding calls go directly to OpenAI.
+
+| Env var | Default | Current `.env.local` override | Used for |
+|---------|---------|-------------------------------|----------|
+| `OPENROUTER_CHAT_MODEL` | `openai/gpt-4o-mini` | `openai/gpt-oss-20b:nitro` | All generative tasks: challenge summary, artifact recommendations, artifact detail, content summary, artifact detection, news proposals |
+| `OPENROUTER_INGEST_MODEL` | `google/gemini-2.0-flash` | _(not overridden — default used)_ | Transcript intelligence extraction. Needs 1 M+ token context window for long podcast transcripts. Falls back to `OPENROUTER_CHAT_MODEL` if unset. |
+| `OPENROUTER_EMBEDDING_MODEL` | `openai/text-embedding-3-small` | _(not overridden — default used)_ | Chunk embeddings at ingest, query embeddings at match time, artifact knowledge-card retrieval. Must produce 1 536-dim vectors (pgvector index). |
+
+---
+
+### Flow 1 — User Challenge Pipeline (real-time)
+
+**Trigger:** User submits a challenge via the `/flow` page.
+**Execution:** Synchronous; user waits ~10–12 s on the loading screen.
+
+| Step | Service call | Prompt file | Output schema | Model env var |
+|------|-------------|-------------|---------------|---------------|
+| 1. Challenge summary | `services/challenge.ts` → `generateText` | `core/prompts/challenge-summary.ts` → `buildChallengeSummaryPrompt()` | `challengeSummaryOutputSchema` — `{ structured_summary, problem_statement, desired_outcome_statement }` | `OPENROUTER_CHAT_MODEL` |
+| 2. Artifact recommendations | `services/matching.ts` → `generateText` | `core/prompts/recommendations.ts` → `buildRecommendationsPrompt()` | `recommendationsOutputSchema` — `{ recommendations: [{ slug, title, domains, use_case, explanation, is_most_relevant }] }`, 1–5 items | `OPENROUTER_CHAT_MODEL` |
+
+**No embedding call** in this flow. Embeddings are generated at ingest time and stored; at query time one embedding call is made (see Flow 2, step 3).
+
+---
+
+### Flow 2 — Artifact Detail & Knowledge Cards (on-demand)
+
+**Trigger:** User opens an artifact detail page (`/artifacts/[slug]`).
+**Execution:** Two parallel async calls; static content (description, how-to) loads from DB if pre-generated; falls back to an on-demand LLM call on first visit.
+
+| Step | Service call | Prompt file | Output schema | Model env var |
+|------|-------------|-------------|---------------|---------------|
+| 3a. Artifact detail generation | `services/artifact-detail.ts` → `generateText` | `core/prompts/artifact-detail.ts` → `buildArtifactDetailPrompt()` | `artifactDetailOutputSchema` — `{ description, how_to_intro, how_to_steps[], thought_leaders[], pro_tip, company_stage_suitability }` | `OPENROUTER_CHAT_MODEL` |
+| 3b. Knowledge card retrieval | `services/matching.ts` → `generateEmbedding` + DB queries | _(no generative prompt)_ | Vector similarity results + keyword fallback — array of content items | `OPENROUTER_EMBEDDING_MODEL` |
+
+**Content card overlay (Epic 18):** Clicking a knowledge card opens a modal with an AI-generated summary. This is a third parallel call:
+
+| Step | Service call | Prompt file | Output schema | Model env var |
+|------|-------------|-------------|---------------|---------------|
+| 3c. Content summary overlay | `services/content-summary.ts` → `generateText` | `core/prompts/content-summary.ts` → `buildContentSummaryPrompt()` | `contentSummaryOutputSchema` — `{ summary }` (2–4 sentences) | `OPENROUTER_CHAT_MODEL` |
+
+Content summaries are pre-generated at ingest time and cached in the `content.summary` column; step 3c only fires if the cached value is missing.
+
+---
+
+### Flow 3 — Content Ingestion Pipeline (background job)
+
+**Trigger:** Admin clicks "Run Ingestion" on a draft content item, or the transcript job finishes for a URL-ingested item.
+**Execution:** Asynchronous background job; admin sees progress via the notification bell. Artifact detection and news proposal are non-blocking: failures are logged but do not fail the ingestion job.
+
+| Step | Service call | Prompt file | Output schema | Model env var |
+|------|-------------|-------------|---------------|---------------|
+| 4a. Transcript intelligence extraction | `services/ingest.ts` → `generateText` | `core/prompts/content-intelligence.ts` → `buildContentIntelligencePrompt()` | `contentIntelligenceOutputSchema` — topics, keywords, author, publication date, content category, language, confidence score; per-chunk: type + key concepts | `OPENROUTER_INGEST_MODEL` (large context) |
+| 4b. Chunk embedding generation | `services/ingest.ts` → `generateEmbedding` (per chunk) | _(no generative prompt)_ | 1 536-dim float vector stored in `content_chunks.embedding` | `OPENROUTER_EMBEDDING_MODEL` |
+| 4c. Content summary generation | `services/ingest.ts` → `generateText` | `core/prompts/content-summary.ts` → `buildContentSummaryPrompt()` | `contentSummaryOutputSchema` — `{ summary }` cached to `content.summary` | `OPENROUTER_CHAT_MODEL` |
+| 4d. Artifact detection | `services/artifact-detection.ts` → `generateText` | `core/prompts/artifact-detection.ts` → `buildArtifactDetectionPrompt()` | `artifactDetectionOutputSchema` — `{ artifacts: [{ title, slug, domains, use_case, description, how_to_intro, how_to_steps[], is_possible_duplicate, possible_duplicate_of }] }` | `OPENROUTER_CHAT_MODEL` |
+| 4e. News proposal generation | `services/news-proposal.ts` → `generateText` | `core/prompts/news-proposal.ts` → `buildNewsProposalPrompt()` | `newsProposalOutputSchema` — `{ type, title, description, published_date }` | `OPENROUTER_CHAT_MODEL` |
+
+Steps 4d and 4e each create a draft record (artifacts / news_posts with `status = 'draft'`) and an `admin_notifications` entry that appears in the admin notification bell in real-time via Supabase Realtime.
+
+---
+
+### Prompt File Reference
+
+| File | Builder function | Zod output schema | Used in |
+|------|-----------------|-------------------|---------|
+| `core/prompts/challenge-summary.ts` | `buildChallengeSummaryPrompt(description, domains, context?)` | `challengeSummaryOutputSchema` | Flow 1 step 1 |
+| `core/prompts/recommendations.ts` | `buildRecommendationsPrompt(summary, artifactList, context?)` | `recommendationsOutputSchema` | Flow 1 step 2 |
+| `core/prompts/artifact-detail.ts` | `buildArtifactDetailPrompt(artifact, challengeContext?)` | `artifactDetailOutputSchema` | Flow 2 step 3a |
+| `core/prompts/content-summary.ts` | `buildContentSummaryPrompt(title, sourceType, body)` | `contentSummaryOutputSchema` | Flow 2 step 3c; Flow 3 step 4c |
+| `core/prompts/content-intelligence.ts` | `buildContentIntelligencePrompt(chunks)` | `contentIntelligenceOutputSchema` | Flow 3 step 4a |
+| `core/prompts/artifact-detection.ts` | `buildArtifactDetectionPrompt(title, sourceType, chunks, existingTitles)` | `artifactDetectionOutputSchema` | Flow 3 step 4d |
+| `core/prompts/news-proposal.ts` | `buildNewsProposalPrompt({ itemType, title, author?, domains?, … })` | `newsProposalOutputSchema` | Flow 3 step 4e |
+
+---
+
+### Cost & Token Notes
+
+- **Flow 1** fires 2 chat calls per challenge submission. The recommendations prompt includes the full filtered artifact list (~70% token reduction vs. unfiltered, achieved by domain pre-filtering).
+- **Flow 2** fires at most 1 chat call + 1 embedding call per artifact page visit. The chat call is skipped on subsequent visits because the result is cached in the DB.
+- **Flow 3** fires 1 ingest call (large context — potentially 100 K+ tokens for a long transcript) + N embedding calls (one per chunk, typically 20–60 chunks) + 2 chat calls (content summary + artifact detection) + 1 chat call (news proposal) per content item.
+- **Artifact detection** truncates the concatenated chunk text to 12 000 characters before sending to the chat model. For very long transcripts this means only the first ~12 K chars are analysed. If better recall is needed on long content, switch `OPENROUTER_CHAT_MODEL` to a large-context model or route the detection step through `OPENROUTER_INGEST_MODEL` instead.
+- **Embedding model** must always produce 1 536-dim vectors. Changing the embedding model without re-embedding the entire knowledge base (chunks + query vectors) will break pgvector similarity search.
+
+---
+
+## Known Limitations & Out of Scope
+
+The following are intentional decisions or known gaps in the current version. They are not bugs.
+
+- **Challenge status is read-only** — users can see the status of each challenge (open, in progress, completed, etc.) but cannot manually change it through the UI. Status update controls are deferred.
 - **No archetype-based matching** — the system does not classify challenges into problem archetypes (e.g. "prioritisation paralysis," "stakeholder misalignment"). Archetype boosting is planned for a future version.
 - **No decision pattern logic** — the system does not apply "When X → do Y (unless Z)" rules to recommendations. Recommendations are driven purely by semantic similarity, keyword matching, and artifact selection.
 - **No analytics dashboard** — user events are logged to the server console. There is no third-party analytics integration or internal dashboard in the current version.
 - **No Q&A or cited-answer format** — the product returns curated artifact recommendations, not synthesised answers. A conversational or cited-answer format is explicitly out of scope.
 - **No audience-targeting metadata** — artifacts and content items are not tagged by target role, company stage, or experience level. Domain overlap is the only structured signal in the matching score.
 - **No per-chunk domain tagging** — domain assignments apply to the whole content item, not to individual chunks within it.
-- **Unsaved challenges are unrecoverable** — a challenge record is always created when the pipeline runs, but it only appears in the Journey if explicitly saved. Guests who close the browser or navigate away from the Results page without signing up lose access to those results permanently. Signed-in users who leave the Results page without clicking "Save Challenge" similarly lose the results.
-- **Google OAuth requires Supabase dashboard configuration** — the "Continue with Google" button on the login page is always visible, but Google OAuth will not work until a Google OAuth application is configured and enabled in the Supabase project dashboard. Without this, the button returns an error.
-- **Password reset ("forgot password") not yet implemented** — the login page has no forgot-password flow. Users who forget their password cannot reset it through the product UI in the current version.
-- **Email confirmation is off by default (Supabase development settings)** — in production, Supabase will send a confirmation email before activating the account. Ensure the correct Supabase email templates and SMTP settings are configured before going live.
+- **Unsaved challenges are unrecoverable** — a challenge record is always created when the pipeline runs, but it only appears in the Journey if explicitly saved. Guests who close the browser without signing up, and signed-in users who leave the Results page without clicking "Save Challenge", lose access to those results permanently.
+- **Google OAuth requires Supabase dashboard configuration** — the "Continue with Google" button is always visible, but Google OAuth will not work until configured in the Supabase dashboard. Without this, the button returns an error.
+- **Password reset ("forgot password") not yet implemented** — the login page has no forgot-password flow.
+- **Email confirmation is off by default (Supabase development settings)** — in production, ensure Supabase email templates and SMTP settings are configured before going live.
 - **No multi-hop or agent-based reasoning** — the matching pipeline is a single-pass retrieval and ranking. Graph databases, multi-step reasoning, and agent orchestration are non-goals.
 - **Content Intelligence Service has no timeout guard** — if the AI provider is slow or unresponsive during ingestion, the extraction step can hang indefinitely. Affected items can be retried with the backfill script.
-- **Eval harness has no CI integration** — the evaluation script is run manually by the team. It is not automatically triggered on code changes or content updates.
+- **Eval harness has no CI integration** — the evaluation script is run manually. It is not automatically triggered on code changes or content updates.
 - **Eval precision targets are not set** — the harness measures a baseline; no minimum precision threshold is enforced or tracked automatically.
-- **Artifact difficulty, progress, ratings, and comments** — the detail page does not include user progress indicators, difficulty ratings, peer comments, or social signals. These are explicitly out of scope for the current version.
-- **Artifact detail for uncached artifacts loads via LLM on first visit** — if a new artifact is added to the catalog but the backfill script has not been run, the first visit to that artifact's detail page will trigger an on-demand LLM call (the result is then stored for all future visits). Run `npm run backfill-artifact-details` after adding new artifacts to avoid this.
+- **Artifact difficulty, progress, ratings, and comments** — the detail page does not include user progress indicators, difficulty ratings, peer comments, or social signals. These are explicitly out of scope.
+- **Artifact detail for uncached artifacts loads via LLM on first visit** — if a new artifact is added but the backfill script has not been run, the first visit to that artifact's detail page triggers an on-demand LLM call (result is then cached). Run `npm run backfill-artifact-details` after adding new artifacts.
+- **Artifact detection analyses only the first 12 000 characters** — for very long podcast transcripts the model sees only the opening portion of the content. Artifacts discussed later in the episode may be missed. Re-detection can be triggered manually from the content detail page in the Admin UI.
+- **AI-detected artifacts require admin review before going live** — detected artifacts are always created with `status = draft`. They do not appear in the public artifact catalog or in recommendations until an admin changes the status to `active`.
+- **News proposals require admin publishing** — AI-generated news cards are created with `status = draft` in the news_posts table. They do not appear in the Journey feed until an admin publishes them from `/admin/news`.
+- **No deduplication across ingestion runs** — if the same content item is re-processed, artifact detection runs again. The slug uniqueness constraint prevents exact-duplicate artifacts from being inserted, but near-duplicates with a different slug may be created if the LLM generates a slightly different slug.
 
 ---
 
-## 8. Future Epics (Planned)
+## Future Epics (Planned)
 
 | Epic | What it would add | Status |
 |------|-------------------|--------|
@@ -868,10 +995,11 @@ The following are intentional decisions for the current version. They are not bu
 
 ---
 
-## 9. Changelog
+## Changelog
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-09 | 4.3 | Epic 19 | Added Smart Artifact Detection + News Proposal Pipeline: content ingestion now automatically detects new PM artifacts and generates draft news proposals using the chat model. Artifacts are inserted as `draft` records and queued for admin review. News proposals are inserted as AI-generated drafts. Both actions create real-time `admin_notifications` records (surfaced via the notification bell). Added Artifacts admin section (`/admin/artifacts`) with list view (filter by status, domain, AI-only toggle), editor form, and per-artifact status management. Dashboard stats extended with artifact counts by status and unread notification count. Admin notification bell now shows a combined badge and a combined dropdown with notifications and transcript jobs. Activating a content item or an artifact triggers a news proposal automatically. Added new section 10 (AI Flows, Models & Prompts) to this document. |
 | 2026-03-09 | 4.2 | Epic 18 | Added Content Card Enrichment: knowledge base cards on the artifact detail page are now interactive. Clicking a card opens a modal overlay with an AI-generated summary, topics, keywords, domain badges, and an estimated read/listen time. Signed-in users have their views tracked per content item — a "Viewed" badge appears on previously-opened cards and the overlay shows a first-seen date and view count. Summaries are generated automatically during ingestion (and regenerated on reprocess) using a smart chunk selection strategy. Added three new API endpoints (`GET /api/content/[id]`, `GET /api/content/[id]/view`, `POST /api/content/[id]/view`), a new Content View entity in the data model, and enriched the knowledge card shape with full content metadata. Removed "No content detail screen from knowledge carousel" from Known Limitations. |
 | 2026-03-09 | 4.1 | Epic 17 | Added Auto-Transcript from URL: admins can now paste any URL (YouTube video, podcast RSS feed, direct audio file, or web page) to automatically generate a transcript, extract metadata, and create a pre-filled draft content item in the background. A notification bell in the admin nav shows in-progress job count and fires a toast when a job completes. "Run Ingestion" button on the draft review page triggers embedding generation to make content searchable. Added Transcript Job to the Data Model, three new admin-only API endpoints, and a new `OPENROUTER_INGEST_MODEL` configuration setting. |
 | 2026-03-08 | 4.0 | Epic 16 | Added Admin UI: a protected web interface at `/admin` for internal content and news management. Admins can create, edit, process, and delete content items; publish and manage news posts; and view a dashboard of knowledge base stats. The Journey page news feed is now live-fetched from the database (published posts only) rather than hardcoded. Added 13 new API endpoints (9 admin-only, 1 public). Updated Data Model to add News Post entity and admin flag on User Profile, and content lifecycle status on Content Item. Removed "No admin content management UI" from Known Limitations and "Content management UI" from Future Epics. |

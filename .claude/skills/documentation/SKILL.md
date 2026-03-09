@@ -47,8 +47,8 @@ Use this when `/dev` has passed `--changed-files` and `--summary`.
 3. **Read only the changed files** listed in `--changed-files=` — enough to understand what's new. Skip files you don't need (e.g. migration SQL is rarely needed for documentation prose).
 
 4. **Determine what needs to change** in the document:
-   - New feature section(s) to add (after the last 3.x section)
-   - Sections that need updating (e.g. section 3.7 if auth changed, section 4 if data model changed)
+   - New feature section(s) to add (after the last feature sub-section in Feature Reference)
+   - Sections that need updating (e.g. Feature Reference if a feature changed, Data Model if schema changed)
    - Lines in Known Limitations to remove (if the epic resolves a limitation)
    - Lines in Future Epics to remove or update (if the epic was planned)
    - The version header (increment version, update date)
@@ -121,36 +121,36 @@ Use this only when `$ARGUMENTS` is `all` or blank, or when the document does not
 
 ## Table of Contents
 
-1. [Product Overview](#1-product-overview)
-2. [User Flow](#2-user-flow)
-3. [Feature Reference](#3-feature-reference)
-   - [3.1 Feature Name](#31-feature-name)
-   ...
-4. [Data Model for PMs](#4-data-model-for-pms)
-5. [API Reference](#5-api-reference)
-6. [Configuration & Tuning](#6-configuration--tuning)
-7. [Known Limitations & Out of Scope](#7-known-limitations--out-of-scope)
-8. [Future Epics (Planned)](#8-future-epics-planned)
-9. [Changelog](#9-changelog)
+- [Product Overview](#product-overview)
+- [User Flow](#user-flow)
+- [Feature Reference](#feature-reference)
+  - [Feature Name](#feature-name)
+  ...
+- [Data Model for PMs](#data-model-for-pms)
+- [API Reference](#api-reference)
+- [Configuration & Tuning](#configuration--tuning)
+- [Known Limitations & Out of Scope](#known-limitations--out-of-scope)
+- [Future Epics (Planned)](#future-epics-planned)
+- [Changelog](#changelog)
 ```
 
 ---
 
 ## Section writing rules (Mode C full sections; Modes A/B new sections only)
 
-**Section 1 — Product Overview**
+**Product Overview**
 - One-paragraph product elevator pitch.
 - The core problem it solves.
 - The target user persona.
 - The three-step value loop (context → challenge → recommendations).
 
-**Section 2 — User Flow**
+**User Flow**
 - Write as a numbered narrative ("First the user does X. Then…").
 - Cover the full journey from landing to seeing recommendations, including the auth prompt.
 - Note where data is persisted (client-side vs. server) and when.
 - Include edge cases: what happens if the user hits Back, refreshes, or is not logged in.
 
-**Section 3 — Feature Reference**
+**Feature Reference**
 Write one sub-section per implemented feature. For each feature:
 - **What it does**: 1-2 plain-language sentences.
 - **What the user sees**: describe the UI element or interaction.
@@ -160,7 +160,7 @@ Write one sub-section per implemented feature. For each feature:
 Feature section format (for new sections in Modes A/B):
 
 ```
-### 3.N Feature Name
+### Feature Name
 
 **What it does**: 1-2 plain-language sentences.
 
@@ -173,32 +173,32 @@ Feature section format (for new sections in Modes A/B):
 **Status**: Implemented
 ```
 
-**Section 4 — Data Model for PMs**
+**Data Model for PMs**
 - Do NOT show column names. Describe what information the system stores.
 - Use a table: Entity | What it represents | Key fields (in plain English) | Who can access it.
 - Cover: User Profiles, Challenges, Content Items, Content Chunks.
 - Note what's configurable vs. hardcoded.
 
-**Section 5 — API Reference**
+**API Reference**
 - One row per endpoint: Endpoint | Purpose | Auth required | Key inputs | Key outputs.
 - Use human-readable descriptions, not technical schemas.
 - Flag which endpoints require authentication.
 
-**Section 6 — Configuration & Tuning**
+**Configuration & Tuning**
 - Table: Setting name | What it controls (plain English) | Default | Range / Options.
 - Cover every env var in `core/config.ts` plus any relevant ones in scripts.
 - Add a "Tuning guide" subsection: plain-language advice on when a PM might want to change each setting.
 
-**Section 7 — Known Limitations & Out of Scope**
+**Known Limitations & Out of Scope**
 - Bullet list of what the system explicitly does NOT do today.
 - Reference the relevant spec's "Out of scope" items.
 - Flag user-visible limitations.
 
-**Section 8 — Future Epics (Planned)**
+**Future Epics (Planned)**
 - Table: Epic | What it adds | Status.
 - Derive from spec files that have no corresponding migration/service evidence.
 
-**Section 9 — Changelog**
+**Changelog**
 - Reverse-chronological table: Date | Version | Epic | Summary of changes.
 - Always append a new row; never delete old rows.
 
@@ -240,7 +240,7 @@ EOF
 - [ ] New feature section added with Status: Implemented.
 - [ ] ToC updated with new section link.
 - [ ] Changelog has one new row (most recent, at top of table).
-- [ ] Resolved limitations removed from section 7.
-- [ ] Completed epics removed or updated in section 8.
+- [ ] Resolved limitations removed from Known Limitations.
+- [ ] Completed epics removed or updated in Future Epics.
 - [ ] No raw code, TypeScript, SQL, or JSON in the document body.
 - [ ] Language is accessible to a non-technical PM — no jargon without explanation.

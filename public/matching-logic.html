@@ -93,6 +93,7 @@
     }
     .flow-label.flow-1 { background: #2563eb; }
     .flow-label.flow-2 { background: #7c3aed; }
+    .flow-label.flow-3 { background: #059669; }
 
     /* ── Overview grid ──────────────────────────────────── */
     .flow-grid {
@@ -131,6 +132,7 @@
     }
     .phase-block.blue  { border-left-color: #93bbfd; }
     .phase-block.purple { border-left-color: #c4b5fd; }
+    .phase-block.green  { border-left-color: #6ee7b7; }
     .phase-block h3 { margin-top: 0; }
 
     /* ── Tables ─────────────────────────────────────────── */
@@ -217,8 +219,8 @@
     ═══════════════════════════════════════════════════════════ -->
     <h2>Overview</h2>
     <p>
-      Contexta runs two distinct AI flows. They are independent — each has its own trigger, query
-      strategy, and output. Neither reuses the other's intermediate results.
+      Contexta runs three distinct AI flows. They are independent — each has its own trigger, query
+      strategy, and output. None reuses another's intermediate results.
     </p>
 
     <div class="flow-grid">
@@ -241,6 +243,17 @@
           <li>Optional: personalised pro tip for the user's challenge</li>
         </ul>
       </div>
+      <div class="flow-card" style="grid-column: 1 / -1;">
+        <div class="fc-title"><span class="flow-label flow-3">Flow 3</span> &nbsp;Artifact Detection</div>
+        <div class="fc-trigger">Triggered when: a content item finishes processing (Run Ingestion)</div>
+        <ul>
+          <li>Concatenates content chunks into a single context window</li>
+          <li>AI scans for PM frameworks and methodologies not yet in the catalog</li>
+          <li>Deduplicates against existing artifacts; flags near-duplicates</li>
+          <li>Inserts draft artifact records pre-filled with title, use case, description, and how-to steps</li>
+          <li>Creates admin notifications; admin reviews and activates or discards each draft</li>
+        </ul>
+      </div>
     </div>
 
     <table>
@@ -249,6 +262,7 @@
           <th>Property</th>
           <th>Flow 1 — Challenge Matching</th>
           <th>Flow 2 — Artifact Detail</th>
+          <th>Flow 3 — Artifact Detection</th>
         </tr>
       </thead>
       <tbody>
@@ -256,31 +270,37 @@
           <td>Query text</td>
           <td>User's challenge description + context</td>
           <td>Artifact title + use-case description</td>
+          <td>Concatenated content chunks (up to ~12 K chars)</td>
         </tr>
         <tr>
           <td>Retrieval method</td>
           <td>Vector + keyword (hybrid)</td>
           <td>Vector + keyword (hybrid)</td>
+          <td>None — LLM reads chunk text directly</td>
         </tr>
         <tr>
           <td>Domain filtering</td>
           <td>Yes — soft scoring boost + artifact catalog filter</td>
           <td>No — searches the full knowledge base</td>
+          <td>LLM infers domains; existing artifact list provided for dedup</td>
         </tr>
         <tr>
           <td>AI calls</td>
           <td>2 sequential AI calls (understanding → selection)</td>
-          <td>Up to 3 AI calls (detail generation, knowledge cards use no AI, pro tip)</td>
+          <td>Up to 3 AI calls (detail generation, 1 embedding call for knowledge cards, pro tip)</td>
+          <td>1 AI call — detection + full artifact generation in one pass</td>
         </tr>
         <tr>
           <td>Caching</td>
           <td>None — generated fresh per challenge</td>
           <td>Static detail is cached in DB; knowledge cards re-queried each load</td>
+          <td>Results written to DB as draft artifacts; detection is non-fatal and non-blocking</td>
         </tr>
         <tr>
           <td>Output</td>
           <td>3–5 artifact recommendations with explanations</td>
           <td>Structured artifact detail + up to 5 related knowledge cards + pro tip</td>
+          <td>0–N draft artifact records + admin notifications</td>
         </tr>
       </tbody>
     </table>
@@ -439,7 +459,7 @@
       <div class="phase-block purple">
         <ol>
           <li><strong>Static artifact detail</strong> — Structured content about the artifact (description, when to use it, steps, pro tip). Generated once by AI and cached permanently in the database. Subsequent loads are instant DB reads with no AI call.</li>
-          <li><strong>Knowledge cards</strong> — Up to 5 related knowledge base items (podcasts, articles, books) surfaced via vector similarity search against the artifact's own description. No AI call — purely a database query.</li>
+          <li><strong>Knowledge cards</strong> — Up to 5 related knowledge base items (podcasts, articles, books) surfaced via hybrid retrieval (vector + keyword) against the artifact's own description. Requires one embedding AI call to generate the query vector; no generative AI call.</li>
           <li><strong>Personalised pro tip</strong> — If the user arrived from a specific challenge, a small AI call replaces the generic pro tip with one tailored to their challenge context. Runs in parallel with the static detail render.</li>
         </ol>
       </div>
@@ -574,8 +594,180 @@
       </table>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════
+         FLOW 3
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="flow-section">
+      <span class="flow-label flow-3">Flow 3</span>
+      <h2 style="margin-top:0.4rem;">Artifact Detection</h2>
+      <p>
+        After a content item finishes processing (chunking + embeddings), Contexta automatically
+        scans the new chunks for PM frameworks, methodologies, and tools that are not yet in the
+        artifact catalog. Any discoveries are inserted as draft records for admin review — the
+        pipeline never publishes artifacts directly.
+      </p>
+      <div class="note" style="background:#f0fdf4; border-color:#bbf7d0;">
+        This flow is <strong>non-fatal and non-blocking</strong>: if detection fails or returns
+        nothing, the ingestion pipeline still completes successfully. Detection can also be
+        re-triggered manually from the content edit page ("Re-detect artifacts").
+      </div>
+
+      <h2>Pipeline Steps</h2>
+      <div class="phase-block green">
+        <ol>
+          <li>
+            <strong>Load chunks</strong> — All content chunks for the just-processed content item
+            are fetched from the database and concatenated into a single context string. Up to
+            approximately 12 000 characters are used (truncated if longer).
+          </li>
+          <li>
+            <strong>Load existing artifacts</strong> — The full list of artifact titles and slugs
+            currently in the catalog is fetched. This list is passed to the LLM as the deduplication
+            reference — the model is instructed not to return anything already on this list.
+          </li>
+          <li>
+            <strong>Single LLM call — detect and generate</strong> — One AI call serves both
+            purposes: it identifies new artifacts <em>and</em> generates their full content in a
+            single structured JSON response. The prompt instructs the model to:
+            <ul>
+              <li>Return only artifacts that are explained or demonstrated in depth (not merely mentioned).</li>
+              <li>Perform a fuzzy semantic dedup against the existing list — not an exact string match.</li>
+              <li>Flag borderline cases as <code>is_possible_duplicate = true</code> and populate
+                <code>possible_duplicate_of</code> with the slug of the closest existing artifact.</li>
+              <li>For each new artifact, generate: title, slug (kebab-case), domains (1–3),
+                use case (1–2 sentences), description (3–5 sentences), how-to intro (1–2 sentences),
+                and 3–8 how-to steps.</li>
+              <li>Return an empty array if no new artifacts are found.</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Schema validation</strong> — The LLM response is parsed as JSON and validated
+            against a Zod schema. Any response that fails validation is discarded (non-fatal).
+          </li>
+          <li>
+            <strong>Slug dedup</strong> — Before inserting each detected artifact, its slug is
+            checked against the in-memory set of known slugs. An artifact whose slug already exists
+            is skipped silently. This is a cheap second guard after the LLM-level dedup.
+          </li>
+          <li>
+            <strong>Insert draft artifacts</strong> — Each genuinely new artifact is inserted into
+            the <code>artifacts</code> table with:
+            <ul>
+              <li><code>status = 'draft'</code> — never published automatically.</li>
+              <li><code>is_ai_generated = true</code></li>
+              <li><code>source_content_id</code> pointing to the content item that triggered detection.</li>
+              <li><code>possible_duplicate_of</code> populated if the LLM flagged it as borderline.</li>
+              <li><code>detail</code> JSONB containing description, how-to intro, and how-to steps.</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Admin notifications</strong> — For each inserted artifact, an
+            <code>admin_notifications</code> row is created (<code>type = 'artifact_detected'</code>)
+            with a direct link to the artifact editor. The bell icon in the admin panel shows the
+            unread count and a toast appears via Supabase Realtime.
+          </li>
+        </ol>
+      </div>
+
+      <h2>Deduplication Strategy</h2>
+      <p>
+        Two independent dedup guards run in sequence:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Guard</th>
+            <th>Mechanism</th>
+            <th>What it catches</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>LLM semantic dedup</strong></td>
+            <td>Existing artifact titles passed as context; LLM performs fuzzy matching on meaning</td>
+            <td>Near-synonyms, alternate names, rebranded variants (e.g. "Jobs to Be Done" vs "JTBD")</td>
+          </tr>
+          <tr>
+            <td><strong>Slug exact dedup</strong></td>
+            <td>Set membership check on known slugs before each insert</td>
+            <td>Exact slug collisions — fast and free, runs in memory</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Artifacts that pass both guards but are semantically close to an existing one are inserted
+        with <code>possible_duplicate_of</code> set. The artifact editor displays a warning banner
+        prompting the admin to review before activating.
+      </p>
+
+      <h2>Context Window Budget</h2>
+      <p>
+        The chunks fed to the LLM are capped at ~12 000 characters. For most content items this
+        covers the full transcript; for very long pieces (e.g. a full book transcript) only the
+        first 12 K characters are used. This keeps the prompt within a predictable token budget
+        while still capturing the densest material (which typically appears early in the chunk
+        sequence).
+      </p>
+
+      <h2>Admin Workflow After Detection</h2>
+      <p>
+        Detection creates raw material — admin review determines what reaches the catalog.
+        The admin flow is:
+      </p>
+      <ol>
+        <li>Bell icon shows unread notification count; toast fires on arrival via Realtime.</li>
+        <li>Admin opens <code>/admin/artifacts</code> and filters to <strong>Draft</strong> status.</li>
+        <li>For each draft, the editor shows all generated fields plus a read-only info panel
+          indicating the source content item and any duplicate warning.</li>
+        <li>Admin can edit any field, change status to <strong>Pending review</strong> or
+          <strong>Active</strong>, or delete the draft.</li>
+        <li>Setting status to <strong>Active</strong> triggers a second AI flow —
+          <a href="#news-proposal">News Proposal Generation</a> — which creates a draft news card
+          for the Journey feed.</li>
+      </ol>
+
+      <h2 id="news-proposal">News Proposal Generation</h2>
+      <p>
+        Whenever a content item or artifact transitions to <code>status = 'active'</code> via
+        the admin API, a separate lightweight AI call generates a draft news post for the
+        Contexta Journey feed. This is also non-fatal — activation succeeds even if proposal
+        generation fails.
+      </p>
+      <div class="phase-block green">
+        <ol>
+          <li>
+            <strong>Source metadata assembled</strong> — For content: title, author, source type
+            (podcast / video / article / book), domains. For artifacts: title, domains, use case,
+            description.
+          </li>
+          <li>
+            <strong>Single LLM call</strong> — The model is prompted to write an engaging news card
+            in the tone of a professional PM newsletter. It returns: <code>type</code>
+            (podcast / artifact / article), <code>title</code> (max 80 chars),
+            <code>description</code> (max 200 chars, 1–2 sentences), and
+            <code>published_date</code> (display string, e.g. "Mar 2026").
+          </li>
+          <li>
+            <strong>Insert draft news post</strong> — A <code>news_posts</code> row is created with
+            <code>status = 'draft'</code>, <code>is_ai_generated = true</code>, and a
+            <code>source_id</code> back-reference to the originating content item or artifact.
+          </li>
+          <li>
+            <strong>Admin notification</strong> — An <code>admin_notifications</code> row is created
+            (<code>type = 'news_proposal_generated'</code>) with a link to the news post editor.
+            The news list shows an <strong>AI draft</strong> badge on auto-generated posts; they
+            are edited and published identically to manual posts.
+          </li>
+        </ol>
+      </div>
+      <div class="note" style="background:#f0fdf4; border-color:#bbf7d0;">
+        Every activation triggers a new proposal — including re-activations. This is intentional:
+        a content item updated and re-activated might warrant a fresh news card.
+      </div>
+    </div>
+
     <footer-note>
-      Contexta &mdash; Matching Logic &mdash; Documentation v2.0
+      Contexta &mdash; Matching Logic &mdash; Documentation v3.0
     </footer-note>
   </div>
 </body>

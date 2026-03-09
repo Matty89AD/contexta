@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_is_read ON admin_notifications (is_read);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_created_at ON admin_notifications (created_at DESC);
 
+-- Add to Realtime publication so NotificationBell receives live inserts
+ALTER PUBLICATION supabase_realtime ADD TABLE admin_notifications;
+
 -- RLS: only admins can access
 ALTER TABLE admin_notifications ENABLE ROW LEVEL SECURITY;
 
