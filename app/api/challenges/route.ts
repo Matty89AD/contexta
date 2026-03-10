@@ -8,8 +8,12 @@ import {
   ValidationError,
   AIProviderError,
 } from "@/core/errors";
+import { checkRateLimit, getClientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rl = checkRateLimit(getClientIp(request), 5, 10 * 60_000);
+  if (!rl.allowed) return rateLimitedResponse(rl.resetMs);
+
   try {
     const user = await getCurrentUser().catch(() => null);
     const body = await request.json();

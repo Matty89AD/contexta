@@ -3,7 +3,7 @@ import { getServiceRoleClient } from "@/lib/supabase/server";
 import { getArtifactBySlug } from "@/repositories/artifacts";
 import { getArtifactKnowledge } from "@/services/artifact-detail";
 import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
-import { NotFoundError, AppError } from "@/core/errors";
+import { NotFoundError, AIProviderError, AppError } from "@/core/errors";
 
 export async function GET(
   _request: Request,
@@ -21,6 +21,9 @@ export async function GET(
   } catch (e) {
     if (e instanceof NotFoundError) {
       return NextResponse.json({ error: e.message }, { status: 404 });
+    }
+    if (e instanceof AIProviderError) {
+      return NextResponse.json({ error: "AI service temporarily unavailable" }, { status: 502 });
     }
     if (e instanceof AppError) {
       return NextResponse.json({ error: e.message }, { status: e.statusCode });

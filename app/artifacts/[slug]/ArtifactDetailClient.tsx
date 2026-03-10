@@ -166,10 +166,12 @@ function KnowledgeCarousel({
 
 export function ArtifactDetailClient({
   artifact,
+  challengeId,
   challengeSummary,
   challengeDomains,
 }: {
   artifact: Artifact;
+  challengeId?: string;
   challengeSummary?: string;
   challengeDomains?: string[];
 }) {
@@ -200,12 +202,13 @@ export function ArtifactDetailClient({
       .catch(() => setDetailError("Failed to load artifact detail."))
       .finally(() => setDetailLoading(false));
 
-    // 2. Personalised pro_tip — separate LLM call, only when challenge context exists
-    if (challengeSummary) {
+    // 2. Personalised pro_tip — separate LLM call, only when challenge context exists.
+    // Uses challengeId so the server fetches the summary from DB (prevents prompt injection).
+    if (challengeId) {
       fetch(`/api/artifacts/${artifact.slug}/pro-tip`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ challengeSummary, challengeDomains }),
+        body: JSON.stringify({ challengeId }),
       })
         .then((r) => r.json())
         .then((data: { pro_tip?: string | null }) => setProTip(data.pro_tip ?? undefined))

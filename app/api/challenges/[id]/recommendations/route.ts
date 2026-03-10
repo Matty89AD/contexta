@@ -3,11 +3,15 @@ import { getServiceRoleClient } from "@/lib/supabase/server";
 import { runChallengePhase2 } from "@/services/challenge";
 import { createOpenRouterProvider } from "@/core/ai/openrouter-provider";
 import { NotFoundError, AIProviderError, AppError } from "@/core/errors";
+import { checkRateLimit, getClientIp, rateLimitedResponse } from "@/lib/rate-limit";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rl = checkRateLimit(getClientIp(request), 5, 10 * 60_000);
+  if (!rl.allowed) return rateLimitedResponse(rl.resetMs);
+
   try {
     const { id } = await params;
     const supabase = getServiceRoleClient();

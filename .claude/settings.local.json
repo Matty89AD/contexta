@@ -18,7 +18,8 @@
       "Bash(npx shadcn@latest:*)",
       "Bash(git stash:*)",
       "Bash(npx playwright:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(grep:*)"
     ]
   }
 }

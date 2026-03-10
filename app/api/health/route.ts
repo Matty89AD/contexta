@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    ai: "openai",
-  });
+  return NextResponse.json({ status: "ok" });
 }

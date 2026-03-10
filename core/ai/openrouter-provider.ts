@@ -46,6 +46,12 @@ function resolveEmbeddingClient(openrouterKey: string): {
   };
 }
 
+/** Timeout in ms for chat completions (text generation). */
+const CHAT_TIMEOUT_MS = 30_000;
+
+/** Timeout in ms for embedding calls (faster, smaller payload). */
+const EMBEDDING_TIMEOUT_MS = 20_000;
+
 /** Shared embedding implementation used by both providers. */
 async function callEmbeddingAPI(
   client: OpenAI,
@@ -54,11 +60,14 @@ async function callEmbeddingAPI(
 ): Promise<number[]> {
   let res: Awaited<ReturnType<typeof client.embeddings.create>>;
   try {
-    res = await client.embeddings.create({
-      model,
-      input: text,
-      encoding_format: "float",
-    });
+    res = await client.embeddings.create(
+      {
+        model,
+        input: text,
+        encoding_format: "float",
+      },
+      { timeout: EMBEDDING_TIMEOUT_MS }
+    );
   } catch (apiErr) {
     throw new Error(
       `Embedding API error (model: ${model}): ${
@@ -107,11 +116,14 @@ export function createOpenRouterIngestProvider(apiKey?: string): AIProvider {
         messages.push({ role: "system", content: options.systemPrompt });
       }
       messages.push({ role: "user", content: prompt });
-      const completion = await openai.chat.completions.create({
-        model: ingestModel,
-        messages,
-        response_format: options?.jsonMode ? { type: "json_object" } : undefined,
-      });
+      const completion = await openai.chat.completions.create(
+        {
+          model: ingestModel,
+          messages,
+          response_format: options?.jsonMode ? { type: "json_object" } : undefined,
+        },
+        { timeout: CHAT_TIMEOUT_MS }
+      );
       const content = completion.choices[0]?.message?.content;
       if (content == null) throw new Error("OpenRouter returned empty content");
       return content;
@@ -154,11 +166,14 @@ export function createOpenRouterProvider(apiKey?: string): AIProvider {
         messages.push({ role: "system", content: options.systemPrompt });
       }
       messages.push({ role: "user", content: prompt });
-      const completion = await openai.chat.completions.create({
-        model: chatModel,
-        messages,
-        response_format: options?.jsonMode ? { type: "json_object" } : undefined,
-      });
+      const completion = await openai.chat.completions.create(
+        {
+          model: chatModel,
+          messages,
+          response_format: options?.jsonMode ? { type: "json_object" } : undefined,
+        },
+        { timeout: CHAT_TIMEOUT_MS }
+      );
       const content = completion.choices[0]?.message?.content;
       if (content == null) throw new Error("OpenRouter returned empty content");
       return content;

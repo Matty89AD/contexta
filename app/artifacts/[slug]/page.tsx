@@ -35,6 +35,7 @@ export default async function ArtifactDetailPage({ params, searchParams }: Props
   return (
     <ArtifactDetailClient
       artifact={artifact}
+      challengeId={cid}
       challengeSummary={challengeSummary}
       challengeDomains={challengeDomains}
     />
