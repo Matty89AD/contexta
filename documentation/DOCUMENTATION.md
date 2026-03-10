@@ -1,6 +1,6 @@
 # Contexta — Product Documentation
 
-> **Version:** 4.3 &nbsp;|&nbsp; **Last updated:** 2026-03-09 &nbsp;|&nbsp; **Audience:** Product Managers
+> **Version:** 4.4 &nbsp;|&nbsp; **Last updated:** 2026-03-10 &nbsp;|&nbsp; **Audience:** Product Managers
 
 ---
 
@@ -27,6 +27,7 @@
   - [Auto-Transcript from URL](#auto-transcript-from-url)
   - [Content Card Enrichment](#content-card-enrichment)
   - [Smart Artifact Detection & News Proposals](#smart-artifact-detection--news-proposals)
+  - [API Security & Rate Limiting](#api-security--rate-limiting)
 - [Data Model for PMs](#data-model-for-pms)
 - [API Reference](#api-reference)
 - [Configuration & Tuning](#configuration--tuning)
@@ -700,6 +701,27 @@ The overlay closes by pressing Escape, clicking the X button, or clicking outsid
 
 ---
 
+### API Security & Rate Limiting
+
+**What it does**: Protects all AI-powered API endpoints from abuse before the product goes public. Three independent layers work together: request throttling prevents any single user from exhausting the AI budget, call timeouts prevent slow AI responses from hanging the server, and prompt safeguards prevent users from smuggling instructions into the AI through their challenge text.
+
+**What the user sees**: Under normal usage this is invisible. If a user submits challenges too rapidly they receive a "Too many requests" error with a message indicating when they can try again. If the AI provider is unresponsive, requests fail cleanly after 30 seconds rather than spinning indefinitely.
+
+**Business rules**:
+- A user (identified by their IP address) may submit at most 5 challenges per 10-minute window. The same limit applies to the recommendations step.
+- Personalised Pro-Tipp requests are limited to 10 per minute per IP.
+- Analytics event logging is limited to 30 calls per minute per IP.
+- All AI text generation calls time out after 30 seconds; embedding calls time out after 20 seconds. Timed-out requests return a clean error to the user rather than hanging.
+- The challenge summary and personalised Pro-Tipp prompts use explicit data delimiters around user-supplied text, instructing the AI to treat that content as data to analyse rather than as instructions to follow. This limits the impact of prompt injection attempts.
+- The personalised Pro-Tipp endpoint now accepts a challenge ID rather than raw summary text. The server fetches the summary directly from the database, preventing callers from substituting arbitrary text into the AI call.
+- The analytics event endpoint validates event names against an allowlist of characters (letters, numbers, and a small set of separators). Freeform strings are rejected.
+- The health check endpoint no longer discloses the name of the AI provider in its response.
+- Rate limiting is enforced per server instance. For a multi-region or high-traffic deployment, a distributed store (such as Upstash Redis) would be required to enforce global limits across all instances.
+
+**Status**: Implemented
+
+---
+
 ## Data Model for PMs
 
 The following describes what information the system stores, in plain language. Column names and technical details are omitted.
@@ -740,7 +762,7 @@ All endpoints return JSON. All errors include a plain-text description of what w
 | `POST /api/challenges` | Phase 1: submit a challenge and generate the AI summary | No (works anonymously) | Challenge description, domain(s), optional context fields | Challenge ID, AI summary, problem statement, desired outcome statement |
 | `POST /api/challenges/[id]/recommendations` | Phase 2: generate artifact recommendations for an existing challenge | No | Challenge ID (in URL) | 3–5 artifact recommendations (each with title, domains, use case, tailored explanation, and most-relevant flag) |
 | `GET /api/artifacts/[slug]/detail` | Return the pre-generated static deep-dive content for a specific artifact | No | Artifact slug (in URL) | Description, company stage suitability, thought leaders, generic Pro-Tipp, how-to intro, numbered how-to steps |
-| `POST /api/artifacts/[slug]/pro-tip` | Generate a personalised Pro-Tipp for an artifact given a specific challenge | No | Artifact slug (in URL), challenge summary and domains (in body) | Personalised 2–3 sentence Pro-Tipp |
+| `POST /api/artifacts/[slug]/pro-tip` | Generate a personalised Pro-Tipp for an artifact given a specific challenge | No | Artifact slug (in URL), challenge ID (in body — the server fetches the summary from the database) | Personalised 2–3 sentence Pro-Tipp |
 | `GET /api/artifacts/[slug]/knowledge` | Find knowledge base content semantically related to a specific artifact | No | Artifact slug (in URL) | Up to 5 deduplicated enriched content cards (title, author, source type, URL, summary, topics, keywords, domains, publication date, and estimated word count) |
 | `GET /api/content/[id]` | Return full metadata for a single content item (used by the knowledge card overlay) | No | Content ID (in URL) | Title, source type, author, URL, publication date, domains, topics, keywords, AI-generated summary, extraction confidence, and estimated word count |
 | `GET /api/content/[id]/view` | Check whether the signed-in user has viewed a specific content item | **Yes** | Content ID (in URL) | Viewed flag, first-seen timestamp, last-seen timestamp, and view count; returns 401 if unauthenticated |
@@ -972,7 +994,6 @@ The following are intentional decisions or known gaps in the current version. Th
 - **Password reset ("forgot password") not yet implemented** — the login page has no forgot-password flow.
 - **Email confirmation is off by default (Supabase development settings)** — in production, ensure Supabase email templates and SMTP settings are configured before going live.
 - **No multi-hop or agent-based reasoning** — the matching pipeline is a single-pass retrieval and ranking. Graph databases, multi-step reasoning, and agent orchestration are non-goals.
-- **Content Intelligence Service has no timeout guard** — if the AI provider is slow or unresponsive during ingestion, the extraction step can hang indefinitely. Affected items can be retried with the backfill script.
 - **Eval harness has no CI integration** — the evaluation script is run manually. It is not automatically triggered on code changes or content updates.
 - **Eval precision targets are not set** — the harness measures a baseline; no minimum precision threshold is enforced or tracked automatically.
 - **Artifact difficulty, progress, ratings, and comments** — the detail page does not include user progress indicators, difficulty ratings, peer comments, or social signals. These are explicitly out of scope.
@@ -999,6 +1020,7 @@ The following are intentional decisions or known gaps in the current version. Th
 
 | Date | Version | Epic | What changed |
 |------|---------|------|--------------|
+| 2026-03-10 | 4.4 | — | Added API Security & Rate Limiting: all AI-powered endpoints now enforce per-IP request limits (5 challenges per 10 minutes, 10 Pro-Tipp calls per minute, 30 analytics events per minute). All AI calls have hard timeouts (30 s for text generation, 20 s for embeddings). User-supplied text in challenge and Pro-Tipp prompts is now isolated with explicit data delimiters to limit prompt injection impact. The personalised Pro-Tipp endpoint now accepts a challenge ID and fetches the summary server-side, eliminating a free-form injection surface. Analytics event names are validated against a character allowlist. Health check no longer discloses the AI provider name. Removed the "Content Intelligence Service has no timeout guard" known limitation. |
 | 2026-03-09 | 4.3 | Epic 19 | Added Smart Artifact Detection + News Proposal Pipeline: content ingestion now automatically detects new PM artifacts and generates draft news proposals using the chat model. Artifacts are inserted as `draft` records and queued for admin review. News proposals are inserted as AI-generated drafts. Both actions create real-time `admin_notifications` records (surfaced via the notification bell). Added Artifacts admin section (`/admin/artifacts`) with list view (filter by status, domain, AI-only toggle), editor form, and per-artifact status management. Dashboard stats extended with artifact counts by status and unread notification count. Admin notification bell now shows a combined badge and a combined dropdown with notifications and transcript jobs. Activating a content item or an artifact triggers a news proposal automatically. Added new section 10 (AI Flows, Models & Prompts) to this document. |
 | 2026-03-09 | 4.2 | Epic 18 | Added Content Card Enrichment: knowledge base cards on the artifact detail page are now interactive. Clicking a card opens a modal overlay with an AI-generated summary, topics, keywords, domain badges, and an estimated read/listen time. Signed-in users have their views tracked per content item — a "Viewed" badge appears on previously-opened cards and the overlay shows a first-seen date and view count. Summaries are generated automatically during ingestion (and regenerated on reprocess) using a smart chunk selection strategy. Added three new API endpoints (`GET /api/content/[id]`, `GET /api/content/[id]/view`, `POST /api/content/[id]/view`), a new Content View entity in the data model, and enriched the knowledge card shape with full content metadata. Removed "No content detail screen from knowledge carousel" from Known Limitations. |
 | 2026-03-09 | 4.1 | Epic 17 | Added Auto-Transcript from URL: admins can now paste any URL (YouTube video, podcast RSS feed, direct audio file, or web page) to automatically generate a transcript, extract metadata, and create a pre-filled draft content item in the background. A notification bell in the admin nav shows in-progress job count and fires a toast when a job completes. "Run Ingestion" button on the draft review page triggers embedding generation to make content searchable. Added Transcript Job to the Data Model, three new admin-only API endpoints, and a new `OPENROUTER_INGEST_MODEL` configuration setting. |
