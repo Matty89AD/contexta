@@ -85,7 +85,7 @@ Tables intentionally excluded: `profiles`, `challenges` (dev test data, not usef
 2. Go to **Settings → Database** and copy its direct connection string
 3. Save it:
 ```bash
-export PROD_DATABASE_URL="postgresql://postgres.[prod-ref]:[password]@db.[prod-ref].supabase.co:5432/postgres"
+export PROD_DATABASE_URL="postgresql://postgres.[prod-ref]:[password]@aws-1-[region].pooler.supabase.com:5432/postgres"
 ```
 
 Apply the baseline schema:
