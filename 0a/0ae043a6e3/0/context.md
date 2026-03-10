@@ -1,0 +1,32 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+[Image]
+<image_files>
+The following images were provdied by the user and saved to the workspace for future use:
+1. /Users/mattyaldoyaili/.cursor/projects/Users-mattyaldoyaili-Documents-dev-projects-contexta/assets/image-5a7116bf-0b2f-470a-becb-0896322d9b7f.png
+
+These images can be copied for use in other locations.
+</image_files>
+
+as you can see in the screenshot, that padding margins for the content card carousel is not right. the first card is on the loft and all cards on the top not shown ...
+
+### Prompt 2
+
+/clear
+
+### Prompt 3
+
+explain the project directory structure for an product peer with just basic engineering understanding
+
+### Prompt 4
+
+what is pages used for normally? it's empty
+
+### Prompt 5
+
+are there any pros and cons for an app router vs page router apporach?
+
