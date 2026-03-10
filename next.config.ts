@@ -1,10 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  experimental: {
-    // Enable after() for post-response background work (Epic 17)
-    after: true,
-  },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

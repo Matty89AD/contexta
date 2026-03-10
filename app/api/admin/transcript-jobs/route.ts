@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { unstable_after as after } from "next/server";
+import { after } from "next/server";
 import { createClient, getServiceRoleClient } from "@/lib/supabase/server";
 import { createJob, processJob, listJobs } from "@/services/transcript-job.service";
 import { createOpenRouterIngestProvider } from "@/core/ai/openrouter-provider";
