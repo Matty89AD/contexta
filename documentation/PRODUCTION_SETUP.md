@@ -13,17 +13,19 @@ This guide walks through setting up a production environment with its own Supaba
 ## Step 1: Get the Dev Database Connection String
 
 1. Open your **dev** Supabase project in the dashboard
-2. Go to **Settings → Database**
-3. Under **Connection string**, select **URI** and copy the **direct connection** (not the pooler)
+2. Go to **Settings → Database → Connection pooling**
+3. Copy the **Session pooler** connection string (port 5432)
 
 It looks like:
 ```
-postgresql://postgres.[project-ref]:[password]@db.[project-ref].supabase.co:5432/postgres
+postgresql://postgres.[project-ref]:[password]@aws-1-[region].pooler.supabase.com:5432/postgres
 ```
+
+> **Note:** The direct connection host (`db.[project-ref].supabase.co`) may not resolve via DNS. Use the Session pooler URL instead. The username must include the project ref: `postgres.[project-ref]` (not just `postgres`).
 
 Save it as `DEV_DATABASE_URL` in your terminal session:
 ```bash
-export DEV_DATABASE_URL="postgresql://postgres.[dev-ref]:[password]@db.[dev-ref].supabase.co:5432/postgres"
+export DEV_DATABASE_URL="postgresql://postgres.[project-ref]:[password]@aws-1-[region].pooler.supabase.com:5432/postgres"
 ```
 
 ---
