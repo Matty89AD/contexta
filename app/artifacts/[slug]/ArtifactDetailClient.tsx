@@ -342,7 +342,7 @@ export function ArtifactDetailClient({
         data-testid="back-button"
       >
         <ArrowLeft size={16} />
-        Zurück zu den Empfehlungen
+        Back to recommendations
       </button>
 
       {/* Header */}

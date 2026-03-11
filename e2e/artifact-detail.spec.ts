@@ -23,7 +23,7 @@ test.describe("Artifact Detail page (Epic 11)", () => {
     const response = await page.goto("/artifacts/rice-scoring");
     if (response?.status() === 200) {
       await expect(
-        page.getByRole("button", { name: "Zurück zu den Empfehlungen" })
+        page.getByRole("button", { name: "Back to recommendations" })
       ).toBeVisible();
     }
   });
@@ -45,7 +45,7 @@ test.describe("Artifact Detail page (Epic 11)", () => {
     const response = await page.goto("/artifacts/rice-scoring");
     if (response?.status() === 200) {
       await expect(
-        page.getByRole("button", { name: "Zurück zu den Empfehlungen" })
+        page.getByRole("button", { name: "Back to recommendations" })
       ).toBeVisible();
     }
   });
