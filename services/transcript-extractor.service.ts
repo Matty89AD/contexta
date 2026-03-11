@@ -1,15 +1,11 @@
 /**
- * Transcript Extractor Service — wraps @steipete/summarize CLI (Epic 17).
- * Spawns the summarize CLI with --extract flag to get raw content without
- * LLM summarization (we run our own intelligence extraction).
- * Passes OPENROUTER_API_KEY as OPENAI_API_KEY so summarize routes
- * through OpenRouter for any Whisper-based audio transcription.
+ * Transcript Extractor Service — uses @steipete/summarize programmatic API (Epic 17).
+ * Uses createLinkPreviewClient instead of spawning the summarize CLI so that
+ * it works in serverless environments (Vercel) where child_process.execFile
+ * cannot spawn arbitrary binaries.
  */
-import { execFile } from "child_process";
-import { promisify } from "util";
-import path from "path";
+import { createLinkPreviewClient } from "@steipete/summarize/content";
 
-const execFileAsync = promisify(execFile);
 const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
 export interface TranscriptResult {
@@ -20,36 +16,36 @@ export interface TranscriptResult {
 }
 
 /**
- * Extract raw transcript/content from a URL using the summarize CLI.
- * Uses --extract flag to skip LLM summarization — returns raw content only.
+ * Extract raw transcript/content from a URL using the summarize programmatic API.
+ * Skips LLM summarization — returns raw content only.
  */
 export async function extractTranscript(url: string): Promise<TranscriptResult> {
-  const summarizeBin = path.resolve(process.cwd(), "node_modules/.bin/summarize");
+  const client = createLinkPreviewClient({
+    env: {
+      OPENAI_API_KEY: process.env.OPENROUTER_API_KEY ?? "",
+      OPENAI_BASE_URL: "https://openrouter.ai/api/v1",
+    },
+    openaiApiKey: process.env.OPENROUTER_API_KEY ?? undefined,
+  });
 
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
-    OPENAI_API_KEY: process.env.OPENROUTER_API_KEY ?? "",
-    OPENAI_BASE_URL: "https://openrouter.ai/api/v1",
-    SUMMARIZE_MODEL: process.env.SUMMARIZE_MODEL ?? "google/gemini-2.0-flash-lite",
-  };
+  const result = await client.fetchLinkContent(url, {
+    youtubeTranscript: "auto",
+    format: "text",
+    timeoutMs: TIMEOUT_MS,
+    maxCharacters: 50 * 1024 * 4, // ~200k chars for long transcripts
+  });
 
-  const { stdout } = await execFileAsync(
-    summarizeBin,
-    [url, "--extract", "--format", "text", "--plain", "--no-color"],
-    {
-      env,
-      timeout: TIMEOUT_MS,
-      maxBuffer: 50 * 1024 * 1024, // 50 MB for long transcripts
-    }
-  );
+  const transcript = result.content ?? "";
 
   return {
-    transcript: cleanTranscript(stdout),
+    transcript: cleanTranscript(transcript),
+    detectedTitle: result.title ?? undefined,
+    duration: result.mediaDurationSeconds ?? undefined,
   };
 }
 
 /**
- * Normalise raw CLI output into clean prose:
+ * Normalise raw content into clean prose:
  * - Strip leading "Transcript:" label
  * - Join short caption lines into continuous text
  * - Treat >> speaker-change markers as paragraph breaks

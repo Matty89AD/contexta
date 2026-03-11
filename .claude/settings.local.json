@@ -19,7 +19,9 @@
       "Bash(git stash:*)",
       "Bash(npx playwright:*)",
       "Bash(git:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(node:*)",
+      "Bash(npx next:*)"
     ]
   }
 }
