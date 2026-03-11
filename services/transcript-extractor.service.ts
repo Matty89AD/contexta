@@ -35,7 +35,9 @@ export async function extractTranscript(url: string): Promise<TranscriptResult> 
     maxCharacters: 50 * 1024 * 4, // ~200k chars for long transcripts
   });
 
-  const transcript = result.content ?? "";
+  // For YouTube (and other video) URLs, transcriptTimedText holds the actual
+  // captions/transcript. result.content is the page meta-description only.
+  const transcript = result.transcriptTimedText ?? result.content ?? "";
 
   return {
     transcript: cleanTranscript(transcript),
