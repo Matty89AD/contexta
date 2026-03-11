@@ -43,7 +43,7 @@ const ArtifactDetail = ({ selectedArtifact, onBack, onOpenContent }) => {
         className="flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-8 transition-colors group"
       >
         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
-        Zurück zu den Empfehlungen
+        Back to recommendations
       </button>
 
       {/* Header Section */}
@@ -92,7 +92,7 @@ const ArtifactDetail = ({ selectedArtifact, onBack, onOpenContent }) => {
             <div className="animate-in fade-in slide-in-from-left-4 duration-300 space-y-10">
               <section>
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Info size={20} className="text-indigo-600" /> Über dieses Framework
+                  <Info size={20} className="text-indigo-600" /> About this Artifact
                 </h3>
                 <p className="text-xl text-gray-600 leading-relaxed">{art.description}</p>
               </section>

@@ -22,7 +22,7 @@ function OverviewTab({ detail }: { detail: ArtifactDetailOutput }) {
     <div className="space-y-6">
       <div>
         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-3">
-          Über dieses Framework
+          About this Artifact
         </h3>
         <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">
           {detail.description}
