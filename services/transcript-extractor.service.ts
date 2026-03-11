@@ -5,6 +5,7 @@
  * cannot spawn arbitrary binaries.
  */
 import { createLinkPreviewClient } from "@steipete/summarize/content";
+import { logger } from "@/core/logger";
 
 const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -33,6 +34,16 @@ export async function extractTranscript(url: string): Promise<TranscriptResult> 
     format: "text",
     timeoutMs: TIMEOUT_MS,
     maxCharacters: 50 * 1024 * 4, // ~200k chars for long transcripts
+  });
+
+  logger.info("extractTranscript result", {
+    url,
+    transcriptSource: result.transcriptSource,
+    transcriptCharacters: result.transcriptCharacters,
+    transcriptTimedTextLength: result.transcriptTimedText?.length ?? null,
+    contentLength: result.content?.length ?? null,
+    title: result.title,
+    diagnostics: result.diagnostics,
   });
 
   // For YouTube (and other video) URLs, transcriptTimedText holds the actual
