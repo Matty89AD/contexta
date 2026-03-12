@@ -21,16 +21,24 @@ export interface TranscriptResult {
  * Skips LLM summarization — returns raw content only.
  */
 export async function extractTranscript(url: string): Promise<TranscriptResult> {
+  const apifyApiToken = process.env.APIFY_API_TOKEN ?? null;
+
   const client = createLinkPreviewClient({
     env: {
       OPENAI_API_KEY: process.env.OPENROUTER_API_KEY ?? "",
       OPENAI_BASE_URL: "https://openrouter.ai/api/v1",
     },
     openaiApiKey: process.env.OPENROUTER_API_KEY ?? undefined,
+    apifyApiToken,
   });
 
+  // Use Apify for YouTube when token is available — direct caption fetching
+  // (youtubei / captionTracks) is blocked by YouTube from cloud/datacenter IPs.
+  const isYouTube = /youtube\.com|youtu\.be/.test(url);
+  const youtubeTranscript = isYouTube && apifyApiToken ? "apify" : "auto";
+
   const result = await client.fetchLinkContent(url, {
-    youtubeTranscript: "auto",
+    youtubeTranscript,
     format: "text",
     timeoutMs: TIMEOUT_MS,
     maxCharacters: 50 * 1024 * 4, // ~200k chars for long transcripts
