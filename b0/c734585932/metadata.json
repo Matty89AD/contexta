@@ -1,0 +1,20 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "b0c734585932",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yml",
+    "services/transcript-extractor.service.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b0/c734585932/0/metadata.json",
+      "transcript": "/b0/c734585932/0/full.jsonl",
+      "context": "/b0/c734585932/0/context.md",
+      "content_hash": "/b0/c734585932/0/content_hash.txt",
+      "prompt": "/b0/c734585932/0/prompt.txt"
+    }
+  ]
+}

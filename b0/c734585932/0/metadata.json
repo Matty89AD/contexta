@@ -1,0 +1,24 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "b0c734585932",
+  "session_id": "8466b5cc-ec01-41c3-a4f1-60d9706b7927",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-12T10:55:07.001368Z",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yml",
+    "services/transcript-extractor.service.ts"
+  ],
+  "agent": "Cursor",
+  "turn_id": "7180b94b84d1",
+  "initial_attribution": {
+    "calculated_at": "2026-03-12T10:55:06.984548Z",
+    "agent_lines": 32,
+    "human_added": 8,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 41,
+    "agent_percentage": 78.04878048780488
+  }
+}
