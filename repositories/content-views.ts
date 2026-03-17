@@ -56,6 +56,23 @@ export async function getView(
   return data as ContentView;
 }
 
+/**
+ * Count distinct content items the user has ever viewed.
+ * Uses `head: true` so no rows are returned — only the COUNT aggregate.
+ */
+export async function getViewedContentCount(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("user_content_views")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
 /** Batch fetch view records for a list of content IDs (for hydrating cards). */
 export async function getViewsForContents(
   supabase: SupabaseClient,

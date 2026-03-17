@@ -5,6 +5,25 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+/**
+ * Calculates the number of full days from today until a target date.
+ *
+ * @param target - The future date to count down to.
+ * @returns Number of days remaining, or 0 if the date has passed.
+ */
+function daysUntil(target: Date): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const t = new Date(target);
+  t.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((t.getTime() - today.getTime()) / 86_400_000));
+}
+
+/**
+ * Profile page for the authenticated user.
+ * Shows current date, account email, a password-change form,
+ * and a countdown to the next new year.
+ */
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +31,7 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [viewedContentCount, setViewedContentCount] = useState<number | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -20,6 +40,10 @@ export default function ProfilePage() {
         router.replace("/login?next=/profile");
       } else {
         setUser(u);
+        fetch("/api/profile/stats")
+          .then((r) => r.json())
+          .then((data) => setViewedContentCount(data.viewedContentCount ?? 0))
+          .catch(() => setViewedContentCount(0));
       }
       setLoading(false);
     });
@@ -52,9 +76,39 @@ export default function ProfilePage() {
 
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm mb-6">
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">
+          Heute
+        </p>
+        <p className="text-zinc-900 dark:text-zinc-100 font-medium">
+          {new Date().toLocaleDateString("de-DE", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        </p>
+      </div>
+
+      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm mb-6">
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">
+          Days until new year
+        </p>
+        <p className="text-zinc-900 dark:text-zinc-100 font-medium">
+          {daysUntil(new Date(new Date().getFullYear() + 1, 0, 1))} days
+        </p>
+      </div>
+
+      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm mb-6">
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">
           Email
         </p>
         <p className="text-zinc-900 dark:text-zinc-100 font-medium">{user?.email}</p>
+      </div>
+
+      <div
+        data-testid="viewed-content-count"
+        className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm mb-6"
+      >
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">
+          Content Viewed
+        </p>
+        <p className="text-zinc-900 dark:text-zinc-100 font-medium">
+          {viewedContentCount === null ? "—" : viewedContentCount} items
+        </p>
       </div>
 
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
